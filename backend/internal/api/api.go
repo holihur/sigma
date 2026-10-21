@@ -26,14 +26,22 @@ type API struct {
 	auth      *auth.Manager
 	hub       *ws.Hub
 	staticDir string
+	uploadDir string
 	locks     sync.Map
 }
 
-func New(st *store.Store, am *auth.Manager, staticDir string) *API {
-	a := &API{st: st, auth: am, staticDir: staticDir}
-	a.hub = ws.NewHub(a.wsAccess, func(fileID, userID string, incoming json.RawMessage) (json.RawMessage, int, error) {
-		return a.mergeAndSave(fileID, incoming)
-	})
+func New(st *store.Store, am *auth.Manager, staticDir, uploadDir string) *API {
+	a := &API{st: st, auth: am, staticDir: staticDir, uploadDir: uploadDir}
+	_ = os.MkdirAll(uploadDir, 0o755)
+	a.hub = ws.NewHub(
+		a.wsAccess,
+		func(fileID, userID string, incoming json.RawMessage) (json.RawMessage, int, error) {
+			return a.mergeAndSave(fileID, incoming)
+		},
+		func(fileID, userID string, incoming json.RawMessage) (json.RawMessage, int, error) {
+			return a.applyDelta(fileID, incoming)
+		},
+	)
 	return a
 }
 
@@ -59,6 +67,13 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/files/{id}/versions", a.requireAuth(a.handleListVersions))
 	mux.HandleFunc("POST /api/files/{id}/versions", a.requireAuth(a.handleCreateVersion))
 	mux.HandleFunc("POST /api/files/{id}/versions/{versionId}/restore", a.requireAuth(a.handleRestoreVersion))
+	mux.HandleFunc("POST /api/uploads", a.requireAuth(a.handleUpload))
+	mux.HandleFunc("GET /api/uploads/{name}", a.handleUploadFile)
+	mux.HandleFunc("GET /api/files/{id}/public-link", a.requireAuth(a.handleGetPublicLink))
+	mux.HandleFunc("POST /api/files/{id}/public-link", a.requireAuth(a.handleSetPublicLink))
+	mux.HandleFunc("GET /api/public/{token}", a.handlePublicFile)
+	mux.HandleFunc("GET /api/notifications", a.requireAuth(a.handleListNotifications))
+	mux.HandleFunc("POST /api/notifications/read", a.requireAuth(a.handleReadNotifications))
 	mux.HandleFunc("GET /api/files/{id}/comments", a.requireAuth(a.handleListComments))
 	mux.HandleFunc("POST /api/files/{id}/comments", a.requireAuth(a.handleCreateComment))
 	mux.HandleFunc("PATCH /api/comments/{id}", a.requireAuth(a.handlePatchComment))
@@ -186,6 +201,14 @@ func newID(prefix string) string {
 		return prefix + "_" + hex.EncodeToString([]byte(time.Now().String()))[:16]
 	}
 	return prefix + "_" + hex.EncodeToString(b)
+}
+
+func newToken() string {
+	b := make([]byte, 24)
+	if _, err := rand.Read(b); err != nil {
+		return hex.EncodeToString([]byte(time.Now().String()))
+	}
+	return hex.EncodeToString(b)
 }
 
 func (a *API) fileLock(id string) *sync.Mutex {

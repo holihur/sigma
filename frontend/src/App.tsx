@@ -7,6 +7,7 @@ import LoginPage from "@/pages/Login";
 
 const DashboardPage = lazy(() => import("@/pages/Dashboard"));
 const EditorPage = lazy(() => import("@/pages/Editor"));
+const PublicPrototypePage = lazy(() => import("@/pages/PublicPrototype"));
 
 function Splash() {
   return (
@@ -58,6 +59,7 @@ export default function App() {
         <Suspense fallback={<Splash />}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/p/:token" element={<PublicPrototypePage />} />
             <Route
               path="/"
               element={

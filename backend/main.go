@@ -48,7 +48,8 @@ func main() {
 		}
 	}
 
-	a := api.New(st, am, staticDir)
+	uploadDir := env("UPLOAD_DIR", filepath.Join(filepath.Dir(dbPath), "uploads"))
+	a := api.New(st, am, staticDir, uploadDir)
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           a.Handler(),
@@ -57,7 +58,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Sigma backend listening on http://localhost:%s (static: %q)", port, staticDir)
+		log.Printf("Sigma backend listening on http://localhost:%s (static: %q, uploads: %q)", port, staticDir, uploadDir)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server: %v", err)
 		}

@@ -34,10 +34,12 @@ type Presence struct {
 
 type AccessFunc func(fileID, token string) (User, error)
 type DocFunc func(fileID, userID string, incoming json.RawMessage) (json.RawMessage, int, error)
+type DeltaFunc func(fileID, userID string, incoming json.RawMessage) (json.RawMessage, int, error)
 
 type Hub struct {
 	access AccessFunc
 	save   DocFunc
+	delta  DeltaFunc
 	rooms  map[string]*room
 	mu     sync.Mutex
 }
@@ -58,15 +60,18 @@ type client struct {
 }
 
 type inbound struct {
-	Type      string   `json:"type"`
-	Cursor    *Point   `json:"cursor,omitempty"`
-	Selection []string `json:"selection,omitempty"`
+	Type      string          `json:"type"`
+	Cursor    *Point          `json:"cursor,omitempty"`
+	Selection []string        `json:"selection,omitempty"`
 	Doc       json.RawMessage `json:"doc,omitempty"`
+	Delta     json.RawMessage `json:"delta,omitempty"`
 }
 
 type outbound struct {
 	Type    string     `json:"type"`
 	Doc     any        `json:"doc,omitempty"`
+	Delta   any        `json:"delta,omitempty"`
+	Comment any        `json:"comment,omitempty"`
 	Version int        `json:"version,omitempty"`
 	Users   []Presence `json:"users,omitempty"`
 	Self    *Presence  `json:"self,omitempty"`
@@ -79,8 +84,8 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func NewHub(access AccessFunc, save DocFunc) *Hub {
-	return &Hub{access: access, save: save, rooms: map[string]*room{}}
+func NewHub(access AccessFunc, save DocFunc, delta DeltaFunc) *Hub {
+	return &Hub{access: access, save: save, delta: delta, rooms: map[string]*room{}}
 }
 
 func (h *Hub) Handle(w http.ResponseWriter, r *http.Request) {
@@ -174,6 +179,39 @@ func (h *Hub) BroadcastDoc(fileID string, doc json.RawMessage, version int) {
 	h.broadcastDoc(fileID, doc, version)
 }
 
+// BroadcastComment sends a newly created comment to everyone in the file room.
+func (h *Hub) BroadcastComment(fileID string, comment any) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	r := h.rooms[fileID]
+	if r == nil {
+		return
+	}
+	payload, err := json.Marshal(outbound{Type: "comment", Comment: comment})
+	if err != nil {
+		return
+	}
+	for c := range r.clients {
+		c.enqueue(payload)
+	}
+}
+
+func (h *Hub) broadcastDelta(fileID string, delta json.RawMessage, version int) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	r := h.rooms[fileID]
+	if r == nil {
+		return
+	}
+	payload, err := json.Marshal(outbound{Type: "doc-delta", Delta: delta, Version: version})
+	if err != nil {
+		return
+	}
+	for c := range r.clients {
+		c.enqueue(payload)
+	}
+}
+
 func (h *Hub) broadcastDoc(fileID string, doc json.RawMessage, version int) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -245,6 +283,21 @@ func (c *client) readPump() {
 				continue
 			}
 			c.hub.broadcastDoc(c.fileID, merged, version)
+		case "delta":
+			if c.user.Role != "owner" && c.user.Role != "edit" {
+				continue
+			}
+			if len(msg.Delta) == 0 {
+				continue
+			}
+			applied, version, err := c.hub.delta(c.fileID, c.user.ID, msg.Delta)
+			if err != nil {
+				log.Printf("ws delta %s: %v", c.fileID, err)
+				errPayload, _ := json.Marshal(outbound{Type: "error", Message: "Could not save changes"})
+				c.enqueue(errPayload)
+				continue
+			}
+			c.hub.broadcastDelta(c.fileID, applied, version)
 		}
 	}
 }

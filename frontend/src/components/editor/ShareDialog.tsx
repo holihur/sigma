@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Check, Copy, Link2, Mail, Shield, Trash2, UserPlus, Users } from "lucide-react";
+import { Check, Copy, ExternalLink, Globe2, Link2, Mail, Shield, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { membersApi } from "@/lib/api";
+import { membersApi, publicApi } from "@/lib/api";
 import type { Member } from "@/lib/types";
 import { useEditor } from "@/store/editor";
 import { useAuth } from "@/store/auth";
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const file = useEditor((s) => s.file);
@@ -29,6 +30,9 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   const [loading, setLoading] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [publicToken, setPublicToken] = useState("");
+  const [publicEnabled, setPublicEnabled] = useState(false);
+  const [publicBusy, setPublicBusy] = useState(false);
 
   useEffect(() => {
     if (!open || !file) return;
@@ -41,6 +45,15 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
       })
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
+    if (file.role === "owner") {
+      publicApi
+        .link(file.id)
+        .then((data) => {
+          setPublicToken(data.token);
+          setPublicEnabled(data.enabled);
+        })
+        .catch(() => undefined);
+    }
   }, [open, file?.id]);
 
   if (!file) return null;
@@ -76,6 +89,22 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     setCopied(true);
     toast.success("Link copied");
     setTimeout(() => setCopied(false), 1800);
+  };
+
+  const publicUrl = publicToken ? `${window.location.origin}/p/${publicToken}` : "";
+
+  const togglePublic = async (enabled: boolean) => {
+    setPublicBusy(true);
+    try {
+      const data = await publicApi.set(file.id, enabled);
+      setPublicToken(data.token);
+      setPublicEnabled(data.enabled);
+      toast.success(enabled ? "Public prototype enabled" : "Public link disabled");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPublicBusy(false);
+    }
   };
 
   return (
@@ -175,12 +204,51 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </div>
         </div>
 
+        {isOwner && (
+          <div className="rounded-lg border border-border">
+            <div className="flex items-center gap-2.5 px-3 py-2.5">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                <Globe2 className="size-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-[12px] font-medium">
+                  Public prototype
+                  {publicEnabled && <Badge variant="success">Live</Badge>}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  Anyone with the link can view the click-through prototype, no account needed.
+                </div>
+              </div>
+              <Switch checked={publicEnabled} onCheckedChange={togglePublic} disabled={publicBusy} />
+            </div>
+            {publicEnabled && publicUrl && (
+              <div className="flex items-center gap-2 border-t border-border bg-secondary/30 px-3 py-2">
+                <Link2 className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground">{publicUrl}</span>
+                <Button variant="ghost" size="iconXs" onClick={() => window.open(publicUrl, "_blank", "noopener,noreferrer")} title="Open prototype">
+                  <ExternalLink className="size-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await copyText(publicUrl);
+                    toast.success("Public link copied");
+                  }}
+                >
+                  <Copy className="size-3.5" /> Copy
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
           <Link2 className="ml-1 size-3.5 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">{window.location.href}</span>
           <Button variant="outline" size="sm" onClick={copyLink}>
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            {copied ? "Copied" : "Copy link"}
+            {copied ? "Copied" : "Editor link"}
           </Button>
         </div>
         <p className="text-[10px] leading-relaxed text-muted-foreground">

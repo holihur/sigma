@@ -200,6 +200,8 @@ func (a *API) handlePutDoc(w http.ResponseWriter, r *http.Request, u model.User)
 		writeError(w, http.StatusBadRequest, "Could not save document")
 		return
 	}
+	// Keep collaborators in sync when a client falls back to HTTP.
+	a.hub.BroadcastDoc(id, merged, version)
 	writeJSON(w, http.StatusOK, map[string]any{"doc": merged, "version": version})
 }
 
@@ -250,3 +252,45 @@ type docError string
 func (e docError) Error() string { return string(e) }
 
 const errEmptyDoc = docError("empty document")
+
+
+// applyDelta merges a partial document from a collaborating client and returns
+// the authoritative subset to broadcast back to the room.
+func (a *API) applyDelta(fileID string, incoming json.RawMessage) (json.RawMessage, int, error) {
+	lock := a.fileLock(fileID)
+	lock.Lock()
+	defer lock.Unlock()
+
+	f, err := a.st.File(fileID)
+	if err != nil {
+		return nil, 0, err
+	}
+	var base doc.Doc
+	if err := json.Unmarshal([]byte(f.Doc), &base); err != nil {
+		base = doc.Doc{}
+	}
+	var delta doc.Doc
+	if err := json.Unmarshal(incoming, &delta); err != nil {
+		return nil, 0, err
+	}
+	if doc.IsEmptyDelta(&delta) {
+		out, err := json.Marshal(doc.Doc{Pages: []doc.Page{}, Tombstones: map[string]int64{}, DeletedPages: map[string]int64{}})
+		return out, f.Version, err
+	}
+	merged := doc.ApplyDelta(&base, &delta)
+	merged.Tombstones = pruneTombstones(merged.Tombstones)
+	full, err := json.Marshal(merged)
+	if err != nil {
+		return nil, 0, err
+	}
+	version := f.Version + 1
+	if err := a.st.SaveDoc(fileID, string(full), version); err != nil {
+		return nil, 0, err
+	}
+	applied := doc.DeltaResult(merged, &delta)
+	out, err := json.Marshal(applied)
+	if err != nil {
+		return nil, 0, err
+	}
+	return out, version, nil
+}

@@ -155,6 +155,17 @@ func (a *API) handleCreateComment(w http.ResponseWriter, r *http.Request, u mode
 		writeError(w, http.StatusInternalServerError, "Could not add comment")
 		return
 	}
+	// Notify collaborators and push the comment to everyone in the file room.
+	if users, err := a.st.AccessUsers(id); err == nil {
+		text := truncateRunes(c.Text, 160)
+		for _, uid := range users {
+			if uid == u.ID {
+				continue
+			}
+			_ = a.st.AddNotificationFor(newID("ntf"), uid, id, c.ID, u.ID, "comment", text)
+		}
+	}
+	a.hub.BroadcastComment(id, c)
 	writeJSON(w, http.StatusCreated, map[string]any{"comment": c})
 }
 
@@ -290,4 +301,13 @@ func (a *API) wsAccess(fileID, token string) (ws.User, error) {
 		return ws.User{}, docError("no access")
 	}
 	return ws.User{ID: u.ID, Name: u.Name, Color: u.Color, Role: role}, nil
+}
+
+
+func truncateRunes(s string, max int) string {
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return string(r[:max]) + "…"
 }

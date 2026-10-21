@@ -9,6 +9,7 @@ export interface NodeViewContext {
   editable: boolean;
   interactive: boolean;
   tool: Tool;
+  panMode?: boolean;
   zoom: number;
   selected: Set<string>;
   hoveredId: string | null;
@@ -25,7 +26,7 @@ export interface NodeViewContext {
 export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext }) {
   const { page, interactive, tool, selected, hoveredId, editingId } = ctx;
   const isSelected = selected.has(node.id);
-  const canInteract = interactive && (tool === "select" || tool === "hand") && !node.locked;
+  const canInteract = interactive && tool === "select" && !ctx.panMode && !node.locked;
 
   const fill = paintToCss(node.fill);
   const strokeColor = node.stroke ? paintToCss(node.stroke) : "transparent";

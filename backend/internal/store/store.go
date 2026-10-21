@@ -91,7 +91,25 @@ CREATE TABLE IF NOT EXISTS versions (
 	author_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS public_links (
+	file_id    TEXT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,
+	token      TEXT NOT NULL UNIQUE,
+	enabled    INTEGER NOT NULL DEFAULT 0,
+	created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS notifications (
+	id         TEXT PRIMARY KEY,
+	user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	file_id    TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+	comment_id TEXT NOT NULL DEFAULT '',
+	actor_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	kind       TEXT NOT NULL DEFAULT 'comment',
+	text       TEXT NOT NULL DEFAULT '',
+	read       INTEGER NOT NULL DEFAULT 0,
+	created_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_files_owner ON files(owner_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read, created_at);
 CREATE INDEX IF NOT EXISTS idx_members_user ON file_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_file ON comments(file_id);
 CREATE INDEX IF NOT EXISTS idx_versions_file ON versions(file_id);
@@ -344,6 +362,86 @@ func (s *Store) VersionDoc(fileID, versionID string) (string, int, error) {
 	var version int
 	err := s.db.QueryRow(`SELECT doc,version FROM versions WHERE id=? AND file_id=?`, versionID, fileID).Scan(&doc, &version)
 	return doc, version, err
+}
+
+// ---------- public links ----------
+
+func (s *Store) PublicLink(fileID string) (string, bool, error) {
+	var token string
+	var enabled int
+	err := s.db.QueryRow(`SELECT token, enabled FROM public_links WHERE file_id=?`, fileID).Scan(&token, &enabled)
+	return token, enabled != 0, err
+}
+
+func (s *Store) SetPublicLink(fileID, token string, enabled bool) error {
+	_, err := s.db.Exec(`INSERT INTO public_links(file_id,token,enabled,created_at) VALUES(?,?,?,?)
+		ON CONFLICT(file_id) DO UPDATE SET enabled=excluded.enabled`, fileID, token, enabled, model.Now())
+	return err
+}
+
+func (s *Store) FileByPublicToken(token string) (model.File, error) {
+	var f model.File
+	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,f.doc,f.version,f.thumbnail,f.template,f.created_at,f.updated_at
+		FROM files f JOIN public_links l ON l.file_id=f.id WHERE l.token=? AND l.enabled=1`, token).
+		Scan(&f.ID, &f.Name, &f.OwnerID, &f.Doc, &f.Version, &f.Thumbnail, &f.Template, &f.CreatedAt, &f.UpdatedAt)
+	return f, err
+}
+
+// ---------- notifications ----------
+
+func (s *Store) AccessUsers(fileID string) ([]string, error) {
+	seen := map[string]bool{}
+	out := []string{}
+	rows, err := s.db.Query(`SELECT owner_id FROM files WHERE id=? UNION SELECT user_id FROM file_members WHERE file_id=?`, fileID, fileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		if !seen[id] {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out, rows.Err()
+}
+
+
+// AddNotificationFor creates a notification for one recipient.
+func (s *Store) AddNotificationFor(id, userID, fileID, commentID, actorID, kind, text string) error {
+	_, err := s.db.Exec(`INSERT INTO notifications(id,user_id,file_id,comment_id,actor_id,kind,text,read,created_at)
+		VALUES(?,?,?,?,?,?,?,0,?)`, id, userID, fileID, commentID, actorID, kind, text, model.Now())
+	return err
+}
+
+func (s *Store) Notifications(userID string) ([]model.Notification, error) {
+	rows, err := s.db.Query(`SELECT n.id,n.kind,n.file_id,f.name,n.comment_id,n.actor_id,u.name,u.color,n.text,n.read,n.created_at
+		FROM notifications n JOIN files f ON f.id=n.file_id JOIN users u ON u.id=n.actor_id
+		WHERE n.user_id=? ORDER BY n.created_at DESC LIMIT 50`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.Notification{}
+	for rows.Next() {
+		var n model.Notification
+		var read int
+		if err := rows.Scan(&n.ID, &n.Type, &n.FileID, &n.FileName, &n.CommentID, &n.ActorID, &n.Actor, &n.Color, &n.Text, &read, &n.CreatedAt); err != nil {
+			return nil, err
+		}
+		n.Read = read != 0
+		out = append(out, n)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) MarkNotificationsRead(userID string) error {
+	_, err := s.db.Exec(`UPDATE notifications SET read=1 WHERE user_id=? AND read=0`, userID)
+	return err
 }
 
 func ErrNotFound(err error) bool { return errors.Is(err, sql.ErrNoRows) }

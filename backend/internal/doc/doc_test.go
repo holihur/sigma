@@ -126,3 +126,42 @@ func TestPrepareRestoreMakesSnapshotAuthoritative(t *testing.T) {
 		t.Fatalf("expected refreshed page ts, got %d", prepared.Pages[0].TS)
 	}
 }
+
+func TestDeltaApplyAndAuthoritativeResult(t *testing.T) {
+	current := parseDoc(t, `{"pages":[{"id":"p1","name":"Page 1","ts":10,"rootIds":["a","b"],"nodes":{
+		"a":{"id":"a","name":"Base A","ts":30,"parentId":null},
+		"b":{"id":"b","name":"Base B","ts":10,"parentId":null}
+	}}]}`)
+	delta := parseDoc(t, `{"pages":[{"id":"p1","name":"Page 1","ts":10,"rootIds":["a","b","c"],"nodes":{
+		"a":{"id":"a","name":"Stale A","ts":20,"parentId":null},
+		"c":{"id":"c","name":"New C","ts":40,"parentId":null}
+	}}],"tombstones":{"b":40}}`)
+	merged := ApplyDelta(current, delta)
+	applied := DeltaResult(merged, delta)
+	if node(t, applied, "p1", "c") == nil {
+		t.Fatal("expected new node in delta result")
+	}
+	if ts, ok := applied.Tombstones["b"]; !ok || ts != 40 {
+		t.Fatalf("expected tombstone for b, got %#v", applied.Tombstones)
+	}
+	a := node(t, applied, "p1", "a")
+	if a == nil || a["name"] != "Base A" {
+		t.Fatalf("expected authoritative newer node, got %#v", a)
+	}
+	if len(applied.Pages[0].RootIDs) != 2 || applied.Pages[0].RootIDs[0] != "a" || applied.Pages[0].RootIDs[1] != "c" {
+		t.Fatalf("expected merged root order, got %#v", applied.Pages[0].RootIDs)
+	}
+}
+
+func TestDeltaPageRemovalResult(t *testing.T) {
+	current := parseDoc(t, `{"pages":[{"id":"p1","name":"Page 1","ts":10,"rootIds":[],"nodes":{}}]}`)
+	delta := parseDoc(t, `{"pages":[],"deletedPages":{"p1":50}}`)
+	merged := ApplyDelta(current, delta)
+	if len(merged.Pages) != 0 {
+		t.Fatal("expected deleted page")
+	}
+	applied := DeltaResult(merged, delta)
+	if ts, ok := applied.DeletedPages["p1"]; !ok || ts != 50 {
+		t.Fatalf("expected deleted page in delta result, got %#v", applied.DeletedPages)
+	}
+}

@@ -106,6 +106,7 @@ interface EditorState {
   confirmSync: (version: number) => void;
   failSync: () => void;
   applyRemoteDoc: (doc: SigmaDoc, version: number) => void;
+  applyRemoteDelta: (delta: SigmaDoc, version: number) => void;
   applyRestoredDoc: (doc: SigmaDoc, version: number) => void;
   openPreview: (frameId?: string | null) => void;
   closePreview: () => void;
@@ -156,7 +157,48 @@ function shiftTree(page: Page, id: string, dxWorld: number, dyWorld: number, vis
   node.ts = Date.now();
 }
 
+function collectShift(
+  page: Page,
+  id: string,
+  dxWorld: number,
+  dyWorld: number,
+  updates: Map<string, { x: number; y: number }>,
+  visited = new Set<string>(),
+) {
+  if (visited.has(id)) return;
+  visited.add(id);
+  const node = page.nodes[id];
+  if (!node) return;
+  if (node.type === "group") {
+    for (const child of node.children) collectShift(page, child, dxWorld, dyWorld, updates, visited);
+    return;
+  }
+  const angle = node.parentId && page.nodes[node.parentId] ? matrixAngle(nodeMatrix(page, node.parentId)) : 0;
+  const rad = (-angle * Math.PI) / 180;
+  updates.set(id, {
+    x: node.x + dxWorld * Math.cos(rad) - dyWorld * Math.sin(rad),
+    y: node.y + dxWorld * Math.sin(rad) + dyWorld * Math.cos(rad),
+  });
+}
+
 export const useEditor = create<EditorState>((set, get) => {
+  const commitPage = (page: Page, record = true) => {
+    const state = get();
+    const nextDoc: SigmaDoc = {
+      ...state.doc,
+      pages: state.doc.pages.map((p) => (p.id === page.id ? page : p)),
+    };
+    const past = record ? [...state.past, state.doc].slice(-60) : state.past;
+    set({
+      doc: nextDoc,
+      past,
+      future: record ? [] : state.future,
+      dirty: true,
+      changeSeq: state.changeSeq + 1,
+      syncStatus: "saving",
+    });
+  };
+
   const mutate = (fn: (page: Page, doc: SigmaDoc) => void, record = true) => {
     const state = get();
     const next = structuredClone(state.doc);
@@ -345,15 +387,20 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     updateNodes: (ids, patch, record = true) => {
       if (get().isReadOnly) return;
-      mutate((page) => {
-        const now = Date.now();
-        for (const id of ids) {
-          const node = page.nodes[id];
-          if (!node) continue;
-          const next = typeof patch === "function" ? patch(node) : patch;
-          Object.assign(node, next, { ts: now });
-        }
-      }, record);
+      const state = get();
+      const source = getPage(state.doc, state.pageId);
+      const now = Date.now();
+      let changed = false;
+      const nodes = { ...source.nodes };
+      for (const id of ids) {
+        const node = source.nodes[id];
+        if (!node) continue;
+        const next = typeof patch === "function" ? patch(node) : patch;
+        nodes[id] = { ...node, ...next, ts: now };
+        changed = true;
+      }
+      if (!changed) return;
+      commitPage({ ...source, nodes }, record);
     },
     updateNode: (id, patch, record = true) => get().updateNodes([id], patch, record),
     addNode: (node, parentId = null, index, record = true) => {
@@ -674,9 +721,17 @@ export const useEditor = create<EditorState>((set, get) => {
       const page = currentPage(state);
       const roots = topLevelSelection(page, state.selection);
       if (roots.length === 0) return;
-      mutate((p) => {
-        for (const id of roots) shiftTree(p, id, dx, dy);
-      }, record);
+      const updates = new Map<string, { x: number; y: number }>();
+      for (const id of roots) collectShift(page, id, dx, dy, updates);
+      if (updates.size === 0) return;
+      const now = Date.now();
+      const nodes = { ...page.nodes };
+      for (const [id, pos] of updates) {
+        const node = nodes[id];
+        if (!node) continue;
+        nodes[id] = { ...node, x: pos.x, y: pos.y, ts: now };
+      }
+      commitPage({ ...page, nodes }, record);
     },
     align: (kind) => {
       if (get().isReadOnly) return;
@@ -810,7 +865,10 @@ export const useEditor = create<EditorState>((set, get) => {
       });
     },
     setComments: (comments) => set({ comments }),
-    appendComment: (comment) => set({ comments: [...get().comments, comment] }),
+    appendComment: (comment) => {
+      if (get().comments.some((c) => c.id === comment.id)) return;
+      set({ comments: [...get().comments, comment] });
+    },
     updateComment: (comment) => set({ comments: get().comments.map((c) => (c.id === comment.id ? comment : c)) }),
     removeComment: (id) => set({ comments: get().comments.filter((c) => c.id !== id) }),
     setShowComments: (show) => set({ showComments: show }),
@@ -830,6 +888,21 @@ export const useEditor = create<EditorState>((set, get) => {
     applyRemoteDoc: (doc, version) => {
       const state = get();
       const merged = mergeDocs(state.doc, normalizeDoc(doc));
+      const pageIds = new Set(merged.pages.map((p) => p.id));
+      const pageId = pageIds.has(state.pageId) ? state.pageId : merged.pages[0].id;
+      const page = getPage(merged, pageId);
+      set({
+        doc: merged,
+        pageId,
+        version: Math.max(version, state.version),
+        selection: state.selection.filter((id) => page.nodes[id]),
+        editingId: state.editingId && page.nodes[state.editingId] ? state.editingId : null,
+      });
+      get().confirmSync(version);
+    },
+    applyRemoteDelta: (delta, version) => {
+      const state = get();
+      const merged = mergeDocs(state.doc, delta);
       const pageIds = new Set(merged.pages.map((p) => p.id));
       const pageId = pageIds.has(state.pageId) ? state.pageId : merged.pages[0].id;
       const page = getPage(merged, pageId);

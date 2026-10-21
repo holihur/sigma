@@ -70,12 +70,20 @@ export default function EditorPage() {
   }, []);
 
   useEffect(() => {
-    if (file && searchParams.get("share") === "1") {
+    if (!file) return;
+    let changed = false;
+    const next = new URLSearchParams(searchParams);
+    if (searchParams.get("share") === "1") {
       setShareOpen(true);
-      const next = new URLSearchParams(searchParams);
       next.delete("share");
-      setSearchParams(next, { replace: true });
+      changed = true;
     }
+    if (searchParams.get("comments") === "1") {
+      setShowComments(true);
+      next.delete("comments");
+      changed = true;
+    }
+    if (changed) setSearchParams(next, { replace: true });
   }, [file, searchParams, setSearchParams]);
 
   // Load the design on mount / when navigating between files.
@@ -173,26 +181,34 @@ export default function EditorPage() {
     const frame = p.nodes[frameId];
     const el = document.querySelector(`[data-node-id="${frameId}"]`) as HTMLElement | null;
     if (!el || !frame) return;
+    const width = Math.max(frame.width, 1);
+    const height = Math.max(Math.abs(frame.height), 1);
+    const host = document.createElement("div");
+    host.style.cssText = `position:fixed;left:0;top:0;width:${width}px;height:${height}px;overflow:hidden;pointer-events:none;background:transparent;opacity:0;z-index:-1;`;
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.style.position = "relative";
+    clone.style.left = "0px";
+    clone.style.top = "0px";
+    clone.style.margin = "0";
+    clone.style.transform = "none";
+    host.appendChild(clone);
+    document.body.appendChild(host);
     try {
-      const dataUrl = await toPng(el, {
-        pixelRatio: 0.5,
+      const dataUrl = await toPng(clone, {
+        pixelRatio: 0.35,
         cacheBust: true,
-        width: Math.max(frame.width, 1),
-        height: Math.max(Math.abs(frame.height), 1),
-        style: {
-          position: "relative",
-          left: "0px",
-          top: "0px",
-          margin: "0",
-          transform: frame.rotation ? `rotate(${frame.rotation}deg)` : "none",
-          transformOrigin: "center center",
-        },
+        width,
+        height,
       });
-      if (dataUrl.length < 800_000) {
+      // Thumbnails stay as compressed data URLs in the file row; document
+      // images are uploaded separately so they never bloat the document JSON.
+      if (dataUrl.length < 400_000) {
         await filesApi.patch(st.file.id, { thumbnail: dataUrl });
       }
     } catch {
       /* thumbnails are best-effort */
+    } finally {
+      host.remove();
     }
   }, []);
 

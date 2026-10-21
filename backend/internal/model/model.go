@@ -81,3 +81,18 @@ type Member struct {
 func Now() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
+
+
+type Notification struct {
+	ID        string `json:"id"`
+	Type      string `json:"type"`
+	FileID    string `json:"fileId"`
+	FileName  string `json:"fileName"`
+	CommentID string `json:"commentId"`
+	ActorID   string `json:"actorId"`
+	Actor     string `json:"actor"`
+	Color     string `json:"color"`
+	Text      string `json:"text"`
+	Read      bool   `json:"read"`
+	CreatedAt string `json:"createdAt"`
+}

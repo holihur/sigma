@@ -28,6 +28,7 @@ import { toPng, toSvg } from "html-to-image";
 import type { Page, Paint, SceneNode, SigmaDoc, Transition } from "@/lib/types";
 import { FONT_FAMILIES, FONT_WEIGHTS, createNode, defaultGradient, getPage, nodeAABB } from "@/lib/nodes";
 import { useEditor } from "@/store/editor";
+import { uploadImage } from "@/lib/api";
 import { cn, clamp, downloadDataUrl, round } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -705,13 +706,16 @@ function ImageSection({ node, onChange }: { node: SceneNode; onChange: (patch: P
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={(e) => {
+          onChange={async (e) => {
             const file = e.target.files?.[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => onChange({ src: String(reader.result ?? "") });
-            reader.readAsDataURL(file);
             e.target.value = "";
+            if (!file) return;
+            try {
+              const src = await uploadImage(file);
+              onChange({ src });
+            } catch (err) {
+              toast.error((err as Error).message || "Could not upload image");
+            }
           }}
         />
       </div>

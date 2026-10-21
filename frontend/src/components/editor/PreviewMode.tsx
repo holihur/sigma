@@ -20,9 +20,10 @@ import { NodeView, type NodeViewContext } from "./NodeView";
 
 type Location = { pageId: string; frameId: string };
 
-export function PreviewMode() {
+export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; publicMode?: boolean } = {}) {
   const open = useEditor((s) => s.previewOpen);
-  const close = useEditor((s) => s.closePreview);
+  const closeStore = useEditor((s) => s.closePreview);
+  const close = onClose ?? closeStore;
   const doc = useEditor((s) => s.doc);
   const file = useEditor((s) => s.file);
   const initialFrame = useEditor((s) => s.previewFrameId);
@@ -117,6 +118,7 @@ export function PreviewMode() {
           setShowHotspots={setShowHotspots}
           canBack={false}
           onBack={goBack}
+          publicMode={publicMode}
         />
         <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
           <div className="flex size-14 items-center justify-center rounded-2xl bg-white/5">
@@ -176,6 +178,7 @@ export function PreviewMode() {
     editable: false,
     interactive: false,
     tool: "hand",
+    panMode: true,
     zoom: scale,
     selected: new Set(),
     hoveredId: null,
@@ -206,6 +209,7 @@ export function PreviewMode() {
         setShowHotspots={setShowHotspots}
         canBack={history.length > 0}
         onBack={goBack}
+        publicMode={publicMode}
       />
 
       <div ref={stageRef} className="relative flex-1 overflow-hidden">
@@ -282,6 +286,7 @@ function PreviewToolbar({
   setShowHotspots,
   canBack,
   onBack,
+  publicMode,
 }: {
   title: string;
   frames: { pageId: string; pageName: string; frame: SceneNode }[];
@@ -294,6 +299,7 @@ function PreviewToolbar({
   setShowHotspots: (v: boolean) => void;
   canBack: boolean;
   onBack: () => void;
+  publicMode?: boolean;
 }) {
   return (
     <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-white/10 bg-[#111114]/90 px-2 py-2 backdrop-blur sm:flex-nowrap sm:gap-3 sm:px-4 sm:py-0">
@@ -305,7 +311,7 @@ function PreviewToolbar({
       </div>
       <div className="min-w-0 flex-1 sm:flex-none">
         <div className="truncate text-[12px] font-medium">{title}</div>
-        <div className="hidden text-[10px] text-white/40 sm:block">Prototype presentation</div>
+        <div className="hidden text-[10px] text-white/40 sm:block">{publicMode ? "Public prototype · read only" : "Prototype presentation"}</div>
       </div>
 
       <div className="order-last flex w-full items-center gap-2 sm:order-none sm:mx-auto sm:w-auto">

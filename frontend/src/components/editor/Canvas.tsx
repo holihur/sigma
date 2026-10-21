@@ -41,6 +41,7 @@ import {
   topLevelSelection,
 } from "@/lib/nodes";
 import { useEditor } from "@/store/editor";
+import { uploadImage } from "@/lib/api";
 import { clamp, cn, isEditableTarget, uid } from "@/lib/utils";
 import { NodeView } from "./NodeView";
 import { SelectionOverlay, type ResizeHandle } from "./SelectionOverlay";
@@ -132,6 +133,7 @@ export function Canvas({
   const [marquee, setMarquee] = useState<Bounds | null>(null);
   const [guides, setGuides] = useState<Guide[]>([]);
   const [cursor, setCursor] = useState<"default" | "grab" | "grabbing" | "crosshair">("default");
+  const [spaceDown, setSpaceDown] = useState(false);
   const [draft, setDraft] = useState<{ world: Point; text: string } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [imagePending, setImagePending] = useState<{ point: Point; replaceId?: string } | null>(null);
@@ -254,6 +256,7 @@ export function Canvas({
       if (isEditableTarget(e.target)) return;
       if (e.code === "Space") {
         spaceRef.current = true;
+        setSpaceDown(true);
         if (!dragRef.current) setCursor("grab");
         e.preventDefault();
       }
@@ -261,6 +264,7 @@ export function Canvas({
     const up = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         spaceRef.current = false;
+        setSpaceDown(false);
         if (!dragRef.current) setCursor("default");
       }
     };
@@ -670,75 +674,69 @@ export function Canvas({
   };
 
   // ---------- image upload ----------
-  const onImageChosen = (file: File, pending: { point: Point; replaceId?: string }) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const src = String(reader.result ?? "");
-      const img = new Image();
-      img.onload = () => {
-        if (pending.replaceId) {
-          store.getState().pushHistory();
-          store.getState().updateNode(pending.replaceId, { src, objectFit: "cover" }, false);
-        } else {
-          store.getState().pushHistory();
-          const parent = frameAt(page, pending.point);
-          const local = parentLocalPoint(page, parent?.id ?? null, pending.point);
-          const maxW = 640;
-          const ratio = img.width / Math.max(img.height, 1);
-          let width = Math.min(maxW, img.width || 320);
-          let height = width / ratio;
-          if (height > 640) {
-            height = 640;
-            width = height * ratio;
-          }
-          const node = createNode("image", {
-            x: local.x - width / 2,
-            y: local.y - height / 2,
-            width,
-            height,
-            src,
-            name: file.name.replace(/\.[^.]+$/, "") || "Image",
-          });
-          store.getState().addNode(node, parent?.id ?? null, undefined, false);
-          store.getState().setTool("select");
-        }
-      };
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // ---------- drop image ----------
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (readOnly) return;
-    const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"));
-    if (!file) return;
-    const point = worldPoint(e);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const src = String(reader.result ?? "");
-      const img = new Image();
-      img.onload = () => {
+  const onImageChosen = async (file: File, pending: { point: Point; replaceId?: string }) => {
+    try {
+      const src = await uploadImage(file);
+      const img = await loadImage(src);
+      if (pending.replaceId) {
         store.getState().pushHistory();
-        const parent = frameAt(page, point);
-        const local = parentLocalPoint(page, parent?.id ?? null, point);
+        store.getState().updateNode(pending.replaceId, { src, objectFit: "cover" }, false);
+      } else {
+        store.getState().pushHistory();
+        const parent = frameAt(page, pending.point);
+        const local = parentLocalPoint(page, parent?.id ?? null, pending.point);
+        const maxW = 640;
         const ratio = img.width / Math.max(img.height, 1);
-        const width = Math.min(560, img.width || 320);
-        const height = width / ratio;
+        let width = Math.min(maxW, img.width || 320);
+        let height = width / ratio;
+        if (height > 640) {
+          height = 640;
+          width = height * ratio;
+        }
         const node = createNode("image", {
           x: local.x - width / 2,
           y: local.y - height / 2,
           width,
           height,
           src,
-          name: "Dropped image",
+          name: file.name.replace(/\.[^.]+$/, "") || "Image",
         });
         store.getState().addNode(node, parent?.id ?? null, undefined, false);
-      };
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
+        store.getState().setTool("select");
+      }
+    } catch (e) {
+      toast.error((e as Error).message || "Could not upload image");
+    }
+  };
+
+  // ---------- drop image ----------
+  const onDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    if (readOnly) return;
+    const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"));
+    if (!file) return;
+    const point = worldPoint(e);
+    try {
+      const src = await uploadImage(file);
+      const img = await loadImage(src);
+      store.getState().pushHistory();
+      const parent = frameAt(page, point);
+      const local = parentLocalPoint(page, parent?.id ?? null, point);
+      const ratio = img.width / Math.max(img.height, 1);
+      const width = Math.min(560, img.width || 320);
+      const height = width / ratio;
+      const node = createNode("image", {
+        x: local.x - width / 2,
+        y: local.y - height / 2,
+        width,
+        height,
+        src,
+        name: "Dropped image",
+      });
+      store.getState().addNode(node, parent?.id ?? null, undefined, false);
+    } catch (err) {
+      toast.error((err as Error).message || "Could not upload image");
+    }
   };
 
   // ---------- comments ----------
@@ -790,6 +788,7 @@ export function Canvas({
     editable: !readOnly,
     interactive: true,
     tool,
+    panMode: spaceDown || tool === "hand",
     zoom: viewport.zoom,
     selected: selectedSet,
     hoveredId,
@@ -1045,6 +1044,15 @@ function MenuRow({
       {shortcut && <span className="ml-auto text-[10px] text-muted-foreground">{shortcut}</span>}
     </button>
   );
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not read image"));
+    img.src = src;
+  });
 }
 
 function normalizeRect(a: Point, b: Point): Bounds {

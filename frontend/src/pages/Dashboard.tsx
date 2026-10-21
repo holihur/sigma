@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LogOut,
+  Bell,
   Menu,
   X,
   Moon,
@@ -29,8 +30,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { filesApi } from "@/lib/api";
-import type { FileMeta, TemplateMeta } from "@/lib/types";
+import { filesApi, notificationsApi } from "@/lib/api";
+import type { FileMeta, Notification, TemplateMeta } from "@/lib/types";
 import { useAuth } from "@/store/auth";
 import { useTheme } from "@/store/theme";
 import { cn, formatRelative, initials, isEditableTarget } from "@/lib/utils";
@@ -78,6 +79,9 @@ export default function DashboardPage() {
   const [renameTarget, setRenameTarget] = useState<FileMeta | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<FileMeta | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -93,15 +97,33 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const loadNotifications = useCallback(async () => {
+    try {
+      const data = await notificationsApi.list();
+      setNotifications(data.notifications);
+      setUnread(data.unread);
+    } catch {
+      /* notifications are non-critical */
+    }
+  }, []);
 
   useEffect(() => {
-    const onFocus = () => void load();
+    void load();
+    void loadNotifications();
+  }, [load, loadNotifications]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      void load();
+      void loadNotifications();
+    };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [load]);
+    const timer = setInterval(() => void loadNotifications(), 30000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(timer);
+    };
+  }, [load, loadNotifications]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -209,6 +231,15 @@ export default function DashboardPage() {
     }
   };
 
+  const openNotifications = async () => {
+    setNotificationsOpen(true);
+    if (unread > 0) {
+      setUnread(0);
+      setNotifications((list) => list.map((n) => ({ ...n, read: true })));
+      await notificationsApi.read().catch(() => undefined);
+    }
+  };
+
   const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
   const heading = nav === "all" ? "Recent designs" : nav === "starred" ? "Starred designs" : "Shared with you";
 
@@ -231,6 +262,18 @@ export default function DashboardPage() {
           <Badge variant="outline" className="ml-auto text-[9px]">
             beta
           </Badge>
+          <button
+            title="Notifications"
+            onClick={() => void openNotifications()}
+            className="relative flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <Bell className="size-4" />
+            {unread > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[8px] font-bold leading-3.5 text-primary-foreground">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </button>
           <button
             title="Close menu"
             onClick={() => setSidebarOpen(false)}
@@ -331,7 +374,19 @@ export default function DashboardPage() {
             </svg>
           </div>
           <span className="text-[15px] font-semibold tracking-tight">Sigma</span>
-          <Button size="sm" className="ml-auto h-8" onClick={() => openNew()}>
+          <button
+            title="Notifications"
+            onClick={() => void openNotifications()}
+            className="relative ml-auto flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <Bell className="size-4.5" />
+            {unread > 0 && (
+              <span className="absolute right-1 top-1 flex min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[8px] font-bold leading-3.5 text-primary-foreground">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </button>
+          <Button size="sm" className="h-8" onClick={() => openNew()}>
             <Plus className="size-4" /> New
           </Button>
         </div>
@@ -444,6 +499,58 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="size-4 text-primary" /> Notifications
+            </DialogTitle>
+            <DialogDescription>Comments and activity across your designs.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55vh] overflow-y-auto rounded-lg border border-border">
+            {notifications.length === 0 ? (
+              <div className="px-4 py-12 text-center text-[12px] text-muted-foreground">
+                You’re all caught up. New comments will show up here.
+              </div>
+            ) : (
+              notifications.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => {
+                    setNotificationsOpen(false);
+                    navigate(`/file/${n.fileId}?comments=1`);
+                  }}
+                  className={cn(
+                    "flex w-full items-start gap-2.5 border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-secondary/40",
+                    !n.read && "bg-primary/5",
+                  )}
+                >
+                  <Avatar className="mt-0.5 size-7 shrink-0">
+                    <AvatarFallback className="text-[9px] font-semibold text-white" style={{ background: n.color }}>
+                      {initials(n.actor)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[12px] leading-relaxed">
+                      <span className="font-medium">{n.actor}</span> commented on{" "}
+                      <span className="font-medium">{n.fileName}</span>
+                    </div>
+                    <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{n.text}</div>
+                    <div className="mt-1 text-[9px] text-muted-foreground">{formatRelative(n.createdAt)}</div>
+                  </div>
+                  {!n.read && <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />}
+                </button>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNotificationsOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* New design dialog */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>

@@ -2,6 +2,7 @@ import type {
   Comment,
   FileMeta,
   Member,
+  Notification,
   SigmaDoc,
   TemplateMeta,
   User,
@@ -95,6 +96,20 @@ export const filesApi = {
     api<{ doc: SigmaDoc; version: number }>(`/files/${id}/doc`, { method: "PUT", body: { doc } }),
 };
 
+export async function uploadImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const token = getToken();
+  const res = await fetch("/api/uploads", {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+  if (!res.ok || !data.url) throw new ApiError(data.error ?? "Upload failed", res.status);
+  return data.url;
+}
+
 // ---------- versions ----------
 
 export const versionsApi = {
@@ -116,6 +131,21 @@ export const commentsApi = {
   resolve: (commentId: string, resolved: boolean) =>
     api<{ comments: Comment[] }>(`/comments/${commentId}`, { method: "PATCH", body: { resolved } }),
   remove: (commentId: string) => api<{ ok: true }>(`/comments/${commentId}`, { method: "DELETE" }),
+};
+
+// ---------- public links & notifications ----------
+
+export const publicApi = {
+  link: (fileId: string) =>
+    api<{ token: string; enabled: boolean }>(`/files/${fileId}/public-link`),
+  set: (fileId: string, enabled: boolean) =>
+    api<{ token: string; enabled: boolean }>(`/files/${fileId}/public-link`, { method: "POST", body: { enabled } }),
+  get: (token: string) => api<{ file: FileMeta; doc: SigmaDoc }>(`/public/${token}`),
+};
+
+export const notificationsApi = {
+  list: () => api<{ notifications: Notification[]; unread: number }>("/notifications"),
+  read: () => api<{ ok: true }>("/notifications/read", { method: "POST" }),
 };
 
 // ---------- members ----------

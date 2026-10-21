@@ -32,6 +32,7 @@ build:
 
 run: build
 	DB_PATH=$${DB_PATH:-backend/data/sigma.db} \
+	UPLOAD_DIR=$${UPLOAD_DIR:-backend/data/uploads} \
 	PORT=$${PORT:-9000} \
 	SIGMA_SECRET=$${SIGMA_SECRET:-sigma-dev-secret-change-in-production} \
 	STATIC_DIR=$(CURDIR)/frontend/dist \

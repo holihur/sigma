@@ -256,3 +256,59 @@ func PrepareRestore(current, restored *Doc, now int64) *Doc {
 	}
 	return out
 }
+
+
+// ApplyDelta merges a partial document (only changed pages/nodes plus
+// tombstones) into the stored document.
+func ApplyDelta(current, delta *Doc) *Doc {
+	return Merge(current, delta)
+}
+
+// DeltaResult returns the authoritative subset of merged state corresponding to
+// the pages touched by delta. It is broadcast to clients instead of the full
+// document, keeping collaborative updates small.
+func DeltaResult(merged, delta *Doc) *Doc {
+	out := &Doc{
+		Pages:        []Page{},
+		Tombstones:   map[string]int64{},
+		DeletedPages: map[string]int64{},
+	}
+	mergedPages := map[string]*Page{}
+	for i := range merged.Pages {
+		mergedPages[merged.Pages[i].ID] = &merged.Pages[i]
+	}
+	for _, dp := range delta.Pages {
+		mp := mergedPages[dp.ID]
+		if mp == nil {
+			continue
+		}
+		np := Page{
+			ID:      mp.ID,
+			Name:    mp.Name,
+			TS:      mp.TS,
+			RootIDs: append([]string{}, mp.RootIDs...),
+			Nodes:   make(map[string]json.RawMessage, len(dp.Nodes)),
+		}
+		for id := range dp.Nodes {
+			if raw, ok := mp.Nodes[id]; ok {
+				np.Nodes[id] = append(json.RawMessage{}, raw...)
+			}
+		}
+		out.Pages = append(out.Pages, np)
+	}
+	for id := range delta.Tombstones {
+		if ts, ok := merged.Tombstones[id]; ok {
+			out.Tombstones[id] = ts
+		}
+	}
+	for id := range delta.DeletedPages {
+		if ts, ok := merged.DeletedPages[id]; ok {
+			out.DeletedPages[id] = ts
+		}
+	}
+	return out
+}
+
+func IsEmptyDelta(d *Doc) bool {
+	return len(d.Pages) == 0 && len(d.Tombstones) == 0 && len(d.DeletedPages) == 0
+}

@@ -189,3 +189,18 @@ export interface Guide {
   from: number;
   to: number;
 }
+
+
+export interface Notification {
+  id: string;
+  type: string;
+  fileId: string;
+  fileName: string;
+  commentId: string;
+  actorId: string;
+  actor: string;
+  color: string;
+  text: string;
+  read: boolean;
+  createdAt: string;
+}
