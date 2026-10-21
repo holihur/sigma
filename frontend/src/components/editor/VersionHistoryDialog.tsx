@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { versionsApi } from "@/lib/api";
 import type { VersionMeta } from "@/lib/types";
 import { useEditor } from "@/store/editor";
+import { useT } from "@/i18n";
 import { formatRelative } from "@/lib/utils";
 import {
   Dialog,
@@ -23,6 +24,7 @@ export function VersionHistoryDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const file = useEditor((s) => s.file);
   const readOnly = useEditor((s) => s.isReadOnly);
   const applyRestoredDoc = useEditor((s) => s.applyRestoredDoc);
@@ -56,7 +58,7 @@ export function VersionHistoryDialog({
       const data = await versionsApi.create(file.id, name.trim() || `Version ${new Date().toLocaleTimeString()}`);
       setVersions(data.versions);
       setName("");
-      toast.success("Version saved");
+      toast.success(t("Version saved"));
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -82,9 +84,9 @@ export function VersionHistoryDialog({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <History className="size-4 text-primary" /> Version history
+            <History className="size-4 text-primary" /> {t("Version history")}
           </DialogTitle>
-          <DialogDescription>Save checkpoints as you design, then restore any version later.</DialogDescription>
+          <DialogDescription>{t("Save checkpoints as you design, then restore any version later.")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex gap-2">
@@ -95,11 +97,11 @@ export function VersionHistoryDialog({
               if (e.key === "Enter") save();
               e.stopPropagation();
             }}
-            placeholder={readOnly ? "Read-only access" : "Name this version (optional)"}
+            placeholder={readOnly ? t("Read-only access") : t("Name this version (optional)")}
             disabled={readOnly}
           />
           <Button onClick={save} disabled={readOnly}>
-            <Save className="size-3.5" /> Save version
+            <Save className="size-3.5" /> {t("Save version")}
           </Button>
         </div>
 
@@ -110,9 +112,9 @@ export function VersionHistoryDialog({
             </div>
           ) : versions.length === 0 ? (
             <div className="px-4 py-10 text-center text-[12px] text-muted-foreground">
-              No saved versions yet.
+              {t("No saved versions yet.")}
               <br />
-              Save one above before making big changes.
+              {t("Save one above before making big changes.")}
             </div>
           ) : (
             versions.map((v) => (
@@ -134,7 +136,7 @@ export function VersionHistoryDialog({
                   onClick={() => restore(v)}
                 >
                   {restoring === v.id ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
-                  Restore
+                  {t("Restore")}
                 </Button>
               </div>
             ))

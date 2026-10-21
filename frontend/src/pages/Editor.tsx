@@ -9,6 +9,7 @@ import { boundsOf, getPage, nodeAABB } from "@/lib/nodes";
 import { useAuth } from "@/store/auth";
 import { useEditor } from "@/store/editor";
 import { useCollaboration } from "@/hooks/useCollaboration";
+import { useT } from "@/i18n";
 import { clamp, cn, isEditableTarget, round } from "@/lib/utils";
 import { Canvas } from "@/components/editor/Canvas";
 import { Toolbar } from "@/components/editor/Toolbar";
@@ -31,6 +32,7 @@ import { Button } from "@/components/ui/button";
 export default function EditorPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const user = useAuth((s) => s.user);
   const file = useEditor((s) => s.file);
@@ -428,14 +430,14 @@ export default function EditorPage() {
           <AlertTriangle className="size-6 text-destructive" />
         </div>
         <div>
-          <h1 className="text-lg font-semibold">We couldn’t open this design</h1>
+          <h1 className="text-lg font-semibold">{t("We couldn’t open this design")}</h1>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">{error}</p>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link to="/">Back to files</Link>
+            <Link to="/">{t("Back to files")}</Link>
           </Button>
-          <Button onClick={() => window.location.reload()}>Try again</Button>
+          <Button onClick={() => window.location.reload()}>{t("Try again")}</Button>
         </div>
       </div>
     );
@@ -444,11 +446,11 @@ export default function EditorPage() {
   if (loading || !file) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background">
-        <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#9d7bff] to-[#6d4aff] text-white shadow-lg">
+        <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white shadow-lg">
           <Sparkles className="size-5" />
         </div>
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Opening your canvas…
+          <Loader2 className="size-4 animate-spin" /> {t("Opening your canvas…")}
         </div>
       </div>
     );
@@ -477,7 +479,7 @@ export default function EditorPage() {
         </aside>
 
         {layersOpen && (
-          <Drawer side="left" title="Pages & layers" onClose={() => setLayersOpen(false)} className="lg:hidden">
+          <Drawer side="left" title={t("Pages & layers")} onClose={() => setLayersOpen(false)} className="lg:hidden">
             <LayersPanel />
           </Drawer>
         )}
@@ -511,7 +513,7 @@ export default function EditorPage() {
         </aside>
 
         {propertiesOpen && (
-          <Drawer side="right" title="Design" onClose={() => setPropertiesOpen(false)} className="xl:hidden">
+          <Drawer side="right" title={t("Properties")} onClose={() => setPropertiesOpen(false)} className="xl:hidden">
             <PropertiesPanel page={page} readOnly={readOnly} doc={doc} />
           </Drawer>
         )}

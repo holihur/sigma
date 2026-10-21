@@ -12,19 +12,19 @@
   --card-foreground: oklch(0.2 0.006 286);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.006 286);
-  --primary: oklch(0.55 0.24 293);
+  --primary: oklch(0.62 0.16 237);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.955 0.004 286);
   --secondary-foreground: oklch(0.26 0.01 286);
   --muted: oklch(0.955 0.004 286);
   --muted-foreground: oklch(0.53 0.012 286);
-  --accent: oklch(0.94 0.018 293);
-  --accent-foreground: oklch(0.31 0.08 293);
+  --accent: oklch(0.95 0.026 237);
+  --accent-foreground: oklch(0.32 0.08 237);
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(0.9 0.005 286);
   --input: oklch(0.88 0.006 286);
-  --ring: oklch(0.6 0.2 293);
+  --ring: oklch(0.66 0.15 237);
   --success: oklch(0.62 0.16 152);
 
   --panel: oklch(0.995 0 0);
@@ -32,7 +32,7 @@
   --canvas: oklch(0.935 0.003 286);
   --grid: oklch(0.3 0.01 286 / 0.11);
   --elevated: oklch(1 0 0);
-  --selection: oklch(0.55 0.24 293);
+  --selection: oklch(0.64 0.16 237);
 }
 
 .dark {
@@ -42,19 +42,19 @@
   --card-foreground: oklch(0.94 0.003 286);
   --popover: oklch(0.215 0.006 286);
   --popover-foreground: oklch(0.95 0.003 286);
-  --primary: oklch(0.66 0.2 293);
+  --primary: oklch(0.74 0.14 232);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.26 0.006 286);
   --secondary-foreground: oklch(0.93 0.003 286);
   --muted: oklch(0.25 0.005 286);
   --muted-foreground: oklch(0.66 0.01 286);
-  --accent: oklch(0.3 0.03 293);
-  --accent-foreground: oklch(0.94 0.01 293);
+  --accent: oklch(0.29 0.035 237);
+  --accent-foreground: oklch(0.93 0.02 237);
   --destructive: oklch(0.64 0.21 25);
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(1 0 0 / 0.09);
   --input: oklch(1 0 0 / 0.13);
-  --ring: oklch(0.66 0.2 293);
+  --ring: oklch(0.74 0.14 232);
   --success: oklch(0.7 0.16 152);
 
   --panel: oklch(0.178 0.004 286);
@@ -62,7 +62,7 @@
   --canvas: oklch(0.215 0.003 286);
   --grid: oklch(1 0 0 / 0.075);
   --elevated: oklch(0.235 0.006 286);
-  --selection: oklch(0.68 0.2 293);
+  --selection: oklch(0.76 0.14 232);
 }
 
 @theme inline {

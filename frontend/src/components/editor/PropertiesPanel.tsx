@@ -28,6 +28,7 @@ import { toPng, toSvg } from "html-to-image";
 import type { Page, Paint, SceneNode, SigmaDoc, Transition } from "@/lib/types";
 import { FONT_FAMILIES, FONT_WEIGHTS, createNode, defaultGradient, getPage, nodeAABB } from "@/lib/nodes";
 import { useEditor } from "@/store/editor";
+import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
 import { cn, clamp, downloadDataUrl, round } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ import {
 } from "./controls";
 
 export function PropertiesPanel({ page, readOnly, doc }: { page: Page; readOnly: boolean; doc: SigmaDoc }) {
+  const t = useT();
   const selection = useEditor((s) => s.selection);
   const selected = selection.map((id) => page.nodes[id]).filter(Boolean);
   const single = selected.length === 1 ? selected[0] : null;
@@ -56,12 +58,12 @@ export function PropertiesPanel({ page, readOnly, doc }: { page: Page; readOnly:
       <div className="flex items-center justify-between border-b border-panel-border px-3 py-2">
         <Tabs value={tab} onValueChange={(v) => setTab(v as "design" | "prototype")}>
           <TabsList>
-            <TabsTrigger value="design">Design</TabsTrigger>
-            <TabsTrigger value="prototype">Prototype</TabsTrigger>
+            <TabsTrigger value="design">{t("Design")}</TabsTrigger>
+            <TabsTrigger value="prototype">{t("Prototype")}</TabsTrigger>
           </TabsList>
         </Tabs>
         <span className="text-[10px] text-muted-foreground">
-          {selected.length > 1 ? `${selected.length} selected` : single ? single.type : "Page"}
+          {selected.length > 1 ? t("{count} selected", { count: selected.length }) : single ? single.type : t("Page")}
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -86,6 +88,7 @@ function DesignTab({
   single: SceneNode | null;
   readOnly: boolean;
 }) {
+  const t = useT();
   const updateNodes = useEditor((s) => s.updateNodes);
   const pushHistory = useEditor((s) => s.pushHistory);
   const align = useEditor((s) => s.align);
@@ -100,13 +103,13 @@ function DesignTab({
       <>
         <AlignSection count={selected.length} onAlign={align} onDistribute={distribute} />
         {selected.length > 1 && (
-          <Section title="Selection">
+          <Section title={t("Selection")}>
             <SelectionBounds page={page} ids={ids} />
           </Section>
         )}
         {selected.length > 1 && (
           <>
-            <FillSection paint={selected[0]?.fill ?? null} onChange={(paint) => apply({ fill: paint })} readOnly={readOnly} />
+            <FillSection paint={selected[0]?.fill ?? null} onChange={(paint) => apply({ fill: paint })} readOnly={readOnly} title={t("Fill")} />
             <AppearanceSection
               opacity={selected[0]?.opacity ?? 1}
               onLive={(opacity) => live({ opacity })}
@@ -130,7 +133,7 @@ function DesignTab({
     <div className={cn(readOnly && "pointer-events-none opacity-60")}>
       <AlignSection count={selected.length} onAlign={align} onDistribute={distribute} />
 
-      <Section title="Position & size">
+      <Section title={t("Position & size")}>
         <div className="grid grid-cols-2 gap-2">
           <NumberField
             icon="X"
@@ -192,7 +195,7 @@ function DesignTab({
           {isFrame && (
             <label className="flex items-center gap-1.5 text-muted-foreground">
               <Switch checked={node.clip} onCheckedChange={(checked) => apply({ clip: checked })} />
-              Clip content
+              {t("Clip content")}
             </label>
           )}
         </div>
@@ -207,7 +210,7 @@ function DesignTab({
         readOnly={readOnly}
       />
 
-      <FillSection paint={node.fill} onChange={(paint) => apply({ fill: paint })} readOnly={readOnly} title={node.type === "text" ? "Text color" : "Fill"} />
+      <FillSection paint={node.fill} onChange={(paint) => apply({ fill: paint })} readOnly={readOnly} title={node.type === "text" ? t("Text color") : t("Fill")} />
 
       <StrokeSection paint={node.stroke} width={node.strokeWidth} onChange={(patch) => apply(patch)} readOnly={readOnly} />
 
@@ -231,6 +234,7 @@ function AlignSection({
   onAlign: (kind: "left" | "hcenter" | "right" | "top" | "vcenter" | "bottom") => void;
   onDistribute: (axis: "h" | "v") => void;
 }) {
+  const t = useT();
   const buttons = [
     { icon: <AlignStartVertical className="size-4" />, title: "Align left", action: () => onAlign("left"), disabled: count < 1 },
     { icon: <AlignCenterVertical className="size-4" />, title: "Align horizontal centers", action: () => onAlign("hcenter"), disabled: count < 1 },
@@ -245,7 +249,7 @@ function AlignSection({
         {buttons.map((b) => (
           <button
             key={b.title}
-            title={b.title}
+            title={t(b.title)}
             disabled={b.disabled}
             onClick={b.action}
             className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30"
@@ -256,7 +260,7 @@ function AlignSection({
       </div>
       <div className="flex items-center gap-0.5">
         <button
-          title="Distribute horizontal spacing"
+          title={t("Distribute horizontal spacing")}
           disabled={count < 3}
           onClick={() => onDistribute("h")}
           className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30"
@@ -264,7 +268,7 @@ function AlignSection({
           <AlignHorizontalSpaceAround className="size-4" />
         </button>
         <button
-          title="Distribute vertical spacing"
+          title={t("Distribute vertical spacing")}
           disabled={count < 3}
           onClick={() => onDistribute("v")}
           className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30"
@@ -310,10 +314,11 @@ function AppearanceSection({
   onBegin: () => void;
   readOnly: boolean;
 }) {
+  const t = useT();
   return (
-    <Section title="Appearance">
+    <Section title={t("Appearance")}>
       <div className="flex items-center gap-2">
-        <span className="w-16 shrink-0 text-[11px] text-muted-foreground">Opacity</span>
+        <span className="w-16 shrink-0 text-[11px] text-muted-foreground">{t("Opacity")}</span>
         <div className="flex flex-1 items-center gap-2" onPointerDown={onBegin}>
           <Slider
             value={[Math.round(opacity * 100)]}
@@ -337,7 +342,7 @@ function AppearanceSection({
       </div>
       {onBlur && (
         <div className="mt-2 flex items-center gap-2">
-          <span className="w-16 shrink-0 text-[11px] text-muted-foreground">Blur</span>
+          <span className="w-16 shrink-0 text-[11px] text-muted-foreground">{t("Blur")}</span>
           <NumberField value={blur ?? 0} min={0} max={100} onFocus={onBegin} onChange={(v) => onBlur(v)} className="flex-1" />
         </div>
       )}
@@ -346,6 +351,7 @@ function AppearanceSection({
 }
 
 function FillSection({ paint, onChange, readOnly, title = "Fill" }: { paint: Paint | null; onChange: (paint: Paint | null) => void; readOnly: boolean; title?: string }) {
+  const t = useT();
   const begin = useEditor((s) => s.pushHistory);
   return (
     <Section
@@ -355,7 +361,7 @@ function FillSection({ paint, onChange, readOnly, title = "Fill" }: { paint: Pai
           {!paint && (
             <button
               className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-secondary"
-              onClick={() => onChange({ type: "solid", color: "#7c5cff" })}
+              onClick={() => onChange({ type: "solid", color: "#0ea5e9" })}
             >
               <Plus className="size-3.5" />
             </button>
@@ -372,7 +378,7 @@ function FillSection({ paint, onChange, readOnly, title = "Fill" }: { paint: Pai
       }
     >
       {!paint ? (
-        <SectionEmpty>No fill</SectionEmpty>
+        <SectionEmpty>{t("No fill")}</SectionEmpty>
       ) : paint.type === "solid" ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -405,7 +411,7 @@ function FillSection({ paint, onChange, readOnly, title = "Fill" }: { paint: Pai
           <PaintTypeRow
             value="linear"
             onChange={(type) => {
-              if (type === "solid") onChange({ type: "solid", color: paint.stops[0]?.color ?? "#7c5cff" });
+              if (type === "solid") onChange({ type: "solid", color: paint.stops[0]?.color ?? "#0ea5e9" });
             }}
           />
           <div className="flex items-center gap-2">
@@ -479,16 +485,17 @@ function FillSection({ paint, onChange, readOnly, title = "Fill" }: { paint: Pai
 }
 
 function PaintTypeRow({ value, onChange }: { value: "solid" | "linear"; onChange: (value: "solid" | "linear") => void }) {
+  const t = useT();
   return (
     <div className="flex items-center gap-2">
-      <span className="w-10 text-[11px] text-muted-foreground">Type</span>
+      <span className="w-10 text-[11px] text-muted-foreground">{t("Type")}</span>
       <Select value={value} onValueChange={(v) => onChange(v as "solid" | "linear")}>
         <SelectTrigger className="h-7 flex-1">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="solid">Solid</SelectItem>
-          <SelectItem value="linear">Linear gradient</SelectItem>
+          <SelectItem value="solid">{t("Solid")}</SelectItem>
+          <SelectItem value="linear">{t("Linear gradient")}</SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -506,10 +513,11 @@ function StrokeSection({
   onChange: (patch: Partial<SceneNode>) => void;
   readOnly: boolean;
 }) {
+  const t = useT();
   const begin = useEditor((s) => s.pushHistory);
   return (
     <Section
-      title="Stroke"
+      title={t("Stroke")}
       action={
         <div className="flex items-center gap-0.5">
           {!paint && (
@@ -532,7 +540,7 @@ function StrokeSection({
       }
     >
       {!paint ? (
-        <SectionEmpty>No stroke</SectionEmpty>
+        <SectionEmpty>{t("No stroke")}</SectionEmpty>
       ) : (
         <div className="flex items-center gap-2">
           <ColorSwatch
@@ -556,11 +564,12 @@ function StrokeSection({
 }
 
 function EffectsSection({ node, onChange, readOnly }: { node: SceneNode; onChange: (patch: Partial<SceneNode>) => void; readOnly: boolean }) {
+  const t = useT();
   const begin = useEditor((s) => s.pushHistory);
   const shadow = node.shadow;
   return (
     <Section
-      title="Effects"
+      title={t("Effects")}
       action={
         !shadow ? (
           <button
@@ -580,7 +589,7 @@ function EffectsSection({ node, onChange, readOnly }: { node: SceneNode; onChang
       }
     >
       {!shadow ? (
-        <SectionEmpty>No effects</SectionEmpty>
+        <SectionEmpty>{t("No effects")}</SectionEmpty>
       ) : (
         <div className="space-y-2">
           <div className="grid grid-cols-4 gap-1.5">
@@ -613,12 +622,13 @@ function TypographySection({
   onLive: (patch: Partial<SceneNode>) => void;
   onBegin: () => void;
 }) {
+  const t = useT();
   const setLive = (patch: Partial<SceneNode>) => {
     onBegin();
     onLive(patch);
   };
   return (
-    <Section title="Typography">
+    <Section title={t("Typography")}>
       <div className="space-y-2">
         <div className="flex gap-2">
           <Select value={node.fontFamily} onValueChange={(v) => setLive({ fontFamily: v })}>
@@ -681,25 +691,26 @@ function TypographySection({
 }
 
 function ImageSection({ node, onChange }: { node: SceneNode; onChange: (patch: Partial<SceneNode>) => void }) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   return (
-    <Section title="Image">
+    <Section title={t("Image")}>
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <span className="w-14 text-[11px] text-muted-foreground">Fit</span>
+          <span className="w-14 text-[11px] text-muted-foreground">{t("Fit")}</span>
           <Select value={node.objectFit} onValueChange={(v) => onChange({ objectFit: v as SceneNode["objectFit"] })}>
             <SelectTrigger className="h-8 flex-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="cover">Cover</SelectItem>
-              <SelectItem value="contain">Contain</SelectItem>
-              <SelectItem value="fill">Fill</SelectItem>
+              <SelectItem value="cover">{t("Cover")}</SelectItem>
+              <SelectItem value="contain">{t("Contain")}</SelectItem>
+              <SelectItem value="fill">{t("Fill")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <Button variant="outline" size="sm" className="w-full" onClick={() => inputRef.current?.click()}>
-          <ImageIcon className="size-3.5" /> Replace image
+          <ImageIcon className="size-3.5" /> {t("Replace image")}
         </Button>
         <input
           ref={inputRef}
@@ -724,6 +735,7 @@ function ImageSection({ node, onChange }: { node: SceneNode; onChange: (patch: P
 }
 
 function PageInfo({ page }: { page: Page }) {
+  const t = useT();
   const file = useEditor((s) => s.file);
   const setPageName = useEditor((s) => s.setPageName);
   const [name, setName] = useState(page.name);
@@ -733,51 +745,43 @@ function PageInfo({ page }: { page: Page }) {
   };
   return (
     <>
-      <Section title="Page">
+      <Section title={t("Page")}>
         <div className="space-y-2.5">
           <div className="flex items-center gap-2">
-            <span className="w-14 text-[11px] text-muted-foreground">Name</span>
+            <span className="w-14 text-[11px] text-muted-foreground">{t("Name")}</span>
             <InlineInput value={name} onChange={setName} onFocus={() => undefined} />
           </div>
           <Button variant="outline" size="sm" className="w-full" onClick={commit}>
-            Rename page
+            {t("Rename page")}
           </Button>
         </div>
       </Section>
-      <Section title="Document">
+      <Section title={t("Document")}>
         <div className="space-y-1.5 text-[11px] text-muted-foreground">
           <div className="flex justify-between">
-            <span>File</span>
+            <span>{t("File")}</span>
             <span className="max-w-[140px] truncate text-foreground">{file?.name}</span>
           </div>
           <div className="flex justify-between">
-            <span>Pages</span>
+            <span>{t("Pages")}</span>
             <span className="text-foreground">{useEditor.getState().doc.pages.length}</span>
           </div>
           <div className="flex justify-between">
-            <span>Layers on this page</span>
+            <span>{t("Layers on this page")}</span>
             <span className="text-foreground">{Object.keys(page.nodes).length}</span>
           </div>
           <div className="flex justify-between">
-            <span>Owner</span>
+            <span>{t("Owner")}</span>
             <span className="text-foreground">{file?.ownerName}</span>
           </div>
         </div>
       </Section>
-      <Section title="Tips">
+      <Section title={t("Tips")}>
         <ul className="space-y-1.5 text-[11px] leading-relaxed text-muted-foreground">
-          <li>
-            Press <b className="text-foreground">F</b> and drag to create a frame.
-          </li>
-          <li>
-            Hold <b className="text-foreground">Space</b> to pan, ⌘/Ctrl + scroll to zoom.
-          </li>
-          <li>
-            Select layers and press <b className="text-foreground">⌘G</b> to group.
-          </li>
-          <li>
-            Add a link in the <b className="text-foreground">Prototype</b> tab, then hit Play.
-          </li>
+          <li>{t("Press F and drag to create a frame.")}</li>
+          <li>{t("Hold Space to pan, ⌘/Ctrl + scroll to zoom.")}</li>
+          <li>{t("Select layers and press ⌘G to group.")}</li>
+          <li>{t("Add a link in the Prototype tab, then hit Play.")}</li>
         </ul>
       </Section>
     </>
@@ -785,6 +789,7 @@ function PageInfo({ page }: { page: Page }) {
 }
 
 function ExportSection({ page, selected }: { page: Page; selected: SceneNode[] }) {
+  const t = useT();
   const [scale, setScale] = useState("2");
   const [busy, setBusy] = useState(false);
   const first = selected[0];
@@ -843,7 +848,7 @@ function ExportSection({ page, selected }: { page: Page; selected: SceneNode[] }
   };
 
   return (
-    <Section title="Export">
+    <Section title={t("Export")}>
       <div className="space-y-2">
         <div className="flex gap-2">
           <Select value={scale} onValueChange={setScale}>
@@ -864,7 +869,7 @@ function ExportSection({ page, selected }: { page: Page; selected: SceneNode[] }
           </Button>
         </div>
         <Button variant="ghost" size="sm" className="w-full" onClick={copyPng}>
-          <Copy className="size-3.5" /> Copy as PNG
+          <Copy className="size-3.5" /> {t("Copy as PNG")}
         </Button>
         <p className="text-[10px] text-muted-foreground">
           {Math.round(first.width * (Number(scale) || 1))} × {Math.round(Math.abs(first.height) * (Number(scale) || 1))} px
@@ -876,20 +881,21 @@ function ExportSection({ page, selected }: { page: Page; selected: SceneNode[] }
 }
 
 function PrototypeTab({ page, single, readOnly, doc }: { page: Page; single: SceneNode | null; readOnly: boolean; doc: SigmaDoc }) {
+  const t = useT();
   const updateNode = useEditor((s) => s.updateNode);
   const openPreview = useEditor((s) => s.openPreview);
   if (!single) {
     return (
       <>
-        <Section title="Prototype">
+        <Section title={t("Prototype")}>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             Select a layer to connect it to another frame. Linked layers become clickable hotspots in presentation mode.
           </p>
           <Button className="mt-3 w-full" variant="outline" size="sm" onClick={() => openPreview(null)}>
-            <MousePointerClick className="size-3.5" /> Present current page
+            <MousePointerClick className="size-3.5" /> {t("Present current page")}
           </Button>
         </Section>
-        <Section title="Interactions">
+        <Section title={t("Interactions")}>
           <HotspotList page={page} doc={doc} />
         </Section>
       </>
@@ -911,10 +917,10 @@ function PrototypeTab({ page, single, readOnly, doc }: { page: Page; single: Sce
 
   return (
     <div className={cn(readOnly && "pointer-events-none opacity-60")}>
-      <Section title="Interaction">
+      <Section title={t("Interaction")}>
         <div className="space-y-2.5">
           <div className="flex items-center gap-2">
-            <span className="w-16 text-[11px] text-muted-foreground">On click</span>
+            <span className="w-16 text-[11px] text-muted-foreground">{t("On click")}</span>
             <Select
               value={link?.action ?? "none"}
               onValueChange={(value) => {
@@ -926,17 +932,17 @@ function PrototypeTab({ page, single, readOnly, doc }: { page: Page; single: Sce
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No interaction</SelectItem>
-                <SelectItem value="navigate">Navigate to frame</SelectItem>
-                <SelectItem value="back">Back</SelectItem>
-                <SelectItem value="url">Open URL</SelectItem>
+                <SelectItem value="none">{t("No interaction")}</SelectItem>
+                <SelectItem value="navigate">{t("Navigate to frame")}</SelectItem>
+                <SelectItem value="back">{t("Back")}</SelectItem>
+                <SelectItem value="url">{t("Open URL")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {link?.action === "navigate" && (
             <div className="flex items-center gap-2">
-              <span className="w-16 text-[11px] text-muted-foreground">Target</span>
+              <span className="w-16 text-[11px] text-muted-foreground">{t("Target")}</span>
               <Select
                 value={targetValue}
                 onValueChange={(value) => {
@@ -945,7 +951,7 @@ function PrototypeTab({ page, single, readOnly, doc }: { page: Page; single: Sce
                 }}
               >
                 <SelectTrigger className="h-8 flex-1">
-                  <SelectValue placeholder="Choose frame…" />
+                  <SelectValue placeholder={t("Choose frame…")} />
                 </SelectTrigger>
                 <SelectContent>
                   {allFrames.map(({ page: p, frame }) => (
@@ -972,7 +978,7 @@ function PrototypeTab({ page, single, readOnly, doc }: { page: Page; single: Sce
           {link && link.action !== "none" && (
             <>
               <div className="flex items-center gap-2">
-                <span className="w-16 text-[11px] text-muted-foreground">Animation</span>
+                <span className="w-16 text-[11px] text-muted-foreground">{t("Animation")}</span>
                 <Select
                   value={link.transition ?? "instant"}
                   onValueChange={(v) => updateLink({ transition: v as Transition })}
@@ -981,19 +987,19 @@ function PrototypeTab({ page, single, readOnly, doc }: { page: Page; single: Sce
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="instant">Instant</SelectItem>
-                    <SelectItem value="dissolve">Dissolve</SelectItem>
-                    <SelectItem value="slide-left">Slide left</SelectItem>
-                    <SelectItem value="slide-up">Slide up</SelectItem>
+                    <SelectItem value="instant">{t("Instant")}</SelectItem>
+                    <SelectItem value="dissolve">{t("Dissolve")}</SelectItem>
+                    <SelectItem value="slide-left">{t("Slide left")}</SelectItem>
+                    <SelectItem value="slide-up">{t("Slide up")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex gap-2 pt-1">
                 <Button size="sm" variant="outline" className="flex-1" onClick={() => openPreview(single.type === "frame" ? single.id : null)}>
-                  <MousePointerClick className="size-3.5" /> Present
+                  <MousePointerClick className="size-3.5" /> {t("Present")}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => updateNode(single.id, { link: null })}>
-                  <RotateCcw className="size-3.5" /> Clear
+                  <RotateCcw className="size-3.5" /> {t("Clear")}
                 </Button>
               </div>
             </>
@@ -1007,20 +1013,20 @@ function PrototypeTab({ page, single, readOnly, doc }: { page: Page; single: Sce
       </Section>
 
       {single.type === "frame" && (
-        <Section title="Flow">
+        <Section title={t("Flow")}>
           <div className="space-y-2">
             <Button size="sm" className="w-full" onClick={() => openPreview(single.id)}>
-              <MousePointerClick className="size-3.5" /> Start prototype from this frame
+              <MousePointerClick className="size-3.5" /> {t("Start prototype from this frame")}
             </Button>
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>Hotspots in frame</span>
+              <span>{t("Hotspots in frame")}</span>
               <span className="text-foreground">{countHotspots(page, single.id)}</span>
             </div>
           </div>
         </Section>
       )}
 
-      <Section title="Links">
+      <Section title={t("Links")}>
         <div className="space-y-1.5">
           {page.nodes[single.id]?.link ? (
             <div className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5 text-[11px]">
@@ -1035,7 +1041,7 @@ function PrototypeTab({ page, single, readOnly, doc }: { page: Page; single: Sce
               <ExternalLink className="ml-auto size-3 text-muted-foreground" />
             </div>
           ) : (
-            <SectionEmpty>No outgoing link</SectionEmpty>
+            <SectionEmpty>{t("No outgoing link")}</SectionEmpty>
           )}
         </div>
       </Section>

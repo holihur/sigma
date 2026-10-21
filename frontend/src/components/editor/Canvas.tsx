@@ -41,6 +41,7 @@ import {
   topLevelSelection,
 } from "@/lib/nodes";
 import { useEditor } from "@/store/editor";
+import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
 import { clamp, cn, isEditableTarget, uid } from "@/lib/utils";
 import { NodeView } from "./NodeView";
@@ -124,6 +125,7 @@ export function Canvas({
   onCommentClick,
   onCreateComment,
 }: CanvasProps) {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const spaceRef = useRef(false);
@@ -880,7 +882,7 @@ export function Canvas({
           onPointerDown={(e) => e.stopPropagation()}
         >
           <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <MessageCircle className="size-3" /> New comment
+            <MessageCircle className="size-3" /> {t("New comment")}
           </div>
           <textarea
             ref={draftRef}
@@ -891,15 +893,15 @@ export function Canvas({
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submitDraft();
               e.stopPropagation();
             }}
-            placeholder="Leave feedback…"
+            placeholder={t("Leave feedback…")}
             className="min-h-16 w-full resize-none rounded-md border border-input bg-transparent px-2 py-1.5 text-xs outline-none focus:border-ring"
           />
           <div className="mt-2 flex justify-end gap-1.5">
             <button className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary" onClick={() => setDraft(null)}>
-              Cancel
+              {t("Cancel")}
             </button>
             <button className="rounded bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground" onClick={submitDraft}>
-              Post
+              {t("Post")}
             </button>
           </div>
         </div>
@@ -914,7 +916,7 @@ export function Canvas({
         >
           <MenuRow
             icon={<Copy className="size-3.5" />}
-            label="Duplicate"
+            label={t("Duplicate")}
             shortcut="⌘D"
             onClick={() => {
               store.getState().select([ctxNode.id]);
@@ -924,7 +926,7 @@ export function Canvas({
           />
           <MenuRow
             icon={<Clipboard className="size-3.5" />}
-            label="Copy"
+            label={t("Copy")}
             shortcut="⌘C"
             onClick={() => {
               store.getState().select([ctxNode.id]);
@@ -935,18 +937,18 @@ export function Canvas({
           <div className="my-1 h-px bg-border" />
           <MenuRow
             icon={<GroupIcon className="size-3.5" />}
-            label="Group selection"
+            label={t("Group selection")}
             shortcut="⌘G"
             onClick={() => {
               const ok = store.getState().groupSelection();
-              if (!ok) toast.error("Select layers with the same parent to group");
+              if (!ok) toast.error(t("Select layers with the same parent to group"));
               setContextMenu(null);
             }}
           />
           {ctxNode.type === "group" && (
             <MenuRow
               icon={<Ungroup className="size-3.5" />}
-              label="Ungroup"
+              label={t("Ungroup")}
               shortcut="⇧⌘G"
               onClick={() => {
                 store.getState().ungroupSelection();
@@ -957,7 +959,7 @@ export function Canvas({
           <div className="my-1 h-px bg-border" />
           <MenuRow
             icon={<BringToFront className="size-3.5" />}
-            label="Bring to front"
+            label={t("Bring to front")}
             shortcut="]"
             onClick={() => {
               store.getState().reorderSelection("front");
@@ -966,7 +968,7 @@ export function Canvas({
           />
           <MenuRow
             icon={<SendToBack className="size-3.5" />}
-            label="Send to back"
+            label={t("Send to back")}
             shortcut="["
             onClick={() => {
               store.getState().reorderSelection("back");
@@ -978,7 +980,7 @@ export function Canvas({
               <div className="my-1 h-px bg-border" />
               <MenuRow
                 icon={<Play className="size-3.5" />}
-                label="Play prototype"
+                label={t("Play prototype")}
                 onClick={() => {
                   store.getState().openPreview(ctxNode.id);
                   setContextMenu(null);
@@ -989,7 +991,7 @@ export function Canvas({
           <div className="my-1 h-px bg-border" />
           <MenuRow
             icon={<Trash2 className="size-3.5" />}
-            label="Delete"
+            label={t("Delete")}
             shortcut="⌫"
             danger
             onClick={() => {

@@ -13,6 +13,7 @@ import {
 import type { Page, SceneNode, Transition } from "@/lib/types";
 import { descendantsOf, getPage, nodeAABB } from "@/lib/nodes";
 import { useEditor } from "@/store/editor";
+import { useT } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +22,7 @@ import { NodeView, type NodeViewContext } from "./NodeView";
 type Location = { pageId: string; frameId: string };
 
 export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; publicMode?: boolean } = {}) {
+  const t = useT();
   const open = useEditor((s) => s.previewOpen);
   const closeStore = useEditor((s) => s.closePreview);
   const close = onClose ?? closeStore;
@@ -125,11 +127,11 @@ export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; pub
             <MousePointerClick className="size-6 text-white/50" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">No frame to present</h2>
-            <p className="mt-1 text-sm text-white/50">Draw a frame on the canvas, then present again.</p>
+            <h2 className="text-lg font-semibold">{t("No frame to present")}</h2>
+            <p className="mt-1 text-sm text-white/50">{t("Draw a frame on the canvas, then present again.")}</p>
           </div>
           <Button variant="secondary" onClick={close}>
-            Back to canvas
+            {t("Back to canvas")}
           </Button>
         </div>
       </div>
@@ -232,14 +234,14 @@ export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; pub
               hotspots.map(({ node, bounds }) => (
                 <div
                   key={node.id}
-                  className="pointer-events-none absolute rounded-sm border border-dashed border-[#7c5cff] bg-[#7c5cff]/15"
+                  className="pointer-events-none absolute rounded-sm border border-dashed border-[#0ea5e9] bg-[#0ea5e9]/15"
                   style={{ left: bounds.x, top: bounds.y, width: bounds.width, height: bounds.height }}
                 />
               ))}
             {hotspots.map(({ node, bounds }) => (
               <button
                 key={`hot-${node.id}`}
-                className="absolute cursor-pointer rounded-sm outline-none transition-colors hover:bg-[#7c5cff]/15 focus-visible:bg-[#7c5cff]/20"
+                className="absolute cursor-pointer rounded-sm outline-none transition-colors hover:bg-[#0ea5e9]/15 focus-visible:bg-[#0ea5e9]/20"
                 style={{
                   left: bounds.x,
                   top: bounds.y,
@@ -301,17 +303,18 @@ function PreviewToolbar({
   onBack: () => void;
   publicMode?: boolean;
 }) {
+  const t = useT();
   return (
     <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-white/10 bg-[#111114]/90 px-2 py-2 backdrop-blur sm:flex-nowrap sm:gap-3 sm:px-4 sm:py-0">
       <button onClick={onClose} className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white sm:size-8">
         <X className="size-4" />
       </button>
-      <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[#9d7bff] to-[#6d4aff] text-white">
+      <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white">
         <Play className="size-3.5 fill-current" />
       </div>
       <div className="min-w-0 flex-1 sm:flex-none">
         <div className="truncate text-[12px] font-medium">{title}</div>
-        <div className="hidden text-[10px] text-white/40 sm:block">{publicMode ? "Public prototype · read only" : "Prototype presentation"}</div>
+        <div className="hidden text-[10px] text-white/40 sm:block">{publicMode ? t("Public prototype · read only") : t("Prototype presentation")}</div>
       </div>
 
       <div className="order-last flex w-full items-center gap-2 sm:order-none sm:mx-auto sm:w-auto">
@@ -324,7 +327,7 @@ function PreviewToolbar({
         </button>
         <Select value={value} onValueChange={onSelect}>
           <SelectTrigger className="h-9 w-full border-white/10 bg-white/5 text-[12px] text-white sm:h-8 sm:w-56">
-            <SelectValue placeholder="Choose a frame" />
+            <SelectValue placeholder={t("Choose a frame")} />
           </SelectTrigger>
           <SelectContent>
             {frames.map((f) => (
@@ -349,7 +352,7 @@ function PreviewToolbar({
           showHotspots && "bg-white/10 text-white",
         )}
       >
-        <MousePointerClick className="size-3.5" /> <span className="hidden sm:inline">Hotspots</span>
+        <MousePointerClick className="size-3.5" /> <span className="hidden sm:inline">{t("Hotspots")}</span>
       </button>
       <div className="hidden items-center gap-1 rounded-lg border border-white/10 px-2 py-1 text-[10px] text-white/50 md:flex">
         <ZoomOut className="size-3" />

@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   LogOut,
   Bell,
+  Languages,
   Menu,
   X,
   Moon,
@@ -34,6 +35,7 @@ import { filesApi, notificationsApi } from "@/lib/api";
 import type { FileMeta, Notification, TemplateMeta } from "@/lib/types";
 import { useAuth } from "@/store/auth";
 import { useTheme } from "@/store/theme";
+import { useI18n, useT } from "@/i18n";
 import { cn, formatRelative, initials, isEditableTarget } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +64,9 @@ export default function DashboardPage() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
   const theme = useTheme((s) => s.theme);
+  const t = useT();
+  const locale = useI18n((s) => s.locale);
+  const toggleLocale = useI18n((s) => s.toggle);
   const toggleTheme = useTheme((s) => s.toggle);
   const navigate = useNavigate();
   const [files, setFiles] = useState<FileMeta[]>([]);
@@ -240,8 +245,8 @@ export default function DashboardPage() {
     }
   };
 
-  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
-  const heading = nav === "all" ? "Recent designs" : nav === "starred" ? "Starred designs" : "Shared with you";
+  const greeting = new Date().getHours() < 12 ? t("Good morning") : new Date().getHours() < 18 ? t("Good afternoon") : t("Good evening");
+  const heading = nav === "all" ? t("Recent designs") : nav === "starred" ? t("Starred designs") : t("Shared with you");
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
@@ -253,7 +258,7 @@ export default function DashboardPage() {
         )}
       >
         <div className="flex h-14 items-center gap-2.5 px-4">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#9d7bff] to-[#6d4aff] text-white shadow-sm">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white shadow-sm">
             <svg viewBox="0 0 32 32" className="size-4.5" fill="currentColor">
               <path d="M21.5 10.2c-1.3-.9-2.9-1.4-4.7-1.4-3 0-5 1.4-5 3.7 0 2 1.3 2.9 4.2 3.6 2.4.6 3.1 1 3.1 2 0 1-1 1.6-2.5 1.6-1.9 0-3.5-.7-4.8-1.8l-.9 2.2c1.5 1.3 3.5 2 5.7 2 3.4 0 5.4-1.5 5.4-4 0-2.2-1.4-3.2-4.4-3.9-2.3-.5-3-1-3-1.8 0-.9.9-1.4 2.3-1.4 1.6 0 3 .6 4.2 1.5l.4-2.3Z" />
             </svg>
@@ -263,7 +268,7 @@ export default function DashboardPage() {
             beta
           </Badge>
           <button
-            title="Notifications"
+            title={t("Notifications")}
             onClick={() => void openNotifications()}
             className="relative flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
@@ -275,7 +280,7 @@ export default function DashboardPage() {
             )}
           </button>
           <button
-            title="Close menu"
+            title={t("Close menu")}
             onClick={() => setSidebarOpen(false)}
             className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
           >
@@ -285,32 +290,32 @@ export default function DashboardPage() {
 
         <div className="px-3 pb-2">
           <Button className="w-full justify-start shadow-sm" onClick={() => openNew()}>
-            <Plus className="size-4" /> New design
+            <Plus className="size-4" /> {t("New design")}
             <span className="ml-auto rounded bg-white/15 px-1 text-[9px] font-medium">N</span>
           </Button>
         </div>
 
         <nav className="space-y-0.5 px-2 pt-2">
-          <NavItem icon={<LayoutGrid className="size-4" />} label="All designs" count={counts.all} active={nav === "all"} onClick={() => { setNav("all"); setSidebarOpen(false); }} />
-          <NavItem icon={<Star className="size-4" />} label="Starred" count={counts.starred} active={nav === "starred"} onClick={() => { setNav("starred"); setSidebarOpen(false); }} />
-          <NavItem icon={<Users className="size-4" />} label="Shared with me" count={counts.shared} active={nav === "shared"} onClick={() => { setNav("shared"); setSidebarOpen(false); }} />
+          <NavItem icon={<LayoutGrid className="size-4" />} label={t("All designs")} count={counts.all} active={nav === "all"} onClick={() => { setNav("all"); setSidebarOpen(false); }} />
+          <NavItem icon={<Star className="size-4" />} label={t("Starred")} count={counts.starred} active={nav === "starred"} onClick={() => { setNav("starred"); setSidebarOpen(false); }} />
+          <NavItem icon={<Users className="size-4" />} label={t("Shared with me")} count={counts.shared} active={nav === "shared"} onClick={() => { setNav("shared"); setSidebarOpen(false); }} />
         </nav>
 
-        <div className="mt-6 px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Templates</div>
+        <div className="mt-6 px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("Templates")}</div>
         <div className="mt-2 space-y-0.5 px-2">
           {templates
-            .filter((t) => t.id !== "blank")
+            .filter((tpl) => tpl.id !== "blank")
             .slice(0, 4)
-            .map((t) => (
+            .map((tpl) => (
               <button
-                key={t.id}
-                onClick={() => openNew(t.id)}
+                key={tpl.id}
+                onClick={() => openNew(tpl.id)}
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
-                <span className="flex size-5 items-center justify-center rounded text-white" style={{ background: t.accent }}>
-                  <TemplateIcon icon={t.icon} className="size-3" />
+                <span className="flex size-5 items-center justify-center rounded text-white" style={{ background: tpl.accent }}>
+                  <TemplateIcon icon={tpl.icon} className="size-3" />
                 </span>
-                <span className="truncate">{t.name}</span>
+                <span className="truncate">{t(tpl.name)}</span>
               </button>
             ))}
         </div>
@@ -337,7 +342,10 @@ export default function DashboardPage() {
               <DropdownMenuContent align="end" side="top">
                 <DropdownMenuItem onClick={toggleTheme}>
                   {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                  {theme === "dark" ? "Light theme" : "Dark theme"}
+                  {theme === "dark" ? t("Light theme") : t("Dark theme")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={toggleLocale}>
+                  <Languages className="size-4" /> {locale === "en" ? "中文" : "English"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -346,7 +354,7 @@ export default function DashboardPage() {
                     navigate("/login");
                   }}
                 >
-                  <LogOut className="size-4" /> Sign out
+                  <LogOut className="size-4" /> {t("Sign out")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -362,20 +370,20 @@ export default function DashboardPage() {
       <main className="min-w-0 flex-1 overflow-y-auto">
         <div className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-panel-border bg-background/90 px-4 backdrop-blur md:hidden">
           <button
-            title="Open menu"
+            title={t("Open menu")}
             onClick={() => setSidebarOpen(true)}
             className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             <Menu className="size-5" />
           </button>
-          <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#9d7bff] to-[#6d4aff] text-white">
+          <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white">
             <svg viewBox="0 0 32 32" className="size-4" fill="currentColor">
               <path d="M21.5 10.2c-1.3-.9-2.9-1.4-4.7-1.4-3 0-5 1.4-5 3.7 0 2 1.3 2.9 4.2 3.6 2.4.6 3.1 1 3.1 2 0 1-1 1.6-2.5 1.6-1.9 0-3.5-.7-4.8-1.8l-.9 2.2c1.5 1.3 3.5 2 5.7 2 3.4 0 5.4-1.5 5.4-4 0-2.2-1.4-3.2-4.4-3.9-2.3-.5-3-1-3-1.8 0-.9.9-1.4 2.3-1.4 1.6 0 3 .6 4.2 1.5l.4-2.3Z" />
             </svg>
           </div>
           <span className="text-[15px] font-semibold tracking-tight">Sigma</span>
           <button
-            title="Notifications"
+            title={t("Notifications")}
             onClick={() => void openNotifications()}
             className="relative ml-auto flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
@@ -387,7 +395,7 @@ export default function DashboardPage() {
             )}
           </button>
           <Button size="sm" className="h-8" onClick={() => openNew()}>
-            <Plus className="size-4" /> New
+            <Plus className="size-4" /> {t("New")}
           </Button>
         </div>
         <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-8 sm:py-5 lg:px-10">
@@ -398,7 +406,7 @@ export default function DashboardPage() {
                 ref={searchRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search designs…"
+                placeholder={t("Search designs…")}
                 className="h-9 rounded-lg bg-panel pl-9 pr-12"
               />
               <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-border bg-secondary px-1 text-[9px] text-muted-foreground">
@@ -412,13 +420,13 @@ export default function DashboardPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="updated">Last updated</SelectItem>
-                  <SelectItem value="created">Date created</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="updated">{t("Last updated")}</SelectItem>
+                  <SelectItem value="created">{t("Date created")}</SelectItem>
+                  <SelectItem value="name">{t("Name")}</SelectItem>
                 </SelectContent>
               </Select>
               <Button className="hidden h-9 sm:inline-flex" onClick={() => openNew()}>
-                <Plus className="size-4" /> New design
+                <Plus className="size-4" /> {t("New design")}
               </Button>
             </div>
           </div>
@@ -430,14 +438,14 @@ export default function DashboardPage() {
               </h1>
               <p className="mt-1 text-[13px] text-muted-foreground">
                 {counts.all === 0
-                  ? "Let’s turn your next idea into an interactive prototype."
-                  : `You have ${counts.all} design${counts.all === 1 ? "" : "s"} in your workspace.`}
+                  ? t("Let’s turn your next idea into an interactive prototype.")
+                  : t("You have {count} designs in your workspace.", { count: counts.all })}
               </p>
             </div>
             <div className="hidden items-center gap-2 sm:flex">
-              <SummaryChip icon={<Folder className="size-3.5" />} label="Designs" value={counts.all} />
-              <SummaryChip icon={<Star className="size-3.5" />} label="Starred" value={counts.starred} />
-              <SummaryChip icon={<Users className="size-3.5" />} label="Shared" value={counts.shared} />
+              <SummaryChip icon={<Folder className="size-3.5" />} label={t("Designs")} value={counts.all} />
+              <SummaryChip icon={<Star className="size-3.5" />} label={t("Starred")} value={counts.starred} />
+              <SummaryChip icon={<Users className="size-3.5" />} label={t("Shared")} value={counts.shared} />
             </div>
           </div>
 
@@ -446,7 +454,7 @@ export default function DashboardPage() {
             <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">{visible.length}</span>
             {nav !== "all" && (
               <button onClick={() => setNav("all")} className="ml-auto text-[11px] text-muted-foreground hover:text-foreground">
-                View all designs <ArrowUpRight className="inline size-3" />
+                {t("View all designs")} <ArrowUpRight className="inline size-3" />
               </button>
             )}
           </div>
@@ -466,7 +474,7 @@ export default function DashboardPage() {
               <AlertTriangle className="size-6 text-destructive" />
               <p className="text-sm font-medium">{error}</p>
               <Button variant="outline" size="sm" onClick={() => void load()}>
-                Try again
+                {t("Try again")}
               </Button>
             </div>
           ) : visible.length === 0 ? (
@@ -494,7 +502,7 @@ export default function DashboardPage() {
 
           {!loading && !error && visible.length > 0 && (
             <div className="pb-10 text-center text-[10px] text-muted-foreground">
-              {visible.length} design{visible.length === 1 ? "" : "s"} · Press N for a new canvas
+              {t("{count} designs · Press N for a new canvas", { count: visible.length })}
             </div>
           )}
         </div>
@@ -504,14 +512,14 @@ export default function DashboardPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Bell className="size-4 text-primary" /> Notifications
+              <Bell className="size-4 text-primary" /> {t("Notifications")}
             </DialogTitle>
-            <DialogDescription>Comments and activity across your designs.</DialogDescription>
+            <DialogDescription>{t("Comments and activity across your designs.")}</DialogDescription>
           </DialogHeader>
           <div className="max-h-[55vh] overflow-y-auto rounded-lg border border-border">
             {notifications.length === 0 ? (
               <div className="px-4 py-12 text-center text-[12px] text-muted-foreground">
-                You’re all caught up. New comments will show up here.
+                {t("You’re all caught up. New comments will show up here.")}
               </div>
             ) : (
               notifications.map((n) => (
@@ -533,7 +541,7 @@ export default function DashboardPage() {
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="text-[12px] leading-relaxed">
-                      <span className="font-medium">{n.actor}</span> commented on{" "}
+                      <span className="font-medium">{n.actor}</span> {t("commented on")}{" "}
                       <span className="font-medium">{n.fileName}</span>
                     </div>
                     <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{n.text}</div>
@@ -546,7 +554,7 @@ export default function DashboardPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setNotificationsOpen(false)}>
-              Close
+              {t("Close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -557,33 +565,33 @@ export default function DashboardPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary" /> Create a new design
+              <Sparkles className="size-4 text-primary" /> {t("Create a new design")}
             </DialogTitle>
-            <DialogDescription>Pick a starting point or begin with a blank canvas.</DialogDescription>
+            <DialogDescription>{t("Pick a starting point or begin with a blank canvas.")}</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {(templates.length ? templates : [{ id: "blank", name: "Blank canvas", description: "", accent: "#7c5cff", icon: "square" }]).map((t) => (
+            {(templates.length ? templates : [{ id: "blank", name: "Blank canvas", description: "", accent: "#0ea5e9", icon: "square" }]).map((tpl) => (
               <button
-                key={t.id}
-                onClick={() => setTemplate(t.id)}
+                key={tpl.id}
+                onClick={() => setTemplate(tpl.id)}
                 className={cn(
                   "group flex items-start gap-3 rounded-xl border p-3 text-left transition-all",
-                  template === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border hover:border-muted-foreground/30 hover:bg-secondary/40",
+                  template === tpl.id ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border hover:border-muted-foreground/30 hover:bg-secondary/40",
                 )}
               >
                 <div
                   className="flex size-10 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
-                  style={{ background: `linear-gradient(135deg, ${t.accent}, color-mix(in oklch, ${t.accent} 55%, #111))` }}
+                  style={{ background: `linear-gradient(135deg, ${tpl.accent}, color-mix(in oklch, ${tpl.accent} 55%, #111))` }}
                 >
-                  <TemplateIcon icon={t.icon} className="size-4.5" />
+                  <TemplateIcon icon={tpl.icon} className="size-4.5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                    {t.name}
-                    {template === t.id && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
+                    {t(tpl.name)}
+                    {template === tpl.id && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
                   </div>
-                  <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{t.description}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{t(tpl.description)}</p>
                 </div>
               </button>
             ))}
@@ -591,7 +599,7 @@ export default function DashboardPage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-medium text-muted-foreground" htmlFor="design-name">
-              Design name
+              {t("Design name")}
             </label>
             <Input
               id="design-name"
@@ -602,13 +610,13 @@ export default function DashboardPage() {
                 if (e.key === "Enter") void create();
                 e.stopPropagation();
               }}
-              placeholder={templateMap.get(template)?.name || "Untitled design"}
+              placeholder={templateMap.get(template)?.name || t("Untitled design")}
             />
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setNewOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={create} disabled={creating}>
               {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />} Create design
@@ -621,7 +629,7 @@ export default function DashboardPage() {
       <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Rename design</DialogTitle>
+            <DialogTitle>{t("Rename design")}</DialogTitle>
           </DialogHeader>
           <Input
             autoFocus
@@ -635,10 +643,10 @@ export default function DashboardPage() {
           />
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRenameTarget(null)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={rename} disabled={!renameValue.trim()}>
-              Save
+              {t("Save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -648,17 +656,17 @@ export default function DashboardPage() {
       <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete “{deleteTarget?.name}”?</DialogTitle>
+            <DialogTitle>{t("Delete design")} “{deleteTarget?.name}”?</DialogTitle>
             <DialogDescription>
-              This permanently deletes the design, its pages, comments and version history. This action cannot be undone.
+              {t("This permanently deletes the design, its pages, comments and version history. This action cannot be undone.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button variant="destructive" onClick={remove}>
-              <Trash2 className="size-4" /> Delete design
+              <Trash2 className="size-4" /> {t("Delete design")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -743,6 +751,7 @@ function FileCard({
   onDelete: () => void;
   onShare: () => void;
 }) {
+  const t = useT();
   return (
     <div className="group relative">
       <button
@@ -757,11 +766,11 @@ function FileCard({
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
           <div className="absolute bottom-2 left-2 flex translate-y-2 items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] font-medium text-white opacity-0 backdrop-blur transition-all group-hover:translate-y-0 group-hover:opacity-100">
-            Open in editor <ArrowUpRight className="size-3" />
+            {t("Open in editor")} <ArrowUpRight className="size-3" />
           </div>
           {file.role !== "owner" && (
             <div className="absolute right-2 top-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-medium text-white backdrop-blur">
-              {file.role === "edit" ? "Can edit" : "View only"}
+              {file.role === "edit" ? t("Can edit") : t("View only")}
             </div>
           )}
         </div>
@@ -773,7 +782,7 @@ function FileCard({
             {file.name}
           </button>
           <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <span>{file.role === "owner" ? "You" : file.ownerName}</span>
+            <span>{file.role === "owner" ? t("You") : file.ownerName}</span>
             <span>·</span>
             <span>{formatRelative(file.updatedAt)}</span>
             {file.template && file.template !== "blank" && (
@@ -804,24 +813,24 @@ function FileCard({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onOpen}>Open</DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpen}>{t("Open")}</DropdownMenuItem>
             <DropdownMenuItem onClick={onRename}>
-              <Pencil className="size-4" /> Rename
+              <Pencil className="size-4" /> {t("Rename")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDuplicate}>
-              <Copy className="size-4" /> Duplicate
+              <Copy className="size-4" /> {t("Duplicate")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onShare}>
-              <Users className="size-4" /> Share
+              <Users className="size-4" /> {t("Share")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onStar}>
-              <Star className="size-4" /> {file.starred ? "Remove star" : "Star"}
+              <Star className="size-4" /> {file.starred ? t("Remove star") : t("Star")}
             </DropdownMenuItem>
             {file.role === "owner" && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={onDelete}>
-                  <Trash2 className="size-4" /> Delete
+                  <Trash2 className="size-4" /> {t("Delete")}
                 </DropdownMenuItem>
               </>
             )}
@@ -833,7 +842,8 @@ function FileCard({
 }
 
 function TemplatePreview({ file, template }: { file: FileMeta; template?: TemplateMeta }) {
-  const accent = template?.accent ?? "#7c5cff";
+  const t = useT();
+  const accent = template?.accent ?? "#0ea5e9";
   return (
     <div className="relative flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(140deg, ${accent}33, ${accent}0d 45%, transparent 75%)` }}>
       <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,.16) 1px, transparent 1px)", backgroundSize: "18px 18px" }} />
@@ -853,47 +863,48 @@ function TemplatePreview({ file, template }: { file: FileMeta; template?: Templa
       </div>
       <div className="absolute bottom-1.5 left-2 flex items-center gap-1 text-[9px] font-medium" style={{ color: accent }}>
         <TemplateIcon icon={template?.icon ?? "square"} className="size-2.5" />
-        {template?.name ?? "Design"}
+        {template ? t(template.name) : t("Design")}
       </div>
     </div>
   );
 }
 
 function EmptyState({ nav, search, onCreate, onClear }: { nav: Nav; search: string; onCreate: () => void; onClear: () => void }) {
+  const t = useT();
   if (search) {
     return (
       <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border py-20 text-center">
         <Search className="size-7 text-muted-foreground/50" />
         <div>
-          <p className="text-sm font-medium">No designs match “{search}”</p>
-          <p className="mt-1 text-[12px] text-muted-foreground">Try a different name or clear the search.</p>
+          <p className="text-sm font-medium">{t("No designs match")} “{search}”</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">{t("Try a different name or clear the search.")}</p>
         </div>
         <Button variant="outline" size="sm" onClick={onClear}>
-          Clear search
+          {t("Clear search")}
         </Button>
       </div>
     );
   }
   return (
     <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border py-20 text-center">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9d7bff]/20 to-[#6d4aff]/5">
+      <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38bdf8]/20 to-[#0284c7]/5">
         {nav === "starred" ? <Star className="size-6 text-primary" /> : nav === "shared" ? <Users className="size-6 text-primary" /> : <Sparkles className="size-6 text-primary" />}
       </div>
       <div>
         <h3 className="text-sm font-semibold">
-          {nav === "starred" ? "No starred designs yet" : nav === "shared" ? "Nothing shared with you yet" : "Your canvas is waiting"}
+          {nav === "starred" ? t("No starred designs yet") : nav === "shared" ? t("Nothing shared with you yet") : t("Your canvas is waiting")}
         </h3>
         <p className="mx-auto mt-1 max-w-sm text-[12px] leading-relaxed text-muted-foreground">
           {nav === "starred"
-            ? "Star the designs you want to keep close — they’ll show up here."
+            ? t("Star the designs you want to keep close — they’ll show up here.")
             : nav === "shared"
-              ? "When a teammate invites you to a design, it will appear here."
-              : "Start from a template or a blank canvas and turn your idea into a clickable prototype."}
+              ? t("When a teammate invites you to a design, it will appear here.")
+              : t("Start from a template or a blank canvas and turn your idea into a clickable prototype.")}
         </p>
       </div>
       {nav !== "shared" && (
         <Button onClick={onCreate}>
-          <Plus className="size-4" /> Create your first design
+          <Plus className="size-4" /> {t("Create your first design")}
         </Button>
       )}
     </div>

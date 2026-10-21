@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { Tool } from "@/lib/types";
 import { useEditor } from "@/store/editor";
+import { useT } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -27,6 +28,7 @@ const TOOLS: { tool: Tool; icon: React.ReactNode; label: string; shortcut: strin
 ];
 
 export function Toolbar({ readOnly }: { readOnly: boolean }) {
+  const t = useT();
   const tool = useEditor((s) => s.tool);
   const setTool = useEditor((s) => s.setTool);
   const showComments = useEditor((s) => s.showComments);
@@ -45,7 +47,7 @@ export function Toolbar({ readOnly }: { readOnly: boolean }) {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    title={item.label}
+                    title={t(item.label)}
                     disabled={disabled}
                     onClick={() => setTool(item.tool)}
                     className={cn(
@@ -62,7 +64,7 @@ export function Toolbar({ readOnly }: { readOnly: boolean }) {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  {item.label} <span className="ml-1 text-muted-foreground">{item.shortcut}</span>
+                  {t(item.label)} <span className="ml-1 text-muted-foreground">{item.shortcut}</span>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -73,7 +75,7 @@ export function Toolbar({ readOnly }: { readOnly: boolean }) {
           <TooltipTrigger asChild>
             <button
               type="button"
-              title="Comments"
+              title={t("Comments")}
               onClick={() => setShowComments(!showComments)}
               className={cn(
                 "hidden size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:flex",
@@ -83,7 +85,7 @@ export function Toolbar({ readOnly }: { readOnly: boolean }) {
               <MessageCircle className="size-[16px]" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="right">Comments</TooltipContent>
+          <TooltipContent side="right">{t("Comments")}</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

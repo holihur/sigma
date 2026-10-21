@@ -27,6 +27,7 @@ import {
 import type { Page, SceneNode } from "@/lib/types";
 import { toast } from "sonner";
 import { useEditor } from "@/store/editor";
+import { useT } from "@/i18n";
 import { ancestorsOf, descendantsOf, getPage, nodeLabel } from "@/lib/nodes";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function LayersPanel() {
+  const t = useT();
   const doc = useEditor((s) => s.doc);
   const pageId = useEditor((s) => s.pageId);
   const selection = useEditor((s) => s.selection);
@@ -157,11 +159,11 @@ export function LayersPanel() {
     <TooltipProvider delayDuration={400}>
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center justify-between px-3 pb-1 pt-3">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Pages</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Pages")}</span>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                title="Add page"
+                title={t("Add page")}
                 disabled={readOnly}
                 className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30"
                 onClick={() => addPage()}
@@ -225,7 +227,7 @@ export function LayersPanel() {
         </div>
 
         <div className="flex items-center justify-between border-t border-panel-border px-3 pb-1.5 pt-2.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Layers</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Layers")}</span>
           <span className="text-[10px] text-muted-foreground">{rows.length}</span>
         </div>
         <div
@@ -236,9 +238,9 @@ export function LayersPanel() {
             <div className="mx-2 mt-3 rounded-lg border border-dashed border-border px-3 py-6 text-center">
               <Layers className="mx-auto mb-2 size-5 text-muted-foreground/60" />
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                No layers yet.
+                {t("No layers yet.")}
                 <br />
-                Press <span className="font-medium text-foreground">F</span> and drag on the canvas to add a frame.
+                {t("Press F and drag on the canvas to add a frame.")}
               </p>
             </div>
           )}
@@ -366,14 +368,14 @@ export function LayersPanel() {
                 <ContextMenuContent
                   onCloseAutoFocus={(e) => e.preventDefault()}
                 >
-                  <ContextMenuItem onClick={() => startRename(node)}>Rename</ContextMenuItem>
+                  <ContextMenuItem onClick={() => startRename(node)}> {t("Rename")}</ContextMenuItem>
                   <ContextMenuItem
                     onClick={() => {
                       select([node.id]);
                       useEditor.getState().duplicateSelection();
                     }}
                   >
-                    <Copy className="size-3.5" /> Duplicate <ContextMenuShortcut>⌘D</ContextMenuShortcut>
+                    <Copy className="size-3.5" /> {t("Duplicate")} <ContextMenuShortcut>⌘D</ContextMenuShortcut>
                   </ContextMenuItem>
                   <ContextMenuItem
                     onClick={() => {
@@ -381,7 +383,7 @@ export function LayersPanel() {
                       useEditor.getState().copySelection();
                     }}
                   >
-                    <Copy className="size-3.5" /> Copy
+                    <Copy className="size-3.5" /> {t("Copy")}
                   </ContextMenuItem>
                   <ContextMenuItem
                     onClick={() => {
@@ -389,17 +391,17 @@ export function LayersPanel() {
                       useEditor.getState().paste();
                     }}
                   >
-                    <ClipboardPaste className="size-3.5" /> Paste
+                    <ClipboardPaste className="size-3.5" /> {t("Paste")}
                   </ContextMenuItem>
                   <ContextMenuSeparator />
                   <ContextMenuItem
                     onClick={() => {
                       select([node.id]);
                       const ok = useEditor.getState().groupSelection();
-                      if (!ok) toast.error("Select layers with the same parent to group");
+                      if (!ok) toast.error(t("Select layers with the same parent to group"));
                     }}
                   >
-                    <GroupIcon className="size-3.5" /> Group selection
+                    <GroupIcon className="size-3.5" /> {t("Group selection")}
                   </ContextMenuItem>
                   {node.type === "group" && (
                     <ContextMenuItem
@@ -408,7 +410,7 @@ export function LayersPanel() {
                         useEditor.getState().ungroupSelection();
                       }}
                     >
-                      <Ungroup className="size-3.5" /> Ungroup
+                      <Ungroup className="size-3.5" /> {t("Ungroup")}
                     </ContextMenuItem>
                   )}
                   <ContextMenuSeparator />
@@ -418,7 +420,7 @@ export function LayersPanel() {
                       useEditor.getState().reorderSelection("front");
                     }}
                   >
-                    <BringToFront className="size-3.5" /> Bring to front
+                    <BringToFront className="size-3.5" /> {t("Bring to front")}
                   </ContextMenuItem>
                   <ContextMenuItem
                     onClick={() => {
@@ -426,7 +428,7 @@ export function LayersPanel() {
                       useEditor.getState().reorderSelection("back");
                     }}
                   >
-                    <SendToBack className="size-3.5" /> Send to back
+                    <SendToBack className="size-3.5" /> {t("Send to back")}
                   </ContextMenuItem>
                   <ContextMenuSeparator />
                   <ContextMenuItem
@@ -436,7 +438,7 @@ export function LayersPanel() {
                       useEditor.getState().deleteSelection();
                     }}
                   >
-                    <Trash2 className="size-3.5" /> Delete <ContextMenuShortcut>⌫</ContextMenuShortcut>
+                    <Trash2 className="size-3.5" /> {t("Delete")} <ContextMenuShortcut>⌫</ContextMenuShortcut>
                   </ContextMenuItem>
                 </ContextMenuContent>
               </ContextMenu>
@@ -456,7 +458,7 @@ export function LayersPanel() {
                 setDrop(null);
               }}
             >
-              Drop here to move to canvas root
+              {t("Drop here to move to canvas root")}
             </div>
           )}
         </div>

@@ -20,7 +20,7 @@ export function createNode(type: NodeType, overrides: Partial<SceneNode> = {}): 
     opacity: 1,
     visible: true,
     locked: false,
-    fill: { type: "solid", color: "#7c5cff" },
+    fill: { type: "solid", color: "#0ea5e9" },
     stroke: null,
     strokeWidth: 1,
     radius: 0,
@@ -375,7 +375,7 @@ export function defaultGradient(): Paint {
     type: "linear",
     angle: 135,
     stops: [
-      { color: "#7c5cff", position: 0 },
+      { color: "#0ea5e9", position: 0 },
       { color: "#f472b6", position: 1 },
     ],
   };

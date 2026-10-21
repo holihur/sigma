@@ -5,6 +5,7 @@ import { membersApi, publicApi } from "@/lib/api";
 import type { Member } from "@/lib/types";
 import { useEditor } from "@/store/editor";
 import { useAuth } from "@/store/auth";
+import { useT } from "@/i18n";
 import { copyText, initials, formatRelative } from "@/lib/utils";
 import {
   Dialog,
@@ -21,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 
 export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const t = useT();
   const file = useEditor((s) => s.file);
   const user = useAuth((s) => s.user);
   const [members, setMembers] = useState<Member[]>([]);
@@ -66,7 +68,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
       const data = await membersApi.add(file.id, email.trim(), role);
       setMembers(data.members);
       setEmail("");
-      toast.success("Collaborator added");
+      toast.success(t("Collaborator added"));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -78,7 +80,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     try {
       const data = await membersApi.remove(file.id, member.userId);
       setMembers(data.members);
-      toast.success("Removed collaborator");
+      toast.success(t("Removed collaborator"));
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -99,7 +101,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
       const data = await publicApi.set(file.id, enabled);
       setPublicToken(data.token);
       setPublicEnabled(data.enabled);
-      toast.success(enabled ? "Public prototype enabled" : "Public link disabled");
+      toast.success(enabled ? t("Public prototype enabled") : t("Public link disabled"));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -112,10 +114,10 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="size-4 text-primary" /> Share “{file.name}”
+            <Users className="size-4 text-primary" /> {t("Share")} “{file.name}”
           </DialogTitle>
           <DialogDescription>
-            Invite teammates to edit or review this design. Collaborators need a Sigma account.
+            {t("Invite teammates to edit or review this design. Collaborators need a Sigma account.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -140,19 +142,19 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="edit">Can edit</SelectItem>
-                <SelectItem value="view">Can view</SelectItem>
+                <SelectItem value="edit">{t("Can edit")}</SelectItem>
+                <SelectItem value="view">{t("Can view")}</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={invite} disabled={inviting || !email.includes("@")}>
-              <UserPlus className="size-4" /> Invite
+              <UserPlus className="size-4" /> {t("Invite")}
             </Button>
           </div>
         )}
 
         <div className="rounded-lg border border-border">
           <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            <Shield className="size-3.5" /> People with access
+            <Shield className="size-3.5" /> {t("People with access")}
           </div>
           <div className="max-h-64 overflow-y-auto p-1.5">
             <div className="flex items-center gap-2.5 rounded-md px-2 py-2">
@@ -163,16 +165,16 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               </Avatar>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px]">
-                  {owner || file.ownerName} {user?.name === (owner || file.ownerName) && <span className="text-muted-foreground">(you)</span>}
+                  {owner || file.ownerName} {user?.name === (owner || file.ownerName) && <span className="text-muted-foreground">{t("(you)")}</span>}
                 </div>
                 <div className="text-[10px] text-muted-foreground">Owner</div>
               </div>
-              <Badge variant="secondary">Owner</Badge>
+              <Badge variant="secondary">{t("Owner")}</Badge>
             </div>
             {loading && <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">Loading collaborators…</div>}
             {!loading && members.length === 0 && (
               <div className="px-3 py-5 text-center text-[11px] text-muted-foreground">
-                No collaborators yet. Invite someone by email.
+                {t("No collaborators yet. Invite someone by email.")}
               </div>
             )}
             {members.map((m) => (
@@ -212,11 +214,11 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 text-[12px] font-medium">
-                  Public prototype
-                  {publicEnabled && <Badge variant="success">Live</Badge>}
+                  {t("Public prototype")}
+                  {publicEnabled && <Badge variant="success">{t("Live")}</Badge>}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  Anyone with the link can view the click-through prototype, no account needed.
+                  {t("Anyone with the link can view the click-through prototype, no account needed.")}
                 </div>
               </div>
               <Switch checked={publicEnabled} onCheckedChange={togglePublic} disabled={publicBusy} />
@@ -233,7 +235,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                   size="sm"
                   onClick={async () => {
                     await copyText(publicUrl);
-                    toast.success("Public link copied");
+                    toast.success(t("Public link copied"));
                   }}
                 >
                   <Copy className="size-3.5" /> Copy
@@ -248,12 +250,11 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">{window.location.href}</span>
           <Button variant="outline" size="sm" onClick={copyLink}>
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            {copied ? "Copied" : "Editor link"}
+            {copied ? t("Copied") : t("Editor link")}
           </Button>
         </div>
         <p className="text-[10px] leading-relaxed text-muted-foreground">
-          Tip: for a quick review, invite the demo account <span className="text-foreground">demo@sigma.design</span>. Only
-          people with access can open this file.
+          {t("Tip: for a quick review, invite the demo account demo@sigma.design. Only people with access can open this file.")}
         </p>
       </DialogContent>
     </Dialog>

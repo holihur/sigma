@@ -18,8 +18,10 @@ import {
   MessageCircle,
   PanelLeft,
   SlidersHorizontal,
+  Languages,
 } from "lucide-react";
 import { useAuth } from "@/store/auth";
+import { useI18n, useT } from "@/i18n";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { useTheme } from "@/store/theme";
 import { useEditor } from "@/store/editor";
@@ -69,6 +71,9 @@ export function TopBar({
   const theme = useTheme((s) => s.theme);
   const toggleTheme = useTheme((s) => s.toggle);
   const navigate = useNavigate();
+  const t = useT();
+  const locale = useI18n((s) => s.locale);
+  const toggleLocale = useI18n((s) => s.toggle);
   const [editing, setEditing] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [draft, setDraft] = useState(file?.name ?? "");
@@ -102,7 +107,7 @@ export function TopBar({
           <TooltipTrigger asChild>
             <Link
               to="/"
-              className="hidden size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#9d7bff] to-[#6d4aff] text-white shadow-sm sm:flex"
+              className="hidden size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white shadow-sm sm:flex"
             >
               <svg viewBox="0 0 32 32" className="size-5" fill="currentColor">
                 <path d="M21.5 10.2c-1.3-.9-2.9-1.4-4.7-1.4-3 0-5 1.4-5 3.7 0 2 1.3 2.9 4.2 3.6 2.4.6 3.1 1 3.1 2 0 1-1 1.6-2.5 1.6-1.9 0-3.5-.7-4.8-1.8l-.9 2.2c1.5 1.3 3.5 2 5.7 2 3.4 0 5.4-1.5 5.4-4 0-2.2-1.4-3.2-4.4-3.9-2.3-.5-3-1-3-1.8 0-.9.9-1.4 2.3-1.4 1.6 0 3 .6 4.2 1.5l.4-2.3Z" />
@@ -144,15 +149,15 @@ export function TopBar({
           <div className="ml-1 hidden items-center gap-1 text-[10px] text-muted-foreground lg:flex">
             {syncStatus === "offline" ? (
               <>
-                <CloudOff className="size-3" /> Offline
+                <CloudOff className="size-3" /> {t("Offline")}
               </>
             ) : syncStatus === "saving" ? (
               <>
-                <Cloud className="size-3 animate-pulse" /> Saving…
+                <Cloud className="size-3 animate-pulse" /> {t("Saving…")}
               </>
             ) : (
               <>
-                <Cloud className="size-3" /> Saved{lastSavedAt ? ` · ${formatRelative(new Date(lastSavedAt).toISOString())}` : ""}
+                <Cloud className="size-3" /> {t("Saved")}{lastSavedAt ? ` · ${formatRelative(new Date(lastSavedAt).toISOString())}` : ""}
               </>
             )}
           </div>
@@ -162,7 +167,7 @@ export function TopBar({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                title="Undo"
+                title={t("Undo")}
                 disabled={past === 0}
                 onClick={undo}
                 className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30"
@@ -175,7 +180,7 @@ export function TopBar({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                title="Redo"
+                title={t("Redo")}
                 disabled={future === 0}
                 onClick={redo}
                 className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30"
@@ -206,14 +211,14 @@ export function TopBar({
         </div>
 
         <button
-          title="Pages & layers"
+          title={t("Pages & layers")}
           onClick={onOpenLayers}
           className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:size-8 lg:hidden"
         >
           <PanelLeft className="size-4" />
         </button>
         <button
-          title="Properties"
+          title={t("Properties")}
           onClick={onOpenProperties}
           className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:size-8 xl:hidden"
         >
@@ -223,7 +228,7 @@ export function TopBar({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              title="Comments"
+              title={t("Comments")}
               onClick={() => setShowComments(!showComments)}
               className={cn(
                 "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:size-8",
@@ -238,17 +243,17 @@ export function TopBar({
 
         <Button variant="outline" size="sm" onClick={onShare} className="h-7 gap-1.5 px-1.5 sm:h-8 sm:px-3">
           <Share2 className="size-3.5" />
-          <span className="hidden sm:inline">Share</span>
+          <span className="hidden sm:inline">{t("Share")}</span>
         </Button>
 
-        <Button size="sm" className="h-7 gap-1.5 bg-gradient-to-b from-[#8b6bff] to-[#6d4aff] px-1.5 shadow sm:h-8 sm:px-4" onClick={() => openPreview(null)}>
+        <Button size="sm" className="h-7 gap-1.5 bg-gradient-to-b from-[#38bdf8] to-[#0284c7] px-1.5 shadow sm:h-8 sm:px-4" onClick={() => openPreview(null)}>
           <Play className="size-3.5 fill-current" />
-          <span className="hidden sm:inline">Present</span>
+          <span className="hidden sm:inline">{t("Present")}</span>
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button title="Account menu" className="flex h-7 items-center gap-0.5 rounded-md px-0.5 hover:bg-secondary sm:h-8 sm:gap-1 sm:px-1">
+            <button title={t("Account menu")} className="flex h-7 items-center gap-0.5 rounded-md px-0.5 hover:bg-secondary sm:h-8 sm:gap-1 sm:px-1">
               <Avatar className="size-6">
                 <AvatarFallback className="text-[9px] font-semibold text-white" style={{ background: user?.color }}>
                   {initials(user?.name ?? "?")}
@@ -264,18 +269,21 @@ export function TopBar({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onVersions}>
-              <History className="size-4" /> Version history
+              <History className="size-4" /> {t("Version history")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDuplicate}>
-              <Users className="size-4" /> Duplicate file
+              <Users className="size-4" /> {t("Duplicate file")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={toggleTheme}>
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-              {theme === "dark" ? "Light theme" : "Dark theme"}
+              {theme === "dark" ? t("Light theme") : t("Dark theme")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={toggleLocale}>
+              <Languages className="size-4" /> {locale === "en" ? "中文" : "English"}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/")}>
-              <Home className="size-4" /> All designs
+              <Home className="size-4" /> {t("All designs")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
@@ -283,7 +291,7 @@ export function TopBar({
                 navigate("/login");
               }}
             >
-              <LogOut className="size-4" /> Sign out
+              <LogOut className="size-4" /> {t("Sign out")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -291,7 +299,7 @@ export function TopBar({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              title="Keyboard shortcuts"
+              title={t("Keyboard shortcuts")}
               onClick={() => setShortcutsOpen(true)}
               className="ml-0.5 hidden size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground sm:flex"
             >

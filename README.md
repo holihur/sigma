@@ -27,6 +27,7 @@ Infinite canvas · Layers & properties · Click-through prototypes · Real-time 
 - **文件与权限**：登录注册、文件列表 / 搜索 / 收藏、模板、复制、重命名、删除、邀请协作者（可编辑 / 仅查看）。
 - **导出**：PNG / SVG 下载、复制为 PNG、系统深浅色主题。
 - **手机 / 平板适配**：编辑器侧栏自动收进抽屉，底部触控工具栏，单指平移、双指缩放，触控友好的缩放手柄；文件面板、评论、分享、原型演示均已响应式适配。
+- **中英文界面**：内置轻量 i18n，跟随浏览器语言，可在登录页、文件面板和编辑器账号菜单中切换；主色采用天蓝。
 - **内置模板**：移动端 Onboarding、SaaS Landing Page、Analytics Dashboard，均带可点击原型链路。
 
 | 文件面板 | 协作编辑器 |
@@ -201,6 +202,16 @@ sigma/
 | 平移 | `Space` + 拖拽、中键拖拽、`H` |
 
 完整列表可在编辑器右上角 **⋯ → Keyboard shortcuts** 查看。
+
+## 路线图：从设计工具到 Agent 平台
+
+下一阶段围绕「超越 Figma」的能力建设：
+
+- **BYOK + DeepSeek + Go ADK**：用户自带模型 Key，DeepSeek 默认使用最新 `deepseek-chat`；通过 Go ADK 提供可调用设计工具的 Agent，支持自然语言生成 / 修改画板、组件、文案与原型跳转。
+- **OIDC**：企业 SSO，支持任意标准 OpenID Connect Provider。
+- **MCP**：把 Sigma 的文件、图层、原型和导出能力暴露为 MCP Server，供 Claude / Cursor / 自研 Agent 调用。
+- **Figma 互通**：Figma REST API 导入 + Figma 插件 / JSON 导出，避免不可靠的封闭 `.fig` 二进制解析。
+- **更深的设计系统**：约束、组件实例、Design Tokens 与生产代码双向同步。
 
 ## 已知限制
 

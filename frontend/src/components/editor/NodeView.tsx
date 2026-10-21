@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import type { Page, SceneNode, Tool } from "@/lib/types";
 import { nodeLabel, paintToCss, shadowToCss } from "@/lib/nodes";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
 import { Image as ImageIcon, Lock } from "lucide-react";
 
 export interface NodeViewContext {
@@ -25,6 +26,7 @@ export interface NodeViewContext {
 
 export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext }) {
   const { page, interactive, tool, selected, hoveredId, editingId } = ctx;
+  const t = useT();
   const isSelected = selected.has(node.id);
   const canInteract = interactive && tool === "select" && !ctx.panMode && !node.locked;
 
@@ -122,7 +124,7 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
     ) : (
       <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
         <ImageIcon className="size-6 opacity-60" />
-        <span className="text-[11px]">Double-click to replace</span>
+        <span className="text-[11px]">{t("Double-click to replace")}</span>
       </div>
     );
     if (!node.src) {

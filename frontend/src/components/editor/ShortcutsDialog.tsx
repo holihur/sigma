@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Kbd } from "./controls";
+import { useT } from "@/i18n";
 
 const GROUPS: { title: string; rows: { keys: string[]; label: string }[] }[] = [
   {
@@ -60,23 +61,24 @@ const GROUPS: { title: string; rows: { keys: string[]; label: string }[] }[] = [
 ];
 
 export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const t = useT();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Keyboard className="size-4 text-primary" /> Keyboard shortcuts
+            <Keyboard className="size-4 text-primary" /> {t("Keyboard shortcuts")}
           </DialogTitle>
-          <DialogDescription>Work faster with the canvas at your fingertips.</DialogDescription>
+          <DialogDescription>{t("Work faster with the canvas at your fingertips.")}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
           {GROUPS.map((group) => (
             <div key={group.title}>
-              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{group.title}</div>
+              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t(group.title)}</div>
               <div className="space-y-0.5">
                 {group.rows.map((row) => (
                   <div key={row.label} className="flex items-center justify-between rounded px-1.5 py-1 hover:bg-secondary/40">
-                    <span className="text-[12px] text-foreground/90">{row.label}</span>
+                    <span className="text-[12px] text-foreground/90">{t(row.label)}</span>
                     <span className="flex items-center gap-1">
                       {row.keys.map((k, i) => (
                         <Kbd key={i}>{k}</Kbd>

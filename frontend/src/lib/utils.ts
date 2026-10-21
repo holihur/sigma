@@ -1,23 +1,26 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useI18n } from "@/i18n";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export function formatRelative(iso: string): string {
-  if (!iso) return "just now";
+  const zh = useI18n.getState().locale === "zh";
+  const empty = zh ? "刚刚" : "just now";
+  if (!iso) return empty;
   const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "just now";
+  if (Number.isNaN(then)) return empty;
   const diff = Date.now() - then;
   const minute = 60_000;
   const hour = 60 * minute;
   const day = 24 * hour;
-  if (diff < minute) return "just now";
-  if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
-  if (diff < day) return `${Math.floor(diff / hour)}h ago`;
-  if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  if (diff < minute) return empty;
+  if (diff < hour) return zh ? `${Math.floor(diff / minute)} 分钟前` : `${Math.floor(diff / minute)}m ago`;
+  if (diff < day) return zh ? `${Math.floor(diff / hour)} 小时前` : `${Math.floor(diff / hour)}h ago`;
+  if (diff < 7 * day) return zh ? `${Math.floor(diff / day)} 天前` : `${Math.floor(diff / day)}d ago`;
+  return new Date(then).toLocaleDateString(zh ? "zh-CN" : undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 export function initials(name: string): string {
