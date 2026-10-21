@@ -1,0 +1,794 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Clock,
+  Copy,
+  Folder,
+  Globe2,
+  LayoutDashboard,
+  LayoutGrid,
+  LogOut,
+  Menu,
+  X,
+  Moon,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Smartphone,
+  Sparkles,
+  Square,
+  Star,
+  Sun,
+  Trash2,
+  Users,
+  Component,
+  Presentation,
+  ArrowUpRight,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
+import { toast } from "sonner";
+import { filesApi } from "@/lib/api";
+import type { FileMeta, TemplateMeta } from "@/lib/types";
+import { useAuth } from "@/store/auth";
+import { useTheme } from "@/store/theme";
+import { cn, formatRelative, initials, isEditableTarget } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+type Nav = "all" | "starred" | "shared";
+
+export default function DashboardPage() {
+  const user = useAuth((s) => s.user);
+  const logout = useAuth((s) => s.logout);
+  const theme = useTheme((s) => s.theme);
+  const toggleTheme = useTheme((s) => s.toggle);
+  const navigate = useNavigate();
+  const [files, setFiles] = useState<FileMeta[]>([]);
+  const [templates, setTemplates] = useState<TemplateMeta[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [nav, setNav] = useState<Nav>("all");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"updated" | "name" | "created">("updated");
+  const [newOpen, setNewOpen] = useState(false);
+  const [template, setTemplate] = useState("blank");
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<FileMeta | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<FileMeta | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [filesRes, templatesRes] = await Promise.all([filesApi.list(), filesApi.templates()]);
+      setFiles(filesRes.files);
+      setTemplates(templatesRes.templates);
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [load]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isEditableTarget(e.target)) return;
+      if (document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (e.key.toLowerCase() === "n" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        openNew();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const counts = useMemo(
+    () => ({
+      all: files.length,
+      starred: files.filter((f) => f.starred).length,
+      shared: files.filter((f) => f.role !== "owner").length,
+    }),
+    [files],
+  );
+
+  const visible = useMemo(() => {
+    let list = files;
+    if (nav === "starred") list = list.filter((f) => f.starred);
+    if (nav === "shared") list = list.filter((f) => f.role !== "owner");
+    const q = search.trim().toLowerCase();
+    if (q) list = list.filter((f) => f.name.toLowerCase().includes(q) || f.ownerName.toLowerCase().includes(q));
+    const sorted = [...list];
+    if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === "created") sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    else sorted.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+    return sorted;
+  }, [files, nav, search, sort]);
+
+  const templateMap = useMemo(() => new Map(templates.map((t) => [t.id, t])), [templates]);
+
+  const openNew = (preset?: string) => {
+    setSidebarOpen(false);
+    setTemplate(preset ?? "blank");
+    setNewName("");
+    setNewOpen(true);
+  };
+
+  const create = async () => {
+    setCreating(true);
+    try {
+      const t = templateMap.get(template);
+      const name = newName.trim() || t?.name || "Untitled design";
+      const data = await filesApi.create(name, template);
+      toast.success("Design created");
+      navigate(`/file/${data.file.id}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+      setCreating(false);
+    }
+  };
+
+  const toggleStar = async (file: FileMeta) => {
+    const next = !file.starred;
+    setFiles((list) => list.map((f) => (f.id === file.id ? { ...f, starred: next } : f)));
+    try {
+      await filesApi.patch(file.id, { starred: next });
+    } catch (e) {
+      setFiles((list) => list.map((f) => (f.id === file.id ? { ...f, starred: !next } : f)));
+      toast.error((e as Error).message);
+    }
+  };
+
+  const rename = async () => {
+    if (!renameTarget || !renameValue.trim()) return;
+    try {
+      const data = await filesApi.patch(renameTarget.id, { name: renameValue.trim() });
+      setFiles((list) => list.map((f) => (f.id === renameTarget.id ? data.file : f)));
+      setRenameTarget(null);
+      toast.success("Renamed");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const remove = async () => {
+    if (!deleteTarget) return;
+    try {
+      await filesApi.remove(deleteTarget.id);
+      setFiles((list) => list.filter((f) => f.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast.success("Design deleted");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const duplicate = async (file: FileMeta) => {
+    try {
+      const data = await filesApi.duplicate(file.id);
+      setFiles((list) => [data.file, ...list]);
+      toast.success("Design duplicated");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
+  const heading = nav === "all" ? "Recent designs" : nav === "starred" ? "Starred designs" : "Shared with you";
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-[90] flex w-[272px] shrink-0 flex-col border-r border-panel-border bg-panel/95 backdrop-blur transition-transform duration-200 md:static md:z-auto md:w-[232px] md:translate-x-0 md:bg-panel/60 md:backdrop-blur-none",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <div className="flex h-14 items-center gap-2.5 px-4">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#9d7bff] to-[#6d4aff] text-white shadow-sm">
+            <svg viewBox="0 0 32 32" className="size-4.5" fill="currentColor">
+              <path d="M21.5 10.2c-1.3-.9-2.9-1.4-4.7-1.4-3 0-5 1.4-5 3.7 0 2 1.3 2.9 4.2 3.6 2.4.6 3.1 1 3.1 2 0 1-1 1.6-2.5 1.6-1.9 0-3.5-.7-4.8-1.8l-.9 2.2c1.5 1.3 3.5 2 5.7 2 3.4 0 5.4-1.5 5.4-4 0-2.2-1.4-3.2-4.4-3.9-2.3-.5-3-1-3-1.8 0-.9.9-1.4 2.3-1.4 1.6 0 3 .6 4.2 1.5l.4-2.3Z" />
+            </svg>
+          </div>
+          <span className="text-[15px] font-semibold tracking-tight">Sigma</span>
+          <Badge variant="outline" className="ml-auto text-[9px]">
+            beta
+          </Badge>
+          <button
+            title="Close menu"
+            onClick={() => setSidebarOpen(false)}
+            className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <div className="px-3 pb-2">
+          <Button className="w-full justify-start shadow-sm" onClick={() => openNew()}>
+            <Plus className="size-4" /> New design
+            <span className="ml-auto rounded bg-white/15 px-1 text-[9px] font-medium">N</span>
+          </Button>
+        </div>
+
+        <nav className="space-y-0.5 px-2 pt-2">
+          <NavItem icon={<LayoutGrid className="size-4" />} label="All designs" count={counts.all} active={nav === "all"} onClick={() => { setNav("all"); setSidebarOpen(false); }} />
+          <NavItem icon={<Star className="size-4" />} label="Starred" count={counts.starred} active={nav === "starred"} onClick={() => { setNav("starred"); setSidebarOpen(false); }} />
+          <NavItem icon={<Users className="size-4" />} label="Shared with me" count={counts.shared} active={nav === "shared"} onClick={() => { setNav("shared"); setSidebarOpen(false); }} />
+        </nav>
+
+        <div className="mt-6 px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Templates</div>
+        <div className="mt-2 space-y-0.5 px-2">
+          {templates
+            .filter((t) => t.id !== "blank")
+            .slice(0, 4)
+            .map((t) => (
+              <button
+                key={t.id}
+                onClick={() => openNew(t.id)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <span className="flex size-5 items-center justify-center rounded text-white" style={{ background: t.accent }}>
+                  <TemplateIcon icon={t.icon} className="size-3" />
+                </span>
+                <span className="truncate">{t.name}</span>
+              </button>
+            ))}
+        </div>
+
+        <div className="flex-1" />
+
+        <div className="m-2 rounded-xl border border-panel-border bg-background/60 p-2">
+          <div className="flex items-center gap-2 px-1 py-1">
+            <Avatar className="size-8">
+              <AvatarFallback className="text-[10px] font-semibold text-white" style={{ background: user?.color }}>
+                {initials(user?.name ?? "?")}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[12px] font-medium">{user?.name}</div>
+              <div className="truncate text-[10px] text-muted-foreground">{user?.email}</div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground">
+                  <MoreHorizontal className="size-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top">
+                <DropdownMenuItem onClick={toggleTheme}>
+                  {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                  {theme === "dark" ? "Light theme" : "Dark theme"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    logout();
+                    navigate("/login");
+                  }}
+                >
+                  <LogOut className="size-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </aside>
+
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-[85] bg-black/55 backdrop-blur-sm md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Main */}
+      <main className="min-w-0 flex-1 overflow-y-auto">
+        <div className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-panel-border bg-background/90 px-4 backdrop-blur md:hidden">
+          <button
+            title="Open menu"
+            onClick={() => setSidebarOpen(true)}
+            className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <Menu className="size-5" />
+          </button>
+          <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#9d7bff] to-[#6d4aff] text-white">
+            <svg viewBox="0 0 32 32" className="size-4" fill="currentColor">
+              <path d="M21.5 10.2c-1.3-.9-2.9-1.4-4.7-1.4-3 0-5 1.4-5 3.7 0 2 1.3 2.9 4.2 3.6 2.4.6 3.1 1 3.1 2 0 1-1 1.6-2.5 1.6-1.9 0-3.5-.7-4.8-1.8l-.9 2.2c1.5 1.3 3.5 2 5.7 2 3.4 0 5.4-1.5 5.4-4 0-2.2-1.4-3.2-4.4-3.9-2.3-.5-3-1-3-1.8 0-.9.9-1.4 2.3-1.4 1.6 0 3 .6 4.2 1.5l.4-2.3Z" />
+            </svg>
+          </div>
+          <span className="text-[15px] font-semibold tracking-tight">Sigma</span>
+          <Button size="sm" className="ml-auto h-8" onClick={() => openNew()}>
+            <Plus className="size-4" /> New
+          </Button>
+        </div>
+        <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-8 sm:py-5 lg:px-10">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1 sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                ref={searchRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search designs…"
+                className="h-9 rounded-lg bg-panel pl-9 pr-12"
+              />
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-border bg-secondary px-1 text-[9px] text-muted-foreground">
+                /
+              </kbd>
+            </div>
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+                <SelectTrigger className="hidden h-9 w-[142px] bg-panel sm:flex">
+                  <Clock className="size-3.5 text-muted-foreground" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="updated">Last updated</SelectItem>
+                  <SelectItem value="created">Date created</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button className="hidden h-9 sm:inline-flex" onClick={() => openNew()}>
+                <Plus className="size-4" /> New design
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-end justify-between gap-4 sm:mt-8">
+            <div>
+              <h1 className="text-[22px] font-semibold tracking-tight sm:text-[26px]">
+                {greeting}, {user?.name?.split(" ")[0]}
+              </h1>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                {counts.all === 0
+                  ? "Let’s turn your next idea into an interactive prototype."
+                  : `You have ${counts.all} design${counts.all === 1 ? "" : "s"} in your workspace.`}
+              </p>
+            </div>
+            <div className="hidden items-center gap-2 sm:flex">
+              <SummaryChip icon={<Folder className="size-3.5" />} label="Designs" value={counts.all} />
+              <SummaryChip icon={<Star className="size-3.5" />} label="Starred" value={counts.starred} />
+              <SummaryChip icon={<Users className="size-3.5" />} label="Shared" value={counts.shared} />
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center gap-2 sm:mt-7">
+            <h2 className="text-[13px] font-semibold">{heading}</h2>
+            <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">{visible.length}</span>
+            {nav !== "all" && (
+              <button onClick={() => setNav("all")} className="ml-auto text-[11px] text-muted-foreground hover:text-foreground">
+                View all designs <ArrowUpRight className="inline size-3" />
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[16/10] rounded-xl bg-secondary/70" />
+                  <div className="mt-3 h-3 w-2/3 rounded bg-secondary/70" />
+                  <div className="mt-2 h-2.5 w-1/3 rounded bg-secondary/50" />
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border py-20 text-center">
+              <AlertTriangle className="size-6 text-destructive" />
+              <p className="text-sm font-medium">{error}</p>
+              <Button variant="outline" size="sm" onClick={() => void load()}>
+                Try again
+              </Button>
+            </div>
+          ) : visible.length === 0 ? (
+            <EmptyState nav={nav} search={search} onCreate={() => openNew()} onClear={() => setSearch("")} />
+          ) : (
+            <div className="mt-4 grid grid-cols-1 gap-4 pb-16 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+              {visible.map((file) => (
+                <FileCard
+                  key={file.id}
+                  file={file}
+                  template={templateMap.get(file.template)}
+                  onOpen={() => navigate(`/file/${file.id}`)}
+                  onStar={() => toggleStar(file)}
+                  onRename={() => {
+                    setRenameTarget(file);
+                    setRenameValue(file.name);
+                  }}
+                  onDuplicate={() => duplicate(file)}
+                  onDelete={() => setDeleteTarget(file)}
+                  onShare={() => navigate(`/file/${file.id}?share=1`)}
+                />
+              ))}
+            </div>
+          )}
+
+          {!loading && !error && visible.length > 0 && (
+            <div className="pb-10 text-center text-[10px] text-muted-foreground">
+              {visible.length} design{visible.length === 1 ? "" : "s"} · Press N for a new canvas
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* New design dialog */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="size-4 text-primary" /> Create a new design
+            </DialogTitle>
+            <DialogDescription>Pick a starting point or begin with a blank canvas.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {(templates.length ? templates : [{ id: "blank", name: "Blank canvas", description: "", accent: "#7c5cff", icon: "square" }]).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTemplate(t.id)}
+                className={cn(
+                  "group flex items-start gap-3 rounded-xl border p-3 text-left transition-all",
+                  template === t.id ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border hover:border-muted-foreground/30 hover:bg-secondary/40",
+                )}
+              >
+                <div
+                  className="flex size-10 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
+                  style={{ background: `linear-gradient(135deg, ${t.accent}, color-mix(in oklch, ${t.accent} 55%, #111))` }}
+                >
+                  <TemplateIcon icon={t.icon} className="size-4.5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 text-[13px] font-medium">
+                    {t.name}
+                    {template === t.id && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
+                  </div>
+                  <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{t.description}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-muted-foreground" htmlFor="design-name">
+              Design name
+            </label>
+            <Input
+              id="design-name"
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void create();
+                e.stopPropagation();
+              }}
+              placeholder={templateMap.get(template)?.name || "Untitled design"}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNewOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={create} disabled={creating}>
+              {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />} Create design
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename design</DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void rename();
+              e.stopPropagation();
+            }}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenameTarget(null)}>
+              Cancel
+            </Button>
+            <Button onClick={rename} disabled={!renameValue.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete “{deleteTarget?.name}”?</DialogTitle>
+            <DialogDescription>
+              This permanently deletes the design, its pages, comments and version history. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={remove}>
+              <Trash2 className="size-4" /> Delete design
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function NavItem({
+  icon,
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex h-8 w-full items-center gap-2 rounded-md px-2 text-[12px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+        active && "bg-secondary text-foreground",
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+      <span className="ml-auto text-[10px] text-muted-foreground">{count}</span>
+    </button>
+  );
+}
+
+function SummaryChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-panel-border bg-panel px-2.5 py-1.5">
+      <span className="text-muted-foreground">{icon}</span>
+      <div className="leading-none">
+        <div className="text-[13px] font-semibold">{value}</div>
+        <div className="mt-0.5 text-[9px] text-muted-foreground">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function TemplateIcon({ icon, className }: { icon: string; className?: string }) {
+  switch (icon) {
+    case "smartphone":
+      return <Smartphone className={className} />;
+    case "globe":
+      return <Globe2 className={className} />;
+    case "layout-dashboard":
+      return <LayoutDashboard className={className} />;
+    case "presentation":
+      return <Presentation className={className} />;
+    case "component":
+      return <Component className={className} />;
+    default:
+      return <Square className={className} />;
+  }
+}
+
+function FileCard({
+  file,
+  template,
+  onOpen,
+  onStar,
+  onRename,
+  onDuplicate,
+  onDelete,
+  onShare,
+}: {
+  file: FileMeta;
+  template?: TemplateMeta;
+  onOpen: () => void;
+  onStar: () => void;
+  onRename: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onShare: () => void;
+}) {
+  return (
+    <div className="group relative">
+      <button
+        onClick={onOpen}
+        className="block w-full overflow-hidden rounded-xl border border-panel-border bg-panel text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-muted-foreground/25 hover:shadow-xl"
+      >
+        <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
+          {file.thumbnail ? (
+            <img src={file.thumbnail} alt={file.name} className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]" />
+          ) : (
+            <TemplatePreview file={file} template={template} />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="absolute bottom-2 left-2 flex translate-y-2 items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] font-medium text-white opacity-0 backdrop-blur transition-all group-hover:translate-y-0 group-hover:opacity-100">
+            Open in editor <ArrowUpRight className="size-3" />
+          </div>
+          {file.role !== "owner" && (
+            <div className="absolute right-2 top-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-medium text-white backdrop-blur">
+              {file.role === "edit" ? "Can edit" : "View only"}
+            </div>
+          )}
+        </div>
+      </button>
+
+      <div className="mt-2.5 flex items-start gap-2 px-0.5">
+        <div className="min-w-0 flex-1">
+          <button onClick={onOpen} className="block w-full truncate text-left text-[13px] font-medium hover:underline">
+            {file.name}
+          </button>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span>{file.role === "owner" ? "You" : file.ownerName}</span>
+            <span>·</span>
+            <span>{formatRelative(file.updatedAt)}</span>
+            {file.template && file.template !== "blank" && (
+              <>
+                <span>·</span>
+                <span className="capitalize">{file.template}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onStar();
+          }}
+          className={cn(
+            "flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground",
+            file.starred && "text-amber-400 hover:text-amber-300",
+          )}
+          title={file.starred ? "Remove star" : "Add star"}
+        >
+          <Star className={cn("size-3.5", file.starred && "fill-current")} />
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 hover:bg-secondary hover:text-foreground group-hover:opacity-100 data-[state=open]:opacity-100">
+              <MoreHorizontal className="size-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onOpen}>Open</DropdownMenuItem>
+            <DropdownMenuItem onClick={onRename}>
+              <Pencil className="size-4" /> Rename
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDuplicate}>
+              <Copy className="size-4" /> Duplicate
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onShare}>
+              <Users className="size-4" /> Share
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onStar}>
+              <Star className="size-4" /> {file.starred ? "Remove star" : "Star"}
+            </DropdownMenuItem>
+            {file.role === "owner" && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive" onClick={onDelete}>
+                  <Trash2 className="size-4" /> Delete
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
+function TemplatePreview({ file, template }: { file: FileMeta; template?: TemplateMeta }) {
+  const accent = template?.accent ?? "#7c5cff";
+  return (
+    <div className="relative flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(140deg, ${accent}33, ${accent}0d 45%, transparent 75%)` }}>
+      <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,.16) 1px, transparent 1px)", backgroundSize: "18px 18px" }} />
+      <div className="relative flex w-[70%] max-w-[220px] flex-col gap-1.5 rounded-lg border border-white/10 bg-black/10 p-2.5 shadow-lg backdrop-blur-[1px]">
+        <div className="flex items-center gap-1">
+          <div className="size-1.5 rounded-full" style={{ background: accent }} />
+          <div className="h-1 w-10 rounded-full bg-white/30" />
+          <div className="ml-auto h-2 w-2 rounded-sm bg-white/20" />
+        </div>
+        <div className="mt-1 h-8 rounded" style={{ background: `linear-gradient(120deg, ${accent}, ${accent}66)` }} />
+        <div className="h-1 w-3/4 rounded bg-white/25" />
+        <div className="h-1 w-1/2 rounded bg-white/15" />
+        <div className="mt-1 flex gap-1">
+          <div className="h-3 flex-1 rounded-sm bg-white/10" />
+          <div className="h-3 w-6 rounded-sm" style={{ background: accent }} />
+        </div>
+      </div>
+      <div className="absolute bottom-1.5 left-2 flex items-center gap-1 text-[9px] font-medium" style={{ color: accent }}>
+        <TemplateIcon icon={template?.icon ?? "square"} className="size-2.5" />
+        {template?.name ?? "Design"}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ nav, search, onCreate, onClear }: { nav: Nav; search: string; onCreate: () => void; onClear: () => void }) {
+  if (search) {
+    return (
+      <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border py-20 text-center">
+        <Search className="size-7 text-muted-foreground/50" />
+        <div>
+          <p className="text-sm font-medium">No designs match “{search}”</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">Try a different name or clear the search.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onClear}>
+          Clear search
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border py-20 text-center">
+      <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9d7bff]/20 to-[#6d4aff]/5">
+        {nav === "starred" ? <Star className="size-6 text-primary" /> : nav === "shared" ? <Users className="size-6 text-primary" /> : <Sparkles className="size-6 text-primary" />}
+      </div>
+      <div>
+        <h3 className="text-sm font-semibold">
+          {nav === "starred" ? "No starred designs yet" : nav === "shared" ? "Nothing shared with you yet" : "Your canvas is waiting"}
+        </h3>
+        <p className="mx-auto mt-1 max-w-sm text-[12px] leading-relaxed text-muted-foreground">
+          {nav === "starred"
+            ? "Star the designs you want to keep close — they’ll show up here."
+            : nav === "shared"
+              ? "When a teammate invites you to a design, it will appear here."
+              : "Start from a template or a blank canvas and turn your idea into a clickable prototype."}
+        </p>
+      </div>
+      {nav !== "shared" && (
+        <Button onClick={onCreate}>
+          <Plus className="size-4" /> Create your first design
+        </Button>
+      )}
+    </div>
+  );
+}

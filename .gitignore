@@ -1,0 +1,23 @@
+# dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Go build output
+sigma-server
+*.exe
+
+# runtime data
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# env & editors
+.env
+.env.local
+.DS_Store
+.idea/
+.vscode/
+*.swp

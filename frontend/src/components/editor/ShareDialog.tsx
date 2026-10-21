@@ -1,0 +1,193 @@
+import React, { useEffect, useState } from "react";
+import { Check, Copy, Link2, Mail, Shield, Trash2, UserPlus, Users } from "lucide-react";
+import { toast } from "sonner";
+import { membersApi } from "@/lib/api";
+import type { Member } from "@/lib/types";
+import { useEditor } from "@/store/editor";
+import { useAuth } from "@/store/auth";
+import { copyText, initials, formatRelative } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const file = useEditor((s) => s.file);
+  const user = useAuth((s) => s.user);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [owner, setOwner] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("edit");
+  const [loading, setLoading] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!open || !file) return;
+    setLoading(true);
+    membersApi
+      .list(file.id)
+      .then((data) => {
+        setMembers(data.members);
+        setOwner(data.owner);
+      })
+      .catch((e) => toast.error(e.message))
+      .finally(() => setLoading(false));
+  }, [open, file?.id]);
+
+  if (!file) return null;
+  const isOwner = file.role === "owner";
+
+  const invite = async () => {
+    if (!email.trim()) return;
+    setInviting(true);
+    try {
+      const data = await membersApi.add(file.id, email.trim(), role);
+      setMembers(data.members);
+      setEmail("");
+      toast.success("Collaborator added");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const remove = async (member: Member) => {
+    try {
+      const data = await membersApi.remove(file.id, member.userId);
+      setMembers(data.members);
+      toast.success("Removed collaborator");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const copyLink = async () => {
+    await copyText(window.location.href);
+    setCopied(true);
+    toast.success("Link copied");
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="size-4 text-primary" /> Share “{file.name}”
+          </DialogTitle>
+          <DialogDescription>
+            Invite teammates to edit or review this design. Collaborators need a Sigma account.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isOwner && (
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Mail className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") invite();
+                  e.stopPropagation();
+                }}
+                placeholder="teammate@company.com"
+                className="pl-8"
+                type="email"
+              />
+            </div>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="edit">Can edit</SelectItem>
+                <SelectItem value="view">Can view</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={invite} disabled={inviting || !email.includes("@")}>
+              <UserPlus className="size-4" /> Invite
+            </Button>
+          </div>
+        )}
+
+        <div className="rounded-lg border border-border">
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <Shield className="size-3.5" /> People with access
+          </div>
+          <div className="max-h-64 overflow-y-auto p-1.5">
+            <div className="flex items-center gap-2.5 rounded-md px-2 py-2">
+              <Avatar className="size-8">
+                <AvatarFallback className="text-[10px] font-semibold text-white" style={{ background: user?.color }}>
+                  {initials(owner || file.ownerName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px]">
+                  {owner || file.ownerName} {user?.name === (owner || file.ownerName) && <span className="text-muted-foreground">(you)</span>}
+                </div>
+                <div className="text-[10px] text-muted-foreground">Owner</div>
+              </div>
+              <Badge variant="secondary">Owner</Badge>
+            </div>
+            {loading && <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">Loading collaborators…</div>}
+            {!loading && members.length === 0 && (
+              <div className="px-3 py-5 text-center text-[11px] text-muted-foreground">
+                No collaborators yet. Invite someone by email.
+              </div>
+            )}
+            {members.map((m) => (
+              <div key={m.userId} className="group flex items-center gap-2.5 rounded-md px-2 py-2 hover:bg-secondary/50">
+                <Avatar className="size-8">
+                  <AvatarFallback className="text-[10px] font-semibold text-white" style={{ background: m.color }}>
+                    {initials(m.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 truncate text-[13px]">
+                    {m.name}
+                    {m.userId === user?.id && <span className="text-[10px] text-muted-foreground">(you)</span>}
+                  </div>
+                  <div className="truncate text-[10px] text-muted-foreground">{m.email}</div>
+                </div>
+                <Badge variant="outline">{m.role === "edit" ? "Can edit" : "Can view"}</Badge>
+                {isOwner && (
+                  <button
+                    onClick={() => remove(m)}
+                    className="rounded p-1 text-muted-foreground opacity-0 hover:bg-secondary hover:text-destructive group-hover:opacity-100"
+                    title="Remove access"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
+          <Link2 className="ml-1 size-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">{window.location.href}</span>
+          <Button variant="outline" size="sm" onClick={copyLink}>
+            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+            {copied ? "Copied" : "Copy link"}
+          </Button>
+        </div>
+        <p className="text-[10px] leading-relaxed text-muted-foreground">
+          Tip: for a quick review, invite the demo account <span className="text-foreground">demo@sigma.design</span>. Only
+          people with access can open this file.
+        </p>
+      </DialogContent>
+    </Dialog>
+  );
+}

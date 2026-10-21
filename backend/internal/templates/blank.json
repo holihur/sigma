@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "id": "blank",
+    "name": "Blank canvas",
+    "description": "Start from scratch with an empty 1440 × 900 page.",
+    "accent": "#7c5cff",
+    "icon": "square"
+  },
+  "doc": {
+    "pages": [
+      {
+        "id": "page-blank",
+        "name": "Page 1",
+        "nodes": {},
+        "rootIds": [],
+        "ts": 0
+      }
+    ],
+    "tombstones": {}
+  }
+}
