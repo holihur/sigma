@@ -42,7 +42,7 @@ function node(type, props, children = []) {
     clip: props.clip ?? false,
     text: props.text ?? "",
     fontSize: props.fontSize ?? 16,
-    fontFamily: "Inter Variable",
+    fontFamily: props.fontFamily ?? "Inter Variable",
     fontWeight: props.fontWeight ?? 400,
     lineHeight: props.lineHeight ?? 1.4,
     letterSpacing: props.letterSpacing ?? 0,
@@ -51,6 +51,10 @@ function node(type, props, children = []) {
     src: props.src ?? "",
     objectFit: "cover",
     link: props.link ?? null,
+    points: [],
+    closed: false,
+    component: props.component ?? false,
+    componentId: props.componentId ?? null,
     ts: ++tick,
   };
   n.children = children.map((c) => c.id);
@@ -60,7 +64,7 @@ function node(type, props, children = []) {
 }
 
 const text = (id, name, content, x, y, width, height, opts = {}) =>
-  node("text", { id, name, text: content, x, y, width, height, fill: solid(opts.color ?? "#111827"), fontSize: opts.size ?? 16, fontWeight: opts.weight ?? 400, lineHeight: opts.lineHeight ?? 1.4, letterSpacing: opts.letterSpacing ?? 0, textAlign: opts.align ?? "left", verticalAlign: opts.valign ?? "top", opacity: opts.opacity ?? 1, link: opts.link });
+  node("text", { id, name, text: content, x, y, width, height, fill: solid(opts.color ?? "#111827"), fontSize: opts.size ?? 16, fontWeight: opts.weight ?? 400, lineHeight: opts.lineHeight ?? 1.4, letterSpacing: opts.letterSpacing ?? 0, textAlign: opts.align ?? "left", verticalAlign: opts.valign ?? "top", opacity: opts.opacity ?? 1, link: opts.link, fontFamily: opts.family });
 
 const rect = (id, name, x, y, width, height, opts = {}) =>
   node("rect", { id, name, x, y, width, height, fill: opts.fill ?? solid("#ffffff"), stroke: opts.stroke, strokeWidth: opts.strokeWidth ?? 1, radius: opts.radius ?? 0, shadow: opts.shadow, opacity: opts.opacity ?? 1, blur: opts.blur ?? 0, link: opts.link });
@@ -514,6 +518,249 @@ const dashboardDoc = {
   tombstones: {},
 };
 
+
+/* ------------------------------------------------------------------ */
+/*  Common design-system foundations board                            */
+/* ------------------------------------------------------------------ */
+
+function foundations(prefix, title, subtitle, colors, opts) {
+  const swatches = colors.map(([name, color], i) => [
+    rect(`${prefix}_sw_${i}`, name, 48 + i * 136, 180, 120, 78, { radius: 14, fill: solid(color), stroke: solid("#000000", 0.06) }),
+    text(`${prefix}_sw_l_${i}`, name, name, 48 + i * 136, 266, 120, 16, { size: 9, weight: 500, color: opts.muted }),
+  ]).flat();
+  return frame(`${prefix}_found`, `${title} foundations`, 0, 0, 900, 640, { fill: solid(opts.bg), radius: 0 }, [
+    text(`${prefix}_fd_title`, "Title", `${title} foundations`, 48, 44, 600, 38, { size: 30, weight: 700, color: opts.text, family: opts.family, letterSpacing: -0.6 }),
+    text(`${prefix}_fd_sub`, "Subtitle", subtitle, 48, 88, 700, 22, { size: 13, color: opts.muted, family: opts.family }),
+    text(`${prefix}_fd_color`, "Colors", "Color tokens", 48, 142, 220, 20, { size: 10, weight: 700, color: opts.muted, letterSpacing: 0.8, family: opts.family }),
+    ...swatches,
+    text(`${prefix}_fd_type`, "Type", "Type scale", 48, 316, 220, 20, { size: 10, weight: 700, color: opts.muted, letterSpacing: 0.8, family: opts.family }),
+    text(`${prefix}_fd_display`, "Display", "Design with confidence", 48, 344, 560, 54, { size: 34, weight: 700, color: opts.text, lineHeight: 1.1, letterSpacing: -0.8, family: opts.family }),
+    text(`${prefix}_fd_body`, "Body", "A shared language keeps teams fast, consistent and accessible across every surface.", 48, 410, 600, 44, { size: 13, color: opts.muted, lineHeight: 1.6, family: opts.family }),
+    text(`${prefix}_fd_comp`, "Components", "Components", 48, 486, 220, 20, { size: 10, weight: 700, color: opts.muted, letterSpacing: 0.8, family: opts.family }),
+    rect(`${prefix}_fd_btn1`, "Primary button", 48, 516, 168, 46, { radius: opts.radius, fill: solid(opts.primary) }),
+    text(`${prefix}_fd_btn1_t`, "Label", "Primary", 48, 516, 168, 46, { size: 12, weight: 600, color: opts.onPrimary, align: "center", valign: "middle", family: opts.family }),
+    rect(`${prefix}_fd_btn2`, "Secondary button", 232, 516, 168, 46, { radius: opts.radius, fill: solid(opts.surface), stroke: solid(opts.border), strokeWidth: 1 }),
+    text(`${prefix}_fd_btn2_t`, "Label", "Secondary", 232, 516, 168, 46, { size: 12, weight: 600, color: opts.text, align: "center", valign: "middle", family: opts.family }),
+    rect(`${prefix}_fd_chip`, "Chip", 48, 582, 96, 30, { radius: 999, fill: solid(opts.chip) }),
+    text(`${prefix}_fd_chip_t`, "Chip", "Filter chip", 48, 582, 96, 30, { size: 10, weight: 600, color: opts.primary, align: "center", valign: "middle", family: opts.family }),
+    rect(`${prefix}_fd_card`, "Card", 676, 316, 176, 296, { radius: opts.radius, fill: solid(opts.surface), stroke: solid(opts.border), strokeWidth: 1, shadow: shadow(0, 12, 30, -18, "rgba(0,0,0,.22)") }),
+    rect(`${prefix}_fd_card_media`, "Card media", 692, 332, 144, 132, { radius: Math.max(8, opts.radius - 4), fill: solid(opts.primary, 0.9) }),
+    text(`${prefix}_fd_card_title`, "Card title", "Reusable card", 692, 482, 144, 18, { size: 12, weight: 600, color: opts.text, family: opts.family }),
+    text(`${prefix}_fd_card_body`, "Card body", "Tokens and components stay in sync.", 692, 504, 144, 34, { size: 9, color: opts.muted, lineHeight: 1.5, family: opts.family }),
+    rect(`${prefix}_fd_card_btn`, "Card action", 692, 556, 144, 30, { radius: Math.max(6, opts.radius - 4), fill: solid(opts.primary, 0.12) }),
+    text(`${prefix}_fd_card_btn_t`, "Action", "View details", 692, 556, 144, 30, { size: 9, weight: 600, color: opts.primary, align: "center", valign: "middle", family: opts.family }),
+  ]);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Material Design 3                                                  */
+/* ------------------------------------------------------------------ */
+
+const materialHome = frame("mat_home", "Material 3 · Home", 0, 0, 390, 844, { fill: solid("#FFFBFE") }, [
+  ...statusBar("mat", false),
+  text("mat_brand", "App title", "Material 3", 28, 58, 220, 28, { size: 22, weight: 500, color: "#1D1B20", family: "Roboto" }),
+  ellipse("mat_avatar", "Avatar", 326, 56, 36, 36, { fill: solid("#EADDFF") }),
+  text("mat_avatar_t", "Avatar", "M", 326, 56, 36, 36, { size: 14, weight: 600, color: "#6750A4", align: "center", valign: "middle", family: "Roboto" }),
+  text("mat_hello", "Greeting", "Hello, Maya", 28, 118, 300, 44, { size: 32, weight: 400, color: "#1D1B20", family: "Roboto", letterSpacing: -0.4 }),
+  text("mat_sub", "Subtitle", "What would you like to create today?", 28, 166, 330, 22, { size: 14, color: "#49454F", family: "Roboto" }),
+  rect("mat_search", "Search bar", 28, 210, 334, 56, { radius: 28, fill: solid("#F3EDF7") }),
+  text("mat_search_icon", "Search", "⌕", 48, 210, 28, 56, { size: 22, color: "#49454F", valign: "middle", family: "Roboto" }),
+  text("mat_search_t", "Search", "Search your workspace", 84, 210, 240, 56, { size: 14, color: "#79747E", valign: "middle", family: "Roboto" }),
+  text("mat_quick", "Section", "Quick actions", 28, 294, 220, 24, { size: 16, weight: 500, color: "#1D1B20", family: "Roboto" }),
+  ...["Create", "Templates", "Team", "Recent"].map((label, i) => {
+    const x = 28 + (i % 2) * 171;
+    const y = 330 + Math.floor(i / 2) * 132;
+    const bg = ["#EADDFF", "#D0BCFF", "#FFD8E4", "#E8DEF8"][i];
+    const fg = ["#21005D", "#21005D", "#31111D", "#1D192B"][i];
+    return [
+      rect(`mat_q_${i}`, `${label} card`, x, y, 163, 120, { radius: 16, fill: solid(bg) }),
+      text(`mat_q_glyph_${i}`, "Icon", ["✦", "▦", "◎", "↺"][i], x + 16, y + 16, 32, 32, { size: 22, weight: 600, color: fg, family: "Roboto" }),
+      text(`mat_q_t_${i}`, "Label", label, x + 16, y + 82, 130, 22, { size: 13, weight: 500, color: fg, family: "Roboto" }),
+    ];
+  }).flat(),
+  rect("mat_fab", "Floating action button", 306, 700, 56, 56, { radius: 16, fill: solid("#6750A4"), shadow: shadow(0, 10, 24, -8, "rgba(103,80,164,.55)") }),
+  text("mat_fab_t", "Add", "+", 306, 700, 56, 56, { size: 26, weight: 400, color: "#FFFFFF", align: "center", valign: "middle", family: "Roboto" }),
+  rect("mat_nav", "Navigation bar", 28, 774, 334, 54, { radius: 27, fill: solid("#F3EDF7") }),
+  rect("mat_nav_active", "Active indicator", 48, 782, 74, 38, { radius: 19, fill: solid("#E8DEF8") }),
+  ...["⌂", "⌕", "◎"].map((g, i) => text(`mat_nav_${i}`, "Nav icon", g, 64 + i * 108, 774, 42, 54, { size: 18, color: i === 0 ? "#1D192B" : "#49454F", align: "center", valign: "middle", family: "Roboto" })),
+]);
+
+const materialFound = foundations("mat", "Material 3", "Material You tokens, Roboto type scale and expressive components.", [
+  ["Primary", "#6750A4"], ["Primary container", "#EADDFF"], ["Secondary", "#625B71"], ["Tertiary", "#7D5260"], ["Surface", "#FFFBFE"], ["Error", "#B3261E"],
+], { bg: "#FFFBFE", surface: "#FFFFFF", text: "#1D1B20", muted: "#49454F", primary: "#6750A4", onPrimary: "#FFFFFF", border: "#CAC4D0", chip: "#E8DEF8", radius: 16, family: "Roboto" });
+
+const materialDoc = {
+  pages: [page("mat_page", "Home", [materialHome]), page("mat_found_page", "Foundations", [materialFound])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
+/*  Apple Human Interface Guidelines                                   */
+/* ------------------------------------------------------------------ */
+
+const iosHome = frame("ios_home", "iOS · Settings", 0, 0, 390, 844, { fill: solid("#F2F2F7") }, [
+  ...statusBar("ios", false),
+  text("ios_title", "Title", "Settings", 28, 54, 334, 28, { size: 17, weight: 600, color: "#000000", align: "center", family: "SF Pro Display" }),
+  text("ios_large", "Large title", "Settings", 24, 106, 300, 48, { size: 34, weight: 700, color: "#000000", family: "SF Pro Display", letterSpacing: -0.6 }),
+  rect("ios_profile", "Profile card", 20, 174, 350, 82, { radius: 14, fill: solid("#FFFFFF") }),
+  ellipse("ios_avatar", "Avatar", 36, 190, 50, 50, { fill: solid("#007AFF") }),
+  text("ios_avatar_t", "Avatar", "M", 36, 190, 50, 50, { size: 20, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "SF Pro Display" }),
+  text("ios_name", "Name", "Maya Chen", 100, 194, 200, 22, { size: 17, weight: 600, color: "#000000", family: "SF Pro Display" }),
+  text("ios_email", "Email", "maya@northwind.dev", 100, 218, 220, 18, { size: 13, color: "#8E8E93", family: "SF Pro Display" }),
+  text("ios_chev", "Chevron", "›", 338, 190, 20, 50, { size: 26, color: "#C7C7CC", valign: "middle", family: "SF Pro Display" }),
+  rect("ios_group1", "Preferences group", 20, 272, 350, 214, { radius: 14, fill: solid("#FFFFFF") }),
+  ...[
+    ["Wi-Fi", "Northwind 5G", "◉"],
+    ["Bluetooth", "On", "◆"],
+    ["Notifications", "Banners, sounds", "◒"],
+    ["Focus", "Work", "☾"],
+  ].map(([label, value, glyph], i) => [
+    ...(i > 0 ? [rect(`ios_sep_${i}`, "Separator", 60, 272 + i * 53, 294, 1, { fill: solid("#E5E5EA") })] : []),
+    rect(`ios_icon_${i}`, "Icon", 36, 286 + i * 53, 30, 30, { radius: 8, fill: solid(["#007AFF", "#007AFF", "#FF3B30", "#5856D6"][i]) }),
+    text(`ios_glyph_${i}`, "Glyph", glyph, 36, 286 + i * 53, 30, 30, { size: 14, color: "#FFFFFF", align: "center", valign: "middle", family: "SF Pro Display" }),
+    text(`ios_label_${i}`, "Label", label, 78, 286 + i * 53, 160, 30, { size: 16, color: "#000000", valign: "middle", family: "SF Pro Display" }),
+    text(`ios_value_${i}`, "Value", value, 210, 286 + i * 53, 110, 30, { size: 14, color: "#8E8E93", align: "right", valign: "middle", family: "SF Pro Display" }),
+    text(`ios_chev_${i}`, "Chevron", "›", 334, 286 + i * 53, 18, 30, { size: 22, color: "#C7C7CC", valign: "middle", family: "SF Pro Display" }),
+  ]).flat(),
+  rect("ios_group2", "Privacy group", 20, 502, 350, 156, { radius: 14, fill: solid("#FFFFFF") }),
+  text("ios_privacy", "Section label", "Privacy & Security", 36, 516, 250, 18, { size: 12, weight: 600, color: "#8E8E93", family: "SF Pro Display" }),
+  rect("ios_toggle_track", "Toggle", 300, 548, 50, 30, { radius: 15, fill: solid("#34C759") }),
+  ellipse("ios_toggle_knob", "Toggle knob", 322, 550, 26, 26, { fill: solid("#FFFFFF"), shadow: shadow(0, 1, 3, 0, "rgba(0,0,0,.2)") }),
+  text("ios_toggle_label", "Label", "Face ID for purchases", 36, 548, 240, 30, { size: 16, color: "#000000", valign: "middle", family: "SF Pro Display" }),
+  rect("ios_sep2", "Separator", 60, 594, 294, 1, { fill: solid("#E5E5EA") }),
+  text("ios_privacy2", "Label", "App privacy report", 36, 612, 240, 30, { size: 16, color: "#000000", valign: "middle", family: "SF Pro Display" }),
+  text("ios_chev2", "Chevron", "›", 334, 612, 18, 30, { size: 22, color: "#C7C7CC", valign: "middle", family: "SF Pro Display" }),
+  rect("ios_btn", "Primary button", 20, 690, 350, 50, { radius: 12, fill: solid("#007AFF") }),
+  text("ios_btn_t", "Label", "Save changes", 20, 690, 350, 50, { size: 17, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "SF Pro Display" }),
+  rect("ios_tabbar", "Tab bar", 0, 770, 390, 74, { fill: solid("#FFFFFF"), stroke: solid("#E5E5EA") }),
+  ...["⌂", "⌕", "＋", "♡", "◎"].map((g, i) => text(`ios_tab_${i}`, "Tab", g, 20 + i * 72, 780, 40, 44, { size: 20, color: i === 0 ? "#007AFF" : "#8E8E93", align: "center", valign: "middle", family: "SF Pro Display" })),
+]);
+
+const iosFound = foundations("ios", "Apple HIG", "Human Interface Guidelines colors, SF Pro type and grouped controls.", [
+  ["Blue", "#007AFF"], ["Green", "#34C759"], ["Red", "#FF3B30"], ["Orange", "#FF9500"], ["Grouped bg", "#F2F2F7"], ["Label", "#000000"],
+], { bg: "#F2F2F7", surface: "#FFFFFF", text: "#000000", muted: "#8E8E93", primary: "#007AFF", onPrimary: "#FFFFFF", border: "#D1D1D6", chip: "#E5F1FF", radius: 12, family: "SF Pro Display" });
+
+const iosDoc = {
+  pages: [page("ios_page", "Settings", [iosHome]), page("ios_found_page", "Foundations", [iosFound])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
+/*  Fluent 2                                                           */
+/* ------------------------------------------------------------------ */
+
+const fluentHome = frame("flu_home", "Fluent 2 · Dashboard", 0, 0, 1440, 900, { fill: solid("#F5F5F5") }, [
+  rect("flu_header", "Command bar", 0, 0, 1440, 56, { fill: solid("#FFFFFF"), stroke: solid("#E0E0E0") }),
+  rect("flu_logo", "Logo", 24, 18, 20, 20, { radius: 4, fill: solid("#0F6CBD") }),
+  text("flu_brand", "Brand", "Fluent 2", 56, 16, 160, 24, { size: 15, weight: 600, color: "#242424", family: "Segoe UI" }),
+  rect("flu_search", "Search", 360, 12, 360, 32, { radius: 4, fill: solid("#FFFFFF"), stroke: solid("#D1D1D1") }),
+  text("flu_search_t", "Search", "Search", 376, 12, 320, 32, { size: 12, color: "#616161", valign: "middle", family: "Segoe UI" }),
+  ellipse("flu_avatar", "Avatar", 1388, 14, 28, 28, { fill: solid("#0F6CBD") }),
+  text("flu_avatar_t", "Avatar", "M", 1388, 14, 28, 28, { size: 11, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "Segoe UI" }),
+  rect("flu_sidebar", "Navigation", 0, 56, 240, 844, { fill: solid("#FFFFFF"), stroke: solid("#E0E0E0") }),
+  ...[["⌂", "Home"], ["▦", "Workspaces"], ["◫", "Projects"], ["◎", "People"], ["⚙", "Settings"]].map(([g, label], i) => [
+    ...(i === 1 ? [rect(`flu_nav_active_${i}`, "Active nav", 8, 80 + i * 44, 224, 36, { radius: 4, fill: solid("#EBF3FC") })] : []),
+    text(`flu_nav_icon_${i}`, "Icon", g, 20, 80 + i * 44, 24, 36, { size: 15, color: i === 1 ? "#0F6CBD" : "#616161", valign: "middle", family: "Segoe UI" }),
+    text(`flu_nav_label_${i}`, "Label", label, 52, 80 + i * 44, 150, 36, { size: 13, weight: i === 1 ? 600 : 400, color: i === 1 ? "#0F6CBD" : "#242424", valign: "middle", family: "Segoe UI" }),
+  ]).flat(),
+  text("flu_title", "Title", "Workspace overview", 280, 96, 480, 38, { size: 28, weight: 600, color: "#242424", family: "Segoe UI" }),
+  text("flu_sub", "Subtitle", "Track projects, people and recent activity in one place.", 280, 138, 600, 22, { size: 13, color: "#616161", family: "Segoe UI" }),
+  rect("flu_primary", "Primary button", 1210, 100, 150, 34, { radius: 4, fill: solid("#0F6CBD") }),
+  text("flu_primary_t", "Label", "New project", 1210, 100, 150, 34, { size: 12, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "Segoe UI" }),
+  ...[["Active projects", "24", "+3 this week"], ["Team members", "128", "+12 this month"], ["Tasks completed", "1,284", "82% on time"]].map(([label, value, meta], i) => [
+    rect(`flu_card_${i}`, "Metric card", 280 + i * 366, 188, 340, 126, { radius: 8, fill: solid("#FFFFFF"), stroke: solid("#E0E0E0"), shadow: shadow(0, 2, 8, -4, "rgba(0,0,0,.12)") }),
+    text(`flu_card_l_${i}`, "Label", label, 300 + i * 366, 206, 260, 18, { size: 12, color: "#616161", family: "Segoe UI" }),
+    text(`flu_card_v_${i}`, "Value", value, 300 + i * 366, 232, 260, 38, { size: 30, weight: 600, color: "#242424", family: "Segoe UI" }),
+    text(`flu_card_m_${i}`, "Meta", meta, 300 + i * 366, 278, 260, 18, { size: 11, color: "#0F6CBD", family: "Segoe UI" }),
+  ]).flat(),
+  rect("flu_table", "Recent projects", 280, 344, 1106, 420, { radius: 8, fill: solid("#FFFFFF"), stroke: solid("#E0E0E0") }),
+  text("flu_table_t", "Title", "Recent projects", 300, 362, 300, 22, { size: 15, weight: 600, color: "#242424", family: "Segoe UI" }),
+  text("flu_table_view", "Link", "View all", 1300, 364, 60, 18, { size: 11, color: "#0F6CBD", align: "right", family: "Segoe UI" }),
+  rect("flu_table_head", "Table header", 280, 402, 1106, 38, { fill: solid("#FAFAFA"), stroke: solid("#E0E0E0") }),
+  ...["Project", "Owner", "Status", "Updated", "Progress"].map((h, i) => text(`flu_th_${i}`, "Header", h, 300 + [0, 400, 610, 820, 980][i], 410, 140, 20, { size: 11, weight: 600, color: "#616161", family: "Segoe UI" })),
+  ...[
+    ["Aurora design system", "Maya Chen", "On track", "2h ago", 82],
+    ["Mobile checkout", "Noah Patel", "At risk", "5h ago", 46],
+    ["Billing migration", "Lena Park", "On track", "Yesterday", 64],
+    ["Search revamp", "Owen Diaz", "Review", "2d ago", 92],
+    ["Admin console", "Iris Kim", "On track", "3d ago", 71],
+  ].map(([name, owner, status, updated, progress], i) => [
+    ...(i > 0 ? [rect(`flu_row_sep_${i}`, "Separator", 300, 440 + i * 64, 1066, 1, { fill: solid("#F0F0F0") })] : []),
+    text(`flu_row_name_${i}`, "Project", name, 300, 450 + i * 64, 360, 40, { size: 12, weight: 600, color: "#242424", valign: "middle", family: "Segoe UI" }),
+    text(`flu_row_owner_${i}`, "Owner", owner, 700, 450 + i * 64, 180, 40, { size: 11, color: "#616161", valign: "middle", family: "Segoe UI" }),
+    rect(`flu_row_badge_${i}`, "Status", 910, 460 + i * 64, 76, 20, { radius: 10, fill: solid(status === "At risk" ? "#FDE7E9" : "#E7F6EC") }),
+    text(`flu_row_status_${i}`, "Status", status, 910, 460 + i * 64, 76, 20, { size: 9, weight: 600, color: status === "At risk" ? "#C50F1F" : "#0E700E", align: "center", valign: "middle", family: "Segoe UI" }),
+    text(`flu_row_date_${i}`, "Updated", updated, 1120, 450 + i * 64, 100, 40, { size: 11, color: "#616161", valign: "middle", family: "Segoe UI" }),
+    rect(`flu_row_track_${i}`, "Track", 1240, 468 + i * 64, 110, 5, { radius: 3, fill: solid("#E0E0E0") }),
+    rect(`flu_row_bar_${i}`, "Progress", 1240, 468 + i * 64, (110 * progress) / 100, 5, { radius: 3, fill: solid(progress < 50 ? "#D13438" : "#0F6CBD") }),
+  ]).flat(),
+]);
+
+const fluentFound = foundations("flu", "Fluent 2", "Microsoft Fluent tokens, Segoe UI type and depth-aware components.", [
+  ["Brand", "#0F6CBD"], ["Brand hover", "#115EA3"], ["Neutral bg", "#F5F5F5"], ["Surface", "#FFFFFF"], ["Stroke", "#D1D1D1"], ["Text", "#242424"],
+], { bg: "#F5F5F5", surface: "#FFFFFF", text: "#242424", muted: "#616161", primary: "#0F6CBD", onPrimary: "#FFFFFF", border: "#D1D1D1", chip: "#EBF3FC", radius: 8, family: "Segoe UI" });
+
+const fluentDoc = {
+  pages: [page("flu_page", "Dashboard", [fluentHome]), page("flu_found_page", "Foundations", [fluentFound])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
+/*  IBM Carbon                                                         */
+/* ------------------------------------------------------------------ */
+
+const carbonHome = frame("car_home", "Carbon · Data platform", 0, 0, 1440, 900, { fill: solid("#F4F4F4") }, [
+  rect("car_header", "UI shell header", 0, 0, 1440, 48, { fill: solid("#161616") }),
+  text("car_brand", "Brand", "IBM Carbon", 16, 0, 200, 48, { size: 14, weight: 600, color: "#FFFFFF", valign: "middle", family: "IBM Plex Sans" }),
+  ...["Catalog", "Docs", "Support"].map((label, i) => text(`car_topnav_${i}`, "Header nav", label, 1060 + i * 110, 0, 100, 48, { size: 12, color: "#C6C6C6", valign: "middle", family: "IBM Plex Sans" })),
+  rect("car_side", "Side navigation", 0, 48, 256, 852, { fill: solid("#262626") }),
+  text("car_side_title", "Section", "Platform", 16, 72, 200, 20, { size: 10, weight: 600, color: "#8D8D8D", letterSpacing: 0.8, family: "IBM Plex Sans" }),
+  ...[["◧", "Overview"], ["▤", "Datasets"], ["◫", "Pipelines"], ["◉", "Models"], ["⚙", "Settings"]].map(([g, label], i) => [
+    ...(i === 0 ? [rect(`car_nav_active_${i}`, "Active", 0, 96 + i * 44, 256, 36, { fill: solid("#353535") }), rect(`car_nav_accent_${i}`, "Accent", 0, 96 + i * 44, 3, 36, { fill: solid("#0F62FE") })] : []),
+    text(`car_nav_icon_${i}`, "Icon", g, 20, 96 + i * 44, 22, 36, { size: 13, color: i === 0 ? "#FFFFFF" : "#C6C6C6", valign: "middle", family: "IBM Plex Sans" }),
+    text(`car_nav_label_${i}`, "Label", label, 52, 96 + i * 44, 180, 36, { size: 12, color: i === 0 ? "#FFFFFF" : "#C6C6C6", valign: "middle", family: "IBM Plex Sans" }),
+  ]).flat(),
+  text("car_title", "Page title", "Data platform", 288, 80, 500, 40, { size: 28, weight: 400, color: "#161616", family: "IBM Plex Sans" }),
+  text("car_sub", "Subtitle", "Monitor pipeline health and model performance across the workspace.", 288, 124, 700, 22, { size: 13, color: "#525252", family: "IBM Plex Sans" }),
+  rect("car_primary", "Primary button", 1216, 86, 176, 40, { radius: 0, fill: solid("#0F62FE") }),
+  text("car_primary_t", "Label", "Create pipeline", 1216, 86, 176, 40, { size: 12, weight: 500, color: "#FFFFFF", align: "center", valign: "middle", family: "IBM Plex Sans" }),
+  ...[["Pipelines", "48", "6 running"], ["Rows processed", "2.4M", "+18% today"], ["Model accuracy", "94.2%", "+1.2 pts"], ["Incidents", "2", "1 critical"]].map(([label, value, meta], i) => [
+    rect(`car_tile_${i}`, "Tile", 288 + i * 280, 176, 264, 128, { radius: 0, fill: solid(i === 3 ? "#FFF1F1" : "#FFFFFF"), stroke: solid(i === 3 ? "#FFB3B8" : "#E0E0E0") }),
+    text(`car_tile_l_${i}`, "Label", label, 304 + i * 280, 192, 220, 18, { size: 11, color: "#525252", family: "IBM Plex Sans" }),
+    text(`car_tile_v_${i}`, "Value", value, 304 + i * 280, 216, 220, 40, { size: 30, weight: 400, color: i === 3 ? "#DA1E28" : "#161616", family: "IBM Plex Sans" }),
+    text(`car_tile_m_${i}`, "Meta", meta, 304 + i * 280, 270, 220, 18, { size: 10, color: i === 3 ? "#DA1E28" : "#24A148", family: "IBM Plex Sans" }),
+  ]).flat(),
+  rect("car_table", "Data table", 288, 336, 1104, 436, { radius: 0, fill: solid("#FFFFFF"), stroke: solid("#E0E0E0") }),
+  text("car_table_t", "Title", "Pipeline runs", 304, 354, 300, 22, { size: 15, weight: 600, color: "#161616", family: "IBM Plex Sans" }),
+  text("car_table_filter", "Filter", "Filter ⌄", 1300, 356, 70, 18, { size: 10, color: "#0F62FE", align: "right", family: "IBM Plex Sans" }),
+  rect("car_head", "Table header", 288, 392, 1104, 40, { fill: solid("#F4F4F4") }),
+  ...["Pipeline", "Status", "Duration", "Rows", "Updated"].map((h, i) => text(`car_th_${i}`, "Header", h, 304 + [0, 380, 590, 780, 960][i], 402, 160, 20, { size: 10, weight: 600, color: "#525252", family: "IBM Plex Sans" })),
+  ...[
+    ["orders-ingest", "Succeeded", "2m 14s", "842k", "2m ago"],
+    ["customer-sync", "Running", "—", "1.2M", "Now"],
+    ["risk-scoring", "Failed", "0m 42s", "0", "12m ago"],
+    ["churn-features", "Succeeded", "4m 08s", "640k", "1h ago"],
+    ["model-eval", "Succeeded", "1m 32s", "128k", "3h ago"],
+  ].map(([name, status, duration, rows, updated], i) => [
+    ...(i > 0 ? [rect(`car_sep_${i}`, "Separator", 304, 440 + i * 64, 1072, 1, { fill: solid("#E0E0E0") })] : []),
+    text(`car_name_${i}`, "Pipeline", name, 304, 452 + i * 64, 340, 40, { size: 12, weight: 500, color: "#161616", valign: "middle", family: "IBM Plex Sans" }),
+    rect(`car_dot_${i}`, "Status dot", 684, 467 + i * 64, 8, 8, { radius: 4, fill: solid(status === "Failed" ? "#DA1E28" : status === "Running" ? "#0F62FE" : "#24A148") }),
+    text(`car_status_${i}`, "Status", status, 700, 452 + i * 64, 130, 40, { size: 11, color: "#161616", valign: "middle", family: "IBM Plex Sans" }),
+    text(`car_dur_${i}`, "Duration", duration, 880, 452 + i * 64, 100, 40, { size: 11, color: "#525252", valign: "middle", family: "IBM Plex Sans" }),
+    text(`car_rows_${i}`, "Rows", rows, 1064, 452 + i * 64, 100, 40, { size: 11, color: "#525252", valign: "middle", family: "IBM Plex Sans" }),
+    text(`car_upd_${i}`, "Updated", updated, 1220, 452 + i * 64, 120, 40, { size: 11, color: "#525252", valign: "middle", family: "IBM Plex Sans" }),
+  ]).flat(),
+]);
+
+const carbonFound = foundations("car", "IBM Carbon", "Carbon color tokens, IBM Plex Sans type and productive components.", [
+  ["Blue 60", "#0F62FE"], ["Gray 10", "#F4F4F4"], ["Gray 90", "#262626"], ["Red 60", "#DA1E28"], ["Green 50", "#24A148"], ["Yellow 30", "#F1C21B"],
+], { bg: "#F4F4F4", surface: "#FFFFFF", text: "#161616", muted: "#525252", primary: "#0F62FE", onPrimary: "#FFFFFF", border: "#E0E0E0", chip: "#E8F0FF", radius: 0, family: "IBM Plex Sans" });
+
+const carbonDoc = {
+  pages: [page("car_page", "Data platform", [carbonHome]), page("car_found_page", "Foundations", [carbonFound])],
+  tombstones: {},
+};
+
 /* ------------------------------------------------------------------ */
 
 const outDir = path.resolve(process.cwd(), "../backend/internal/templates");
@@ -549,6 +796,46 @@ const templates = [
       icon: "layout-dashboard",
     },
     doc: dashboardDoc,
+  },
+  {
+    meta: {
+      id: "material",
+      name: "Material Design 3",
+      description: "Material You color roles, Roboto type scale, expressive cards, FAB and navigation bar.",
+      accent: "#6750A4",
+      icon: "smartphone",
+    },
+    doc: materialDoc,
+  },
+  {
+    meta: {
+      id: "ios",
+      name: "Apple HIG",
+      description: "iOS grouped settings, SF Pro typography, switches, tab bar and Human Interface colors.",
+      accent: "#007AFF",
+      icon: "smartphone",
+    },
+    doc: iosDoc,
+  },
+  {
+    meta: {
+      id: "fluent",
+      name: "Microsoft Fluent 2",
+      description: "Fluent command bar, navigation, metric cards and a data table with Segoe UI styling.",
+      accent: "#0F6CBD",
+      icon: "layout-dashboard",
+    },
+    doc: fluentDoc,
+  },
+  {
+    meta: {
+      id: "carbon",
+      name: "IBM Carbon",
+      description: "Carbon UI shell, side navigation, data table and productive IBM Plex Sans components.",
+      accent: "#0F62FE",
+      icon: "layout-dashboard",
+    },
+    doc: carbonDoc,
   },
 ];
 

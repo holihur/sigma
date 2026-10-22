@@ -105,6 +105,41 @@ CREATE TABLE IF NOT EXISTS ai_settings (
 	api_key_enc  TEXT NOT NULL DEFAULT '',
 	updated_at   TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS user_identities (
+	issuer     TEXT NOT NULL,
+	subject    TEXT NOT NULL,
+	user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	email      TEXT NOT NULL DEFAULT '',
+	created_at TEXT NOT NULL,
+	PRIMARY KEY (issuer, subject)
+);
+CREATE TABLE IF NOT EXISTS personal_access_tokens (
+	id           TEXT PRIMARY KEY,
+	user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	name         TEXT NOT NULL,
+	prefix       TEXT NOT NULL,
+	token_hash   TEXT NOT NULL UNIQUE,
+	scopes       TEXT NOT NULL DEFAULT 'mcp:read mcp:write',
+	last_used_at TEXT NOT NULL DEFAULT '',
+	expires_at   TEXT NOT NULL DEFAULT '',
+	created_at   TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ai_context (
+	user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+	design_md  TEXT NOT NULL DEFAULT '',
+	agents_md  TEXT NOT NULL DEFAULT '',
+	updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ai_skills (
+	id           TEXT PRIMARY KEY,
+	user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	name         TEXT NOT NULL,
+	description  TEXT NOT NULL DEFAULT '',
+	content      TEXT NOT NULL,
+	created_at   TEXT NOT NULL,
+	updated_at   TEXT NOT NULL,
+	UNIQUE(user_id, name)
+);
 CREATE TABLE IF NOT EXISTS notifications (
 	id         TEXT PRIMARY KEY,
 	user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -121,6 +156,9 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read
 CREATE INDEX IF NOT EXISTS idx_members_user ON file_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_file ON comments(file_id);
 CREATE INDEX IF NOT EXISTS idx_versions_file ON versions(file_id);
+CREATE INDEX IF NOT EXISTS idx_pat_user ON personal_access_tokens(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_identity_user ON user_identities(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_skills_user ON ai_skills(user_id, updated_at);
 `
 	_, err := s.db.Exec(schema)
 	return err
@@ -152,6 +190,24 @@ func (s *Store) UserByID(id string) (model.User, error) {
 	err := s.db.QueryRow(`SELECT id,name,email,color,created_at FROM users WHERE id=?`, id).
 		Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.CreatedAt)
 	return u, err
+}
+
+// ---------- SSO identities ----------
+
+func (s *Store) UserByIdentity(issuer, subject string) (model.User, error) {
+	var u model.User
+	err := s.db.QueryRow(`SELECT u.id,u.name,u.email,u.color,u.created_at
+		FROM user_identities i JOIN users u ON u.id=i.user_id
+		WHERE i.issuer=? AND i.subject=?`, issuer, subject).
+		Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.CreatedAt)
+	return u, err
+}
+
+func (s *Store) LinkIdentity(issuer, subject, userID, email string) error {
+	_, err := s.db.Exec(`INSERT INTO user_identities(issuer,subject,user_id,email,created_at)
+		VALUES(?,?,?,?,?) ON CONFLICT(issuer,subject) DO UPDATE SET email=excluded.email`,
+		issuer, subject, userID, strings.ToLower(email), model.Now())
+	return err
 }
 
 // ---------- files ----------
@@ -372,6 +428,69 @@ func (s *Store) VersionDoc(fileID, versionID string) (string, int, error) {
 	return doc, version, err
 }
 
+// ---------- personal access tokens ----------
+
+type PATRecord struct {
+	ID         string
+	UserID     string
+	Name       string
+	Prefix     string
+	TokenHash  string
+	Scopes     string
+	LastUsedAt string
+	ExpiresAt  string
+	CreatedAt  string
+}
+
+func (s *Store) CreatePAT(r PATRecord) error {
+	_, err := s.db.Exec(`INSERT INTO personal_access_tokens(id,user_id,name,prefix,token_hash,scopes,last_used_at,expires_at,created_at)
+		VALUES(?,?,?,?,?,?,?,?,?)`, r.ID, r.UserID, r.Name, r.Prefix, r.TokenHash, r.Scopes, r.LastUsedAt, r.ExpiresAt, r.CreatedAt)
+	return err
+}
+
+func (s *Store) ListPATs(userID string) ([]PATRecord, error) {
+	rows, err := s.db.Query(`SELECT id,user_id,name,prefix,scopes,last_used_at,expires_at,created_at
+		FROM personal_access_tokens WHERE user_id=? ORDER BY created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PATRecord{}
+	for rows.Next() {
+		var r PATRecord
+		if err := rows.Scan(&r.ID, &r.UserID, &r.Name, &r.Prefix, &r.Scopes, &r.LastUsedAt, &r.ExpiresAt, &r.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) PATByHash(hash string) (PATRecord, error) {
+	var r PATRecord
+	err := s.db.QueryRow(`SELECT id,user_id,name,prefix,token_hash,scopes,last_used_at,expires_at,created_at
+		FROM personal_access_tokens WHERE token_hash=?`, hash).
+		Scan(&r.ID, &r.UserID, &r.Name, &r.Prefix, &r.TokenHash, &r.Scopes, &r.LastUsedAt, &r.ExpiresAt, &r.CreatedAt)
+	return r, err
+}
+
+func (s *Store) TouchPAT(id string) error {
+	_, err := s.db.Exec(`UPDATE personal_access_tokens SET last_used_at=? WHERE id=?`, model.Now(), id)
+	return err
+}
+
+func (s *Store) DeletePAT(id, userID string) error {
+	res, err := s.db.Exec(`DELETE FROM personal_access_tokens WHERE id=? AND user_id=?`, id, userID)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // ---------- AI / BYOK settings ----------
 
 type AISettingsRecord struct {
@@ -397,6 +516,82 @@ func (s *Store) SaveAISettings(r AISettingsRecord) error {
 		model=excluded.model,api_key_enc=excluded.api_key_enc,updated_at=excluded.updated_at`,
 		r.UserID, r.Provider, r.BaseURL, r.Model, r.APIKeyEnc, model.Now())
 	return err
+}
+
+// ---------- AI context & skills ----------
+
+type AgentContext struct {
+	UserID    string
+	DesignMD  string
+	AgentsMD  string
+	UpdatedAt string
+}
+
+func (s *Store) AIContext(userID string) (AgentContext, error) {
+	var c AgentContext
+	err := s.db.QueryRow(`SELECT user_id,design_md,agents_md,updated_at FROM ai_context WHERE user_id=?`, userID).
+		Scan(&c.UserID, &c.DesignMD, &c.AgentsMD, &c.UpdatedAt)
+	return c, err
+}
+
+func (s *Store) SaveAIContext(userID, designMD, agentsMD string) error {
+	_, err := s.db.Exec(`INSERT INTO ai_context(user_id,design_md,agents_md,updated_at) VALUES(?,?,?,?)
+		ON CONFLICT(user_id) DO UPDATE SET design_md=excluded.design_md, agents_md=excluded.agents_md, updated_at=excluded.updated_at`,
+		userID, designMD, agentsMD, model.Now())
+	return err
+}
+
+type SkillRecord struct {
+	ID          string
+	UserID      string
+	Name        string
+	Description string
+	Content     string
+	CreatedAt   string
+	UpdatedAt   string
+}
+
+func (s *Store) ListSkills(userID string) ([]SkillRecord, error) {
+	rows, err := s.db.Query(`SELECT id,user_id,name,description,content,created_at,updated_at FROM ai_skills WHERE user_id=? ORDER BY name`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []SkillRecord{}
+	for rows.Next() {
+		var r SkillRecord
+		if err := rows.Scan(&r.ID, &r.UserID, &r.Name, &r.Description, &r.Content, &r.CreatedAt, &r.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) UpsertSkill(r SkillRecord) (SkillRecord, error) {
+	now := model.Now()
+	_, err := s.db.Exec(`INSERT INTO ai_skills(id,user_id,name,description,content,created_at,updated_at) VALUES(?,?,?,?,?,?,?)
+		ON CONFLICT(user_id,name) DO UPDATE SET description=excluded.description, content=excluded.content, updated_at=excluded.updated_at`,
+		r.ID, r.UserID, r.Name, r.Description, r.Content, now, now)
+	if err != nil {
+		return SkillRecord{}, err
+	}
+	var out SkillRecord
+	err = s.db.QueryRow(`SELECT id,user_id,name,description,content,created_at,updated_at FROM ai_skills WHERE user_id=? AND name=?`, r.UserID, r.Name).
+		Scan(&out.ID, &out.UserID, &out.Name, &out.Description, &out.Content, &out.CreatedAt, &out.UpdatedAt)
+	return out, err
+}
+
+func (s *Store) DeleteSkill(id, userID string) error {
+	res, err := s.db.Exec(`DELETE FROM ai_skills WHERE id=? AND user_id=?`, id, userID)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // ---------- public links ----------
@@ -444,7 +639,6 @@ func (s *Store) AccessUsers(fileID string) ([]string, error) {
 	}
 	return out, rows.Err()
 }
-
 
 // AddNotificationFor creates a notification for one recipient.
 func (s *Store) AddNotificationFor(id, userID, fileID, commentID, actorID, kind, text string) error {

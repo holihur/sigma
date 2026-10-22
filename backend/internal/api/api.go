@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -15,7 +16,9 @@ import (
 
 	"sigma/internal/auth"
 	"sigma/internal/model"
+	"sigma/internal/static"
 	"sigma/internal/store"
+	"sigma/internal/update"
 	"sigma/internal/ws"
 
 	"google.golang.org/adk/session"
@@ -24,18 +27,21 @@ import (
 type AuthedHandler func(http.ResponseWriter, *http.Request, model.User)
 
 type API struct {
-	st        *store.Store
-	auth      *auth.Manager
-	hub       *ws.Hub
-	staticDir string
-	uploadDir string
-	secret    string
-	locks     sync.Map
+	st         *store.Store
+	auth       *auth.Manager
+	hub        *ws.Hub
+	staticDir  string
+	staticFS   fs.FS
+	uploadDir  string
+	secret     string
+	locks      sync.Map
 	aiSessions session.Service
+	oidc       *auth.OIDCManager
+	updater    *update.Manager
 }
 
 func New(st *store.Store, am *auth.Manager, staticDir, uploadDir, secret string) *API {
-	a := &API{st: st, auth: am, staticDir: staticDir, uploadDir: uploadDir, secret: secret, aiSessions: session.InMemoryService()}
+	a := &API{st: st, auth: am, staticDir: staticDir, staticFS: static.FS(), uploadDir: uploadDir, secret: secret, aiSessions: session.InMemoryService(), oidc: auth.NewOIDCFromEnv()}
 	_ = os.MkdirAll(uploadDir, 0o755)
 	a.hub = ws.NewHub(
 		a.wsAccess,
@@ -59,9 +65,28 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/ai/settings", a.requireAuth(a.handleSetAISettings))
 	mux.HandleFunc("POST /api/ai/test", a.requireAuth(a.handleTestAI))
 	mux.HandleFunc("POST /api/ai/chat", a.requireAuth(a.handleAIChat))
+	mux.HandleFunc("GET /api/ai/context", a.requireAuth(a.handleAIContext))
+	mux.HandleFunc("PUT /api/ai/context", a.requireAuth(a.handleSaveAIContext))
+	mux.HandleFunc("GET /api/ai/skills", a.requireAuth(a.handleListSkills))
+	mux.HandleFunc("POST /api/ai/skills", a.requireAuth(a.handleUploadSkill))
+	mux.HandleFunc("DELETE /api/ai/skills/{id}", a.requireAuth(a.handleDeleteSkill))
+	mux.HandleFunc("POST /api/mcp", a.requireMCPAuth(a.handleMCP))
+	mux.HandleFunc("POST /api/figma/import", a.requireAuth(a.handleFigmaImport))
+	mux.HandleFunc("POST /api/figma/import-json", a.requireAuth(a.handleFigmaImportJSON))
+	mux.HandleFunc("GET /api/files/{id}/figma-json", a.requireAuth(a.handleFigmaExport))
+	mux.HandleFunc("GET /api/tokens", a.requireAuth(a.handleListPATs))
+	mux.HandleFunc("POST /api/tokens", a.requireAuth(a.handleCreatePAT))
+	mux.HandleFunc("DELETE /api/tokens/{id}", a.requireAuth(a.handleDeletePAT))
+	mux.HandleFunc("GET /api/system/update", a.requireAuth(a.handleUpdateStatus))
+	mux.HandleFunc("POST /api/system/update/check", a.requireAuth(a.handleUpdateCheck))
+	mux.HandleFunc("POST /api/system/update/apply", a.requireAuth(a.handleUpdateApply))
 
 	mux.HandleFunc("POST /api/auth/register", a.handleRegister)
 	mux.HandleFunc("POST /api/auth/login", a.handleLogin)
+	mux.HandleFunc("GET /api/auth/oidc/config", a.handleOIDCConfig)
+	mux.HandleFunc("GET /api/auth/oidc/login", a.handleOIDCLogin)
+	mux.HandleFunc("GET /api/auth/oidc/callback", a.handleOIDCCallback)
+	mux.HandleFunc("POST /api/auth/oidc/exchange", a.handleOIDCExchange)
 	mux.HandleFunc("GET /api/auth/me", a.requireAuth(a.handleMe))
 
 	mux.HandleFunc("GET /api/files", a.requireAuth(a.handleListFiles))
@@ -96,6 +121,8 @@ func (a *API) Handler() http.Handler {
 		if _, err := os.Stat(path.Join(a.staticDir, "index.html")); err == nil {
 			mux.Handle("/", spaHandler(a.staticDir))
 		}
+	} else if a.staticFS != nil {
+		mux.Handle("/", spaFSHandler(a.staticFS))
 	}
 
 	return withCORS(withLogging(mux))
@@ -168,18 +195,27 @@ func withLogging(next http.Handler) http.Handler {
 }
 
 func spaHandler(dir string) http.Handler {
-	fs := http.Dir(dir)
-	fileServer := http.FileServer(fs)
+	return spaFSHandler(os.DirFS(dir))
+}
+
+func spaFSHandler(root fs.FS) http.Handler {
+	fileServer := http.FileServer(http.FS(root))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		p := path.Clean(r.URL.Path)
-		if p != "/" {
-			if f, err := fs.Open(p); err == nil {
-				f.Close()
+		p := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
+		if p != "" {
+			if f, err := root.Open(p); err == nil {
+				_ = f.Close()
 				fileServer.ServeHTTP(w, r)
 				return
 			}
 		}
-		http.ServeFile(w, r, path.Join(dir, "index.html"))
+		index, err := fs.ReadFile(root, "index.html")
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(index)
 	})
 }
 

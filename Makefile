@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help install backend frontend build run clean templates docker
+.PHONY: help install backend frontend build run clean templates docker embed release-snapshot service uninstall-service
 
 help:
 	@echo "Sigma — common tasks"
@@ -12,6 +12,9 @@ help:
 	@echo "  make run        Build and run production server (:9000)"
 	@echo "  make templates  Regenerate embedded design templates"
 	@echo "  make docker     Build the Docker image"
+	@echo "  make release-snapshot  Build release binaries with GoReleaser"
+	@echo "  make service    Install Sigma as a systemd service"
+	@echo "  make uninstall-service  Remove the systemd service (keeps data)"
 	@echo "  make clean      Remove build output and local database"
 
 install:
@@ -41,5 +44,19 @@ run: build
 docker:
 	docker build -t sigma .
 
+embed:
+	rm -rf backend/internal/static/dist
+	mkdir -p backend/internal/static/dist
+	cp -R frontend/dist/. backend/internal/static/dist/
+
+release-snapshot: build embed
+	goreleaser release --snapshot --clean
+
+service:
+	./install.sh --service
+
+uninstall-service:
+	./uninstall.sh
+
 clean:
-	rm -rf sigma-server frontend/dist backend/data
+	rm -rf sigma-server frontend/dist backend/data dist

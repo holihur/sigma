@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,13 @@ import (
 	"sigma/internal/auth"
 	"sigma/internal/store"
 	"sigma/internal/templates"
+	"sigma/internal/update"
+)
+
+var (
+	version = "dev"
+	commit  = ""
+	date    = ""
 )
 
 func env(key, fallback string) string {
@@ -50,6 +58,9 @@ func main() {
 
 	uploadDir := env("UPLOAD_DIR", filepath.Join(filepath.Dir(dbPath), "uploads"))
 	a := api.New(st, am, staticDir, uploadDir, secret)
+	updater := update.NewFromEnv(version)
+	a.SetUpdater(updater)
+	go updater.Start(context.Background())
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           a.Handler(),
@@ -58,7 +69,11 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Sigma backend listening on http://localhost:%s (static: %q, uploads: %q)", port, staticDir, uploadDir)
+		static := staticDir
+		if static == "" {
+			static = "embedded"
+		}
+		log.Printf("Sigma %s (%s) listening on http://localhost:%s (static: %s, uploads: %q)", version, commit, port, static, uploadDir)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server: %v", err)
 		}

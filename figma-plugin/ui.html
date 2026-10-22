@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 14px; font: 12px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--figma-color-bg); color: var(--figma-color-text); }
+  h1 { font-size: 14px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; color: var(--figma-color-text-secondary); }
+  .tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+  .tab { flex: 1; padding: 6px 8px; border-radius: 5px; border: 1px solid var(--figma-color-border); background: transparent; color: inherit; cursor: pointer; }
+  .tab.active { background: #0ea5e9; border-color: #0ea5e9; color: #fff; }
+  label { display: block; font-weight: 600; margin: 8px 0 4px; }
+  input[type=file] { width: 100%; padding: 7px; border: 1px dashed var(--figma-color-border); border-radius: 6px; }
+  textarea { width: 100%; height: 150px; resize: vertical; padding: 8px; border-radius: 6px; border: 1px solid var(--figma-color-border); background: var(--figma-color-bg-secondary); color: inherit; font: 10px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  button.primary { width: 100%; margin-top: 12px; padding: 9px; border: 0; border-radius: 6px; background: linear-gradient(#38bdf8, #0284c7); color: #fff; font-weight: 700; cursor: pointer; }
+  button.primary:disabled { opacity: .5; cursor: default; }
+  .hint { margin-top: 10px; padding: 8px; border-radius: 6px; background: var(--figma-color-bg-secondary); color: var(--figma-color-text-secondary); font-size: 10px; }
+  .status { margin-top: 10px; white-space: pre-wrap; font-size: 11px; }
+  .error { color: #ef4444; }
+  .ok { color: #10b981; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+</style>
+</head>
+<body>
+  <h1>Import a Sigma design</h1>
+  <p>Export from Sigma with <b>Account → Export Figma JSON</b>, then bring it here.</p>
+  <div class="tabs">
+    <button class="tab active" id="tab-file">JSON file</button>
+    <button class="tab" id="tab-paste">Paste JSON</button>
+  </div>
+  <div id="panel-file">
+    <label>Sigma JSON</label>
+    <input id="file" type="file" accept=".json,application/json" />
+  </div>
+  <div id="panel-paste" style="display:none">
+    <label>Sigma JSON</label>
+    <textarea id="json" placeholder='{"format":"sigma-figma-v1", ...}'></textarea>
+  </div>
+  <label>Page filter (optional)</label>
+  <input id="page" type="text" placeholder="Only import pages containing this name" style="width:100%;padding:7px;border-radius:6px;border:1px solid var(--figma-color-border);background:var(--figma-color-bg-secondary);color:inherit" />
+  <button class="primary" id="run" disabled>Import into Figma</button>
+  <div class="hint">Groups are flattened for reliable positioning. Fonts fall back to Inter when the original family is unavailable. Prototype links are not imported.</div>
+  <div class="status" id="status"></div>
+  <script>
+    let data = null;
+    const tabs = { file: document.getElementById('tab-file'), paste: document.getElementById('tab-paste') };
+    const panels = { file: document.getElementById('panel-file'), paste: document.getElementById('panel-paste') };
+    const status = document.getElementById('status');
+    const run = document.getElementById('run');
+    function setTab(name) {
+      data = null;
+      for (const k of Object.keys(tabs)) {
+        tabs[k].classList.toggle('active', k === name);
+        panels[k].style.display = k === name ? '' : 'none';
+      }
+      run.disabled = true;
+      status.textContent = '';
+    }
+    tabs.file.onclick = () => setTab('file');
+    tabs.paste.onclick = () => setTab('paste');
+    function parse(text) {
+      try {
+        const parsed = JSON.parse(text);
+        const doc = parsed.doc || parsed;
+        if (!doc.pages || !Array.isArray(doc.pages)) throw new Error('No pages[] found. Use a Sigma export, not a .fig file.');
+        data = parsed;
+        run.disabled = false;
+        status.className = 'status ok';
+        status.textContent = 'Ready: ' + doc.pages.length + ' page(s), ' + doc.pages.reduce((n,p) => n + Object.keys(p.nodes || {}).length, 0) + ' layer(s).';
+      } catch (e) {
+        data = null;
+        run.disabled = true;
+        status.className = 'status error';
+        status.textContent = e.message;
+      }
+    }
+    document.getElementById('file').onchange = (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => parse(String(r.result));
+      r.readAsText(f);
+    };
+    document.getElementById('json').oninput = (e) => parse(e.target.value);
+    run.onclick = () => {
+      if (!data) return;
+      run.disabled = true;
+      status.className = 'status';
+      status.textContent = 'Importing…';
+      parent.postMessage({ pluginMessage: { type: 'import', data, pageFilter: document.getElementById('page').value.trim() } }, '*');
+    };
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+      if (msg.type === 'done') {
+        status.className = 'status ok';
+        status.textContent = msg.message;
+        run.disabled = false;
+      } else if (msg.type === 'error') {
+        status.className = 'status error';
+        status.textContent = msg.message;
+        run.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

@@ -117,6 +117,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000175
           },
           "wl_logo": {
@@ -154,6 +158,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000106
           },
           "wl_nav_product": {
@@ -191,6 +199,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000107
           },
           "wl_nav_solutions": {
@@ -228,6 +240,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000108
           },
           "wl_nav_pricing": {
@@ -270,6 +286,10 @@
               "targetFrameId": "wf_pricing",
               "transition": "dissolve"
             },
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000109
           },
           "wl_nav_docs": {
@@ -307,6 +327,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000110
           },
           "wl_signin": {
@@ -344,6 +368,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000111
           },
           "wl_cta_nav": {
@@ -386,6 +414,10 @@
               "targetFrameId": "wf_pricing",
               "transition": "dissolve"
             },
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000112
           },
           "wl_cta_nav_text": {
@@ -423,6 +455,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000113
           },
           "wl_glow1": {
@@ -470,6 +506,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000114
           },
           "wl_pill": {
@@ -516,6 +556,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000115
           },
           "wl_pill_dot": {
@@ -553,6 +597,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000116
           },
           "wl_pill_text": {
@@ -590,6 +638,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000117
           },
           "wl_h1": {
@@ -627,6 +679,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000118
           },
           "wl_sub": {
@@ -664,6 +720,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000119
           },
           "wl_hero_cta": {
@@ -707,6 +767,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000120
           },
           "wl_hero_cta_text": {
@@ -744,6 +808,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000121
           },
           "wl_hero_secondary": {
@@ -784,6 +852,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000122
           },
           "wl_hero_secondary_text": {
@@ -821,6 +893,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000123
           },
           "wl_proof": {
@@ -858,6 +934,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000124
           },
           "wl_shot": {
@@ -904,6 +984,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000125
           },
           "wl_shot_sidebar": {
@@ -944,6 +1028,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000126
           },
           "wl_shot_logo": {
@@ -981,6 +1069,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000127
           },
           "wl_shot_nav1": {
@@ -1019,6 +1111,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000128
           },
           "wl_shot_nav1_dot": {
@@ -1056,6 +1152,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000129
           },
           "wl_shot_nav1_text": {
@@ -1093,6 +1193,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000130
           },
           "wl_shot_nav_0": {
@@ -1131,6 +1235,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000131
           },
           "wl_shot_nav_1": {
@@ -1169,6 +1277,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000132
           },
           "wl_shot_nav_2": {
@@ -1207,6 +1319,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000133
           },
           "wl_shot_nav_3": {
@@ -1245,6 +1361,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000134
           },
           "wl_shot_nav_4": {
@@ -1283,6 +1403,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000135
           },
           "wl_shot_title": {
@@ -1320,6 +1444,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000136
           },
           "wl_shot_sub": {
@@ -1357,6 +1485,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000137
           },
           "wl_shot_kpi_0": {
@@ -1397,6 +1529,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000138
           },
           "wl_shot_kpi_1": {
@@ -1437,6 +1573,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000139
           },
           "wl_shot_kpi_2": {
@@ -1477,6 +1617,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000140
           },
           "wl_shot_kpi_3": {
@@ -1517,6 +1661,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000141
           },
           "wl_shot_kpi_label_0": {
@@ -1554,6 +1702,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000142
           },
           "wl_shot_kpi_label_1": {
@@ -1591,6 +1743,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000143
           },
           "wl_shot_kpi_label_2": {
@@ -1628,6 +1784,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000144
           },
           "wl_shot_kpi_label_3": {
@@ -1665,6 +1825,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000145
           },
           "wl_shot_kpi_value_0": {
@@ -1702,6 +1866,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000146
           },
           "wl_shot_kpi_value_1": {
@@ -1739,6 +1907,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000147
           },
           "wl_shot_kpi_value_2": {
@@ -1776,6 +1948,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000148
           },
           "wl_shot_kpi_value_3": {
@@ -1813,6 +1989,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000149
           },
           "wl_shot_chart": {
@@ -1853,6 +2033,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000150
           },
           "wl_shot_chart_title": {
@@ -1890,6 +2074,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000151
           },
           "wl_shot_bar_0": {
@@ -1927,6 +2115,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000152
           },
           "wl_shot_bar_1": {
@@ -1964,6 +2156,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000153
           },
           "wl_shot_bar_2": {
@@ -2001,6 +2197,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000154
           },
           "wl_shot_bar_3": {
@@ -2038,6 +2238,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000155
           },
           "wl_shot_bar_4": {
@@ -2075,6 +2279,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000156
           },
           "wl_shot_bar_5": {
@@ -2112,6 +2320,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000157
           },
           "wl_shot_bar_6": {
@@ -2149,6 +2361,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000158
           },
           "wl_shot_bar_7": {
@@ -2186,6 +2402,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000159
           },
           "wl_shot_bar_8": {
@@ -2223,6 +2443,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000160
           },
           "wl_shot_bar_9": {
@@ -2260,6 +2484,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000161
           },
           "wl_shot_bar_10": {
@@ -2297,6 +2525,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000162
           },
           "wl_shot_bar_11": {
@@ -2334,6 +2566,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000163
           },
           "wl_shot_right": {
@@ -2374,6 +2610,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000164
           },
           "wl_shot_right_title": {
@@ -2411,6 +2651,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000165
           },
           "wl_shot_avatar_0": {
@@ -2448,6 +2692,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000166
           },
           "wl_shot_avatar_1": {
@@ -2485,6 +2733,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000167
           },
           "wl_shot_avatar_2": {
@@ -2522,6 +2774,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000168
           },
           "wl_shot_avatar_3": {
@@ -2559,6 +2815,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000169
           },
           "wl_shot_activity_0": {
@@ -2596,6 +2856,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000170
           },
           "wl_shot_activity_1": {
@@ -2633,6 +2897,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000171
           },
           "wl_shot_activity_2": {
@@ -2670,6 +2938,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000172
           },
           "wl_shot_activity_3": {
@@ -2707,6 +2979,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000173
           },
           "wl_logos_label": {
@@ -2744,6 +3020,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000174
           },
           "wf_landing_features": {
@@ -2810,6 +3090,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000204
           },
           "wf_eyebrow": {
@@ -2847,6 +3131,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000176
           },
           "wf_h2": {
@@ -2884,6 +3172,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000177
           },
           "wf_feat_0": {
@@ -2924,6 +3216,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000178
           },
           "wf_feat_icon_0": {
@@ -2962,6 +3258,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000179
           },
           "wf_feat_dot_0": {
@@ -2999,6 +3299,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000180
           },
           "wf_feat_title_0": {
@@ -3036,6 +3340,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000181
           },
           "wf_feat_body_0": {
@@ -3073,6 +3381,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000182
           },
           "wf_feat_link_0": {
@@ -3111,6 +3423,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000183
           },
           "wf_feat_link_text_0": {
@@ -3148,6 +3464,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000184
           },
           "wf_feat_1": {
@@ -3188,6 +3508,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000185
           },
           "wf_feat_icon_1": {
@@ -3226,6 +3550,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000186
           },
           "wf_feat_dot_1": {
@@ -3263,6 +3591,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000187
           },
           "wf_feat_title_1": {
@@ -3300,6 +3632,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000188
           },
           "wf_feat_body_1": {
@@ -3337,6 +3673,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000189
           },
           "wf_feat_link_1": {
@@ -3375,6 +3715,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000190
           },
           "wf_feat_link_text_1": {
@@ -3412,6 +3756,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000191
           },
           "wf_feat_2": {
@@ -3452,6 +3800,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000192
           },
           "wf_feat_icon_2": {
@@ -3490,6 +3842,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000193
           },
           "wf_feat_dot_2": {
@@ -3527,6 +3883,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000194
           },
           "wf_feat_title_2": {
@@ -3564,6 +3924,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000195
           },
           "wf_feat_body_2": {
@@ -3601,6 +3965,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000196
           },
           "wf_feat_link_2": {
@@ -3639,6 +4007,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000197
           },
           "wf_feat_link_text_2": {
@@ -3676,6 +4048,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000198
           },
           "wf_band": {
@@ -3723,6 +4099,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000199
           },
           "wf_band_title": {
@@ -3760,6 +4140,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000200
           },
           "wf_band_sub": {
@@ -3797,6 +4181,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000201
           },
           "wf_band_btn": {
@@ -3834,6 +4222,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000202
           },
           "wf_band_btn_text": {
@@ -3871,6 +4263,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000203
           }
         },
@@ -3995,6 +4391,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000280
           },
           "wc_logo": {
@@ -4032,6 +4432,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000205
           },
           "wc_back": {
@@ -4074,6 +4478,10 @@
               "targetFrameId": "wf_landing",
               "transition": "dissolve"
             },
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000206
           },
           "wc_nav_pricing": {
@@ -4111,6 +4519,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000207
           },
           "wc_nav_docs": {
@@ -4148,6 +4560,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000208
           },
           "wc_cta_nav": {
@@ -4185,6 +4601,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000209
           },
           "wc_cta_nav_text": {
@@ -4222,6 +4642,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000210
           },
           "wc_h1": {
@@ -4259,6 +4683,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000211
           },
           "wc_sub": {
@@ -4296,6 +4724,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000212
           },
           "wc_plan_0": {
@@ -4342,6 +4774,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000213
           },
           "wc_plan_name_0": {
@@ -4379,6 +4815,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000214
           },
           "wc_plan_desc_0": {
@@ -4416,6 +4856,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000215
           },
           "wc_plan_price_0": {
@@ -4453,6 +4897,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000216
           },
           "wc_plan_period_0": {
@@ -4490,6 +4938,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000217
           },
           "wc_plan_btn_0": {
@@ -4532,6 +4984,10 @@
               "targetFrameId": "wf_landing",
               "transition": "dissolve"
             },
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000218
           },
           "wc_plan_btn_text_0": {
@@ -4569,6 +5025,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000219
           },
           "wc_check_0_0": {
@@ -4606,6 +5066,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000220
           },
           "wc_check_icon_0_0": {
@@ -4643,6 +5107,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000221
           },
           "wc_feat_0_0": {
@@ -4680,6 +5148,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000222
           },
           "wc_check_0_1": {
@@ -4717,6 +5189,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000223
           },
           "wc_check_icon_0_1": {
@@ -4754,6 +5230,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000224
           },
           "wc_feat_0_1": {
@@ -4791,6 +5271,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000225
           },
           "wc_check_0_2": {
@@ -4828,6 +5312,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000226
           },
           "wc_check_icon_0_2": {
@@ -4865,6 +5353,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000227
           },
           "wc_feat_0_2": {
@@ -4902,6 +5394,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000228
           },
           "wc_check_0_3": {
@@ -4939,6 +5435,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000229
           },
           "wc_check_icon_0_3": {
@@ -4976,6 +5476,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000230
           },
           "wc_feat_0_3": {
@@ -5013,6 +5517,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000231
           },
           "wc_check_0_4": {
@@ -5050,6 +5558,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000232
           },
           "wc_check_icon_0_4": {
@@ -5087,6 +5599,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000233
           },
           "wc_feat_0_4": {
@@ -5124,6 +5640,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000234
           },
           "wc_plan_1": {
@@ -5170,6 +5690,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000235
           },
           "wc_plan_name_1": {
@@ -5207,6 +5731,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000236
           },
           "wc_plan_desc_1": {
@@ -5244,6 +5772,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000237
           },
           "wc_plan_price_1": {
@@ -5281,6 +5813,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000238
           },
           "wc_plan_period_1": {
@@ -5318,6 +5854,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000239
           },
           "wc_plan_btn_1": {
@@ -5355,6 +5895,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000240
           },
           "wc_plan_btn_text_1": {
@@ -5392,6 +5936,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000241
           },
           "wc_check_1_0": {
@@ -5429,6 +5977,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000242
           },
           "wc_check_icon_1_0": {
@@ -5466,6 +6018,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000243
           },
           "wc_feat_1_0": {
@@ -5503,6 +6059,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000244
           },
           "wc_check_1_1": {
@@ -5540,6 +6100,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000245
           },
           "wc_check_icon_1_1": {
@@ -5577,6 +6141,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000246
           },
           "wc_feat_1_1": {
@@ -5614,6 +6182,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000247
           },
           "wc_check_1_2": {
@@ -5651,6 +6223,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000248
           },
           "wc_check_icon_1_2": {
@@ -5688,6 +6264,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000249
           },
           "wc_feat_1_2": {
@@ -5725,6 +6305,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000250
           },
           "wc_check_1_3": {
@@ -5762,6 +6346,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000251
           },
           "wc_check_icon_1_3": {
@@ -5799,6 +6387,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000252
           },
           "wc_feat_1_3": {
@@ -5836,6 +6428,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000253
           },
           "wc_check_1_4": {
@@ -5873,6 +6469,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000254
           },
           "wc_check_icon_1_4": {
@@ -5910,6 +6510,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000255
           },
           "wc_feat_1_4": {
@@ -5947,6 +6551,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000256
           },
           "wc_plan_2": {
@@ -5993,6 +6601,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000257
           },
           "wc_plan_name_2": {
@@ -6030,6 +6642,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000258
           },
           "wc_plan_desc_2": {
@@ -6067,6 +6683,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000259
           },
           "wc_plan_price_2": {
@@ -6104,6 +6724,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000260
           },
           "wc_plan_period_2": {
@@ -6141,6 +6765,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000261
           },
           "wc_plan_btn_2": {
@@ -6178,6 +6806,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000262
           },
           "wc_plan_btn_text_2": {
@@ -6215,6 +6847,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000263
           },
           "wc_check_2_0": {
@@ -6252,6 +6888,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000264
           },
           "wc_check_icon_2_0": {
@@ -6289,6 +6929,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000265
           },
           "wc_feat_2_0": {
@@ -6326,6 +6970,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000266
           },
           "wc_check_2_1": {
@@ -6363,6 +7011,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000267
           },
           "wc_check_icon_2_1": {
@@ -6400,6 +7052,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000268
           },
           "wc_feat_2_1": {
@@ -6437,6 +7093,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000269
           },
           "wc_check_2_2": {
@@ -6474,6 +7134,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000270
           },
           "wc_check_icon_2_2": {
@@ -6511,6 +7175,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000271
           },
           "wc_feat_2_2": {
@@ -6548,6 +7216,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000272
           },
           "wc_check_2_3": {
@@ -6585,6 +7257,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000273
           },
           "wc_check_icon_2_3": {
@@ -6622,6 +7298,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000274
           },
           "wc_feat_2_3": {
@@ -6659,6 +7339,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000275
           },
           "wc_check_2_4": {
@@ -6696,6 +7380,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000276
           },
           "wc_check_icon_2_4": {
@@ -6733,6 +7421,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000277
           },
           "wc_feat_2_4": {
@@ -6770,6 +7462,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000278
           },
           "wc_note": {
@@ -6807,6 +7503,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000279
           }
         },

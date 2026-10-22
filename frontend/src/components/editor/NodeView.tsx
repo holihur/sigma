@@ -53,7 +53,7 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
   const innerStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    background: node.type === "group" || node.type === "line" || node.type === "text" ? undefined : fill,
+    background: node.type === "group" || node.type === "line" || node.type === "text" || node.type === "vector" ? undefined : fill,
     borderRadius: node.type === "ellipse" ? "50%" : node.radius || undefined,
     boxShadow: shadows.length ? shadows.join(", ") : undefined,
     filter: node.blur ? `blur(${node.blur}px)` : undefined,
@@ -152,6 +152,18 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
         />
       </svg>
     );
+  } else if (node.type === "vector") {
+    const points = (node.points ?? []).map((p) => `${p.x * 1000},${p.y * 1000}`).join(" ");
+    content =
+      points.length > 0 ? (
+        <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" style={{ pointerEvents: "none" }}>
+          {node.closed ? (
+            <polygon points={points} fill={fill} stroke={strokeColor} strokeWidth={node.strokeWidth} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+          ) : (
+            <polyline points={points} fill="none" stroke={strokeColor} strokeWidth={node.strokeWidth} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+        </svg>
+      ) : null;
   } else if (node.type === "frame" || node.type === "group") {
     content = renderChildren();
   }

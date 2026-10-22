@@ -40,6 +40,10 @@ export function createNode(type: NodeType, overrides: Partial<SceneNode> = {}): 
     src: "",
     objectFit: "cover",
     link: null,
+    points: [],
+    closed: false,
+    component: false,
+    componentId: null,
     ts: Date.now(),
   };
   switch (type) {
@@ -78,6 +82,13 @@ export function createNode(type: NodeType, overrides: Partial<SceneNode> = {}): 
       base.strokeWidth = 2;
       base.height = 0;
       break;
+    case "vector":
+      base.fill = null;
+      base.stroke = { type: "solid", color: "#0ea5e9" };
+      base.strokeWidth = 2;
+      base.width = 1;
+      base.height = 1;
+      break;
     case "rect":
       break;
   }
@@ -96,6 +107,8 @@ export function labelFor(type: NodeType): string {
       return "Ellipse";
     case "line":
       return "Line";
+    case "vector":
+      return "Vector";
     case "text":
       return "Text";
     case "image":

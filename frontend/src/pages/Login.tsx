@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, Sparkles, User as UserIcon } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, Sparkles, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/store/auth";
+import { authApi } from "@/lib/api";
+import type { OIDCConfig } from "@/lib/types";
 import { useT } from "@/i18n";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,7 @@ export default function LoginPage() {
   const user = useAuth((s) => s.user);
   const login = useAuth((s) => s.login);
   const register = useAuth((s) => s.register);
+  const ssoLogin = useAuth((s) => s.ssoLogin);
   const navigate = useNavigate();
   const t = useT();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -22,6 +25,36 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [oidc, setOidc] = useState<OIDCConfig | null>(null);
+  const handledCallback = useRef(false);
+
+  useEffect(() => {
+    authApi.oidcConfig().then(setOidc).catch(() => setOidc({ enabled: false, label: "" }));
+  }, []);
+
+  useEffect(() => {
+    if (handledCallback.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("oidc_error");
+    const code = params.get("oidc_code");
+    if (!error && !code) return;
+    handledCallback.current = true;
+    window.history.replaceState({}, "", "/login");
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    if (code) {
+      setBusy(true);
+      ssoLogin(code)
+        .then((returnTo) => {
+          toast.success(t("Signed in"));
+          navigate(returnTo, { replace: true });
+        })
+        .catch((e) => toast.error((e as Error).message))
+        .finally(() => setBusy(false));
+    }
+  }, []);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -219,6 +252,21 @@ export default function LoginPage() {
               {!busy && <ArrowRight className="size-4" />}
             </Button>
           </form>
+
+          {oidc?.enabled && (
+            <Button
+              variant="outline"
+              className="mt-4 h-10 w-full gap-2"
+              disabled={busy}
+              onClick={() => {
+                const returnTo = window.location.pathname === "/login" ? "/" : window.location.pathname + window.location.search;
+                window.location.href = `/api/auth/oidc/login?returnTo=${encodeURIComponent(returnTo)}`;
+              }}
+            >
+              <ShieldCheck className="size-4 text-primary" />
+              {t("Continue with {provider}", { provider: oidc.label || t("Single sign-on") })}
+            </Button>
+          )}
 
           <div className="my-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />

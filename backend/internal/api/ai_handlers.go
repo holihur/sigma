@@ -16,6 +16,7 @@ import (
 	"google.golang.org/adk/session"
 	"google.golang.org/adk/tool"
 	"google.golang.org/adk/tool/functiontool"
+	"google.golang.org/adk/tool/skilltoolset"
 	"google.golang.org/genai"
 
 	"sigma/internal/ai"
@@ -318,12 +319,29 @@ Current file: %s
 Current page: %s (%s)
 Selected node ids: %s`, f.Name, page.Name, page.ID, strings.Join(body.Selection, ", "))
 
+	ctxRec, ctxErr := a.st.AIContext(u.ID)
+	if ctxErr == nil {
+		instruction = appendAgentDoc(instruction, "Design.md", ctxRec.DesignMD)
+		instruction = appendAgentDoc(instruction, "AGENTS.md", ctxRec.AgentsMD)
+	}
+	skillRecords, _ := a.st.ListSkills(u.ID)
+	toolsets := []tool.Toolset{}
+	if len(skillRecords) > 0 {
+		ts, tsErr := skilltoolset.New(r.Context(), skilltoolset.Config{Source: &dbSkillSource{records: skillRecords}})
+		if tsErr != nil {
+			writeError(w, http.StatusInternalServerError, "Could not load custom skills: "+tsErr.Error())
+			return
+		}
+		toolsets = append(toolsets, ts)
+		instruction += "\n\nCustom skills are available. If one is relevant, you MUST call list_skills and load_skill before proceeding."
+	}
 	ag, err := llmagent.New(llmagent.Config{
 		Name:        "sigma_designer",
 		Description: "Edits Sigma design documents through structured tools.",
 		Model:       mdl,
 		Instruction: instruction,
 		Tools:       tools,
+		Toolsets:    toolsets,
 	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Could not initialize agent")
@@ -377,6 +395,18 @@ Selected node ids: %s`, f.Name, page.Name, page.ID, strings.Join(body.Selection,
 	})
 }
 
+func appendAgentDoc(instruction, name, content string) string {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return instruction
+	}
+	runes := []rune(content)
+	if len(runes) > 12000 {
+		content = string(runes[:12000]) + "\n… (truncated)"
+	}
+	return instruction + "\n\n## " + name + "\n" + content
+}
+
 // ---------- design tools ----------
 
 func (a *API) designAgentTools(recorder *agentActionRecorder) ([]tool.Tool, error) {
@@ -421,6 +451,52 @@ func (a *API) designAgentTools(recorder *agentActionRecorder) ([]tool.Tool, erro
 		Name: "create_ellipse", Description: "Create an ellipse/avatar/decoration layer.",
 	}, func(ctx agent.ToolContext, args createShapeArgs) (map[string]any, error) {
 		return a.agentCreateNode(ctx, "ellipse", args.Name, args.X, args.Y, args.Width, args.Height, args.Fill, args.Radius, args.ParentID, recorder)
+	})
+	if err != nil {
+		return nil, err
+	}
+	createVector, err := functiontool.New(functiontool.Config{
+		Name: "create_vector", Description: "Create an editable vector path. Points are normalized 0..1 inside the node box; use for icons, arrows and custom shapes.",
+	}, func(ctx agent.ToolContext, args createVectorArgs) (map[string]any, error) {
+		fileID, pageID, _, err := toolState(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if args.Width <= 0 {
+			args.Width = 100
+		}
+		if args.Height <= 0 {
+			args.Height = 100
+		}
+		node := design.NewNode("vector", args.Name, args.X, args.Y, args.Width, args.Height)
+		for _, p := range args.Points {
+			node.Points = append(node.Points, design.VectorPoint{X: clamp01(p.X), Y: clamp01(p.Y)})
+		}
+		if len(node.Points) == 0 {
+			node.Points = []design.VectorPoint{{X: 0.5, Y: 0}, {X: 1, Y: 1}, {X: 0, Y: 1}}
+			args.Closed = true
+		}
+		node.Closed = args.Closed
+		if args.Fill != "" {
+			node.Fill = design.Solid(args.Fill)
+		}
+		if args.Stroke != "" {
+			node.Stroke = design.Solid(args.Stroke)
+		}
+		if args.StrokeWidth > 0 {
+			node.StrokeWidth = args.StrokeWidth
+		}
+		res, err := a.agentMutate(fileID, pageID, func(doc *design.Doc, page *design.Page) error {
+			page.Add(node, args.ParentID, -1)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		recorder.add("create_vector", res)
+		res["nodeId"] = node.ID
+		res["summary"] = "Created vector " + node.ID
+		return res, nil
 	})
 	if err != nil {
 		return nil, err
@@ -602,7 +678,7 @@ func (a *API) designAgentTools(recorder *agentActionRecorder) ([]tool.Tool, erro
 		return nil, err
 	}
 
-	return []tool.Tool{getDesign, createFrame, createRect, createEllipse, createText, updateNode, deleteNodes, duplicateNode, linkToFrame}, nil
+	return []tool.Tool{getDesign, createFrame, createRect, createEllipse, createVector, createText, updateNode, deleteNodes, duplicateNode, linkToFrame}, nil
 }
 
 func (a *API) agentMutate(fileID, pageID string, fn func(*design.Doc, *design.Page) error) (map[string]any, error) {
@@ -671,6 +747,35 @@ type createTextArgs struct {
 	Color      string  `json:"color,omitempty"`
 	TextAlign  string  `json:"textAlign,omitempty"`
 	ParentID   string  `json:"parentId,omitempty"`
+}
+
+type vectorPointArg struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type createVectorArgs struct {
+	Name        string           `json:"name,omitempty"`
+	X           float64          `json:"x"`
+	Y           float64          `json:"y"`
+	Width       float64          `json:"width,omitempty"`
+	Height      float64          `json:"height,omitempty"`
+	Points      []vectorPointArg `json:"points,omitempty"`
+	Closed      bool             `json:"closed,omitempty"`
+	Fill        string           `json:"fill,omitempty"`
+	Stroke      string           `json:"stroke,omitempty"`
+	StrokeWidth float64          `json:"strokeWidth,omitempty"`
+	ParentID    string           `json:"parentId,omitempty"`
+}
+
+func clamp01(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
 }
 
 type updateNodeArgs struct {

@@ -1,0 +1,25 @@
+# Example system unit. `install.sh` generates a tuned unit for your paths.
+# sudo cp deploy/sigma.service /etc/systemd/system/sigma.service
+[Unit]
+Description=Sigma collaborative design
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sigma
+Group=sigma
+WorkingDirectory=/var/lib/sigma
+EnvironmentFile=/etc/sigma/sigma.env
+ExecStart=/var/lib/sigma/bin/sigma
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/sigma
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

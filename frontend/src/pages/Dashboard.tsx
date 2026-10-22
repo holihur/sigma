@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock,
   Copy,
+  Figma,
   Folder,
   Globe2,
   LayoutDashboard,
@@ -29,6 +30,7 @@ import {
   ArrowUpRight,
   Loader2,
   AlertTriangle,
+  Terminal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { filesApi, notificationsApi } from "@/lib/api";
@@ -57,6 +59,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DeveloperDialog } from "@/components/editor/DeveloperDialog";
+import { FigmaImportDialog } from "@/components/editor/FigmaImportDialog";
 
 type Nav = "all" | "starred" | "shared";
 
@@ -87,6 +91,8 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [developerOpen, setDeveloperOpen] = useState(false);
+  const [figmaOpen, setFigmaOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -288,10 +294,13 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <div className="px-3 pb-2">
+        <div className="space-y-1.5 px-3 pb-2">
           <Button className="w-full justify-start shadow-sm" onClick={() => openNew()}>
             <Plus className="size-4" /> {t("New design")}
             <span className="ml-auto rounded bg-white/15 px-1 text-[9px] font-medium">N</span>
+          </Button>
+          <Button variant="outline" className="w-full justify-start" onClick={() => { setFigmaOpen(true); setSidebarOpen(false); }}>
+            <Figma className="size-4" /> {t("Import from Figma")}
           </Button>
         </div>
 
@@ -347,6 +356,9 @@ export default function DashboardPage() {
                 <DropdownMenuItem onClick={toggleLocale}>
                   <Languages className="size-4" /> {locale === "en" ? "中文" : "English"}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDeveloperOpen(true)}>
+                  <Terminal className="size-4" /> {t("Developer & MCP")}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => {
@@ -394,6 +406,13 @@ export default function DashboardPage() {
               </span>
             )}
           </button>
+          <button
+            title={t("Import from Figma")}
+            onClick={() => setFigmaOpen(true)}
+            className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <Figma className="size-4" />
+          </button>
           <Button size="sm" className="h-8" onClick={() => openNew()}>
             <Plus className="size-4" /> {t("New")}
           </Button>
@@ -425,6 +444,9 @@ export default function DashboardPage() {
                   <SelectItem value="name">{t("Name")}</SelectItem>
                 </SelectContent>
               </Select>
+              <Button variant="outline" className="h-9 gap-1.5" onClick={() => setFigmaOpen(true)}>
+                <Figma className="size-4" /> <span className="hidden sm:inline">{t("Import")}</span>
+              </Button>
               <Button className="hidden h-9 sm:inline-flex" onClick={() => openNew()}>
                 <Plus className="size-4" /> {t("New design")}
               </Button>
@@ -671,6 +693,8 @@ export default function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <FigmaImportDialog open={figmaOpen} onOpenChange={setFigmaOpen} onImported={(file) => { void load(); navigate(`/file/${file.id}`); }} />
+      <DeveloperDialog open={developerOpen} onOpenChange={setDeveloperOpen} />
     </div>
   );
 }

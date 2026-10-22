@@ -6,6 +6,7 @@ import {
   MessageCircle,
   MousePointer2,
   Minus,
+  PenTool,
   Square,
   Type,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const TOOLS: { tool: Tool; icon: React.ReactNode; label: string; shortcut: strin
   { tool: "rect", icon: <Square className="size-[16px]" />, label: "Rectangle", shortcut: "R" },
   { tool: "ellipse", icon: <Circle className="size-[17px]" />, label: "Ellipse", shortcut: "O" },
   { tool: "line", icon: <Minus className="size-[17px]" />, label: "Line", shortcut: "L" },
+  { tool: "vector", icon: <PenTool className="size-[17px]" />, label: "Pen / vector", shortcut: "P" },
   { tool: "text", icon: <Type className="size-[17px]" />, label: "Text", shortcut: "T" },
   { tool: "image", icon: <ImageIcon className="size-[17px]" />, label: "Place image", shortcut: "⇧I" },
   { tool: "comment", icon: <MessageCircle className="size-[16px]" />, label: "Comment", shortcut: "C" },

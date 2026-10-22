@@ -1,0 +1,20 @@
+services:
+  sigma:
+    build: .
+    container_name: sigma
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      PORT: 9000
+      DB_PATH: /app/data/sigma.db
+      UPLOAD_DIR: /app/data/uploads
+      STATIC_DIR: /app/web
+      SIGMA_SECRET: ${SIGMA_SECRET:-change-me-in-production}
+      # Containers are immutable; update by pulling a new image instead.
+      AUTO_UPDATE: "false"
+    volumes:
+      - sigma-data:/app/data
+
+volumes:
+  sigma-data:

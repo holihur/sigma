@@ -80,10 +80,10 @@ func TestAIChatRunsADKToolCall(t *testing.T) {
 		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
 	}
 	var resp struct {
-		Reply   string          `json:"reply"`
+		Reply   string           `json:"reply"`
 		Actions []map[string]any `json:"actions"`
-		Doc     json.RawMessage `json:"doc"`
-		Version int             `json:"version"`
+		Doc     json.RawMessage  `json:"doc"`
+		Version int              `json:"version"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatal(err)

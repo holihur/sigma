@@ -25,6 +25,7 @@ interface Props {
   selfUserId?: string;
   onResizeStart?: (handle: ResizeHandle, event: React.PointerEvent) => void;
   onRotateStart?: (event: React.PointerEvent) => void;
+  onVectorAnchorStart?: (event: React.PointerEvent, nodeId: string, index: number) => void;
 }
 
 const HANDLE_CURSORS: Record<ResizeHandle, string> = {
@@ -62,6 +63,7 @@ export function SelectionOverlay({
   selfUserId,
   onResizeStart,
   onRotateStart,
+  onVectorAnchorStart,
 }: Props) {
   const toScreen = (p: Point) => ({
     x: p.x * viewport.zoom + viewport.x,
@@ -95,6 +97,13 @@ export function SelectionOverlay({
     : null;
 
   const showHandles = !readOnly && !!target && !editing;
+  const vectorAnchors: Point[] = [];
+  if (!readOnly && !editing && target?.type === "vector") {
+    const m = nodeMatrix(page, target.id);
+    for (const p of target.points ?? []) {
+      vectorAnchors.push(toScreen(applyMatrix(m, { x: p.x * target.width, y: p.y * target.height })));
+    }
+  }
   const handlePoints: { key: ResizeHandle; x: number; y: number }[] = [];
   if (corners) {
     const mid = (a: Point, b: Point) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
@@ -201,6 +210,21 @@ export function SelectionOverlay({
             </g>
           </>
         )}
+
+        {vectorAnchors.map((p, i) => (
+          <g
+            key={`anchor-${i}`}
+            style={{ pointerEvents: "auto", cursor: "move" }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onVectorAnchorStart?.(e, target!.id, i);
+            }}
+          >
+            <circle cx={p.x} cy={p.y} r={11} fill="transparent" />
+            <rect x={p.x - 3.5} y={p.y - 3.5} width={7} height={7} rx={1} fill="var(--card)" stroke="var(--selection)" strokeWidth={1.5} style={{ pointerEvents: "none" }} />
+          </g>
+        ))}
 
         {guides.map((g, i) =>
           g.orientation === "v" ? (

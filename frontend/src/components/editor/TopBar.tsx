@@ -18,9 +18,13 @@ import {
   MessageCircle,
   Sparkles,
   Settings2,
+  FileDown,
+  BookOpen,
+  Component as ComponentIcon,
   PanelLeft,
   SlidersHorizontal,
   Languages,
+  Terminal,
 } from "lucide-react";
 import { useAuth } from "@/store/auth";
 import { useI18n, useT } from "@/i18n";
@@ -50,6 +54,10 @@ export function TopBar({
   onOpenProperties,
   onOpenAI,
   onOpenAISettings,
+  onOpenDeveloper,
+  onExportFigma,
+  onOpenComponents,
+  onOpenAgentContext,
 }: {
   onShare: () => void;
   onVersions: () => void;
@@ -59,6 +67,10 @@ export function TopBar({
   onOpenProperties: () => void;
   onOpenAI: () => void;
   onOpenAISettings: () => void;
+  onOpenDeveloper: () => void;
+  onExportFigma: () => void;
+  onOpenComponents: () => void;
+  onOpenAgentContext: () => void;
 }) {
   const file = useEditor((s) => s.file);
   const syncStatus = useEditor((s) => s.syncStatus);
@@ -284,6 +296,18 @@ export function TopBar({
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onOpenAISettings}>
               <Settings2 className="size-4" /> {t("AI settings")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenComponents}>
+              <ComponentIcon className="size-4" /> {t("Components")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenAgentContext}>
+              <BookOpen className="size-4" /> {t("Agent context & skills")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenDeveloper}>
+              <Terminal className="size-4" /> {t("Developer & MCP")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExportFigma}>
+              <FileDown className="size-4" /> {t("Export Figma JSON")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onVersions}>
               <History className="size-4" /> {t("Version history")}

@@ -81,7 +81,7 @@ func (a *API) handlePatchFile(w http.ResponseWriter, r *http.Request, u model.Us
 	var body struct {
 		Name      *string `json:"name"`
 		Thumbnail *string `json:"thumbnail"`
-		Starred    *bool   `json:"starred"`
+		Starred   *bool   `json:"starred"`
 	}
 	if err := readJSON(r, &body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid request")
@@ -252,7 +252,6 @@ type docError string
 func (e docError) Error() string { return string(e) }
 
 const errEmptyDoc = docError("empty document")
-
 
 // applyDelta merges a partial document from a collaborating client and returns
 // the authoritative subset to broadcast back to the room.

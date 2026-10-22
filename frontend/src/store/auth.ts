@@ -9,6 +9,7 @@ interface AuthState {
   init: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  ssoLogin: (code: string) => Promise<string>;
   logout: () => void;
   setUser: (user: User) => void;
 }
@@ -40,6 +41,12 @@ export const useAuth = create<AuthState>((set) => ({
     const { token, user } = await authApi.register(name, email, password);
     setToken(token);
     set({ token, user, loading: false });
+  },
+  ssoLogin: async (code) => {
+    const { token, user, returnTo } = await authApi.oidcExchange(code);
+    setToken(token);
+    set({ token, user, loading: false });
+    return returnTo || "/";
   },
   logout: () => {
     setToken(null);

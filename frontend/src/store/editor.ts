@@ -15,6 +15,7 @@ import { collectSubtree, instantiateSubtree, mergeDocs } from "@/lib/merge";
 import {
   ancestorsOf,
   applyMatrix,
+  descendantsOf,
   boundsOf,
   frameAt,
   getPage,
@@ -84,6 +85,10 @@ interface EditorState {
   paste: () => void;
   groupSelection: () => boolean;
   ungroupSelection: () => void;
+  createComponent: (ids?: string[]) => string | null;
+  insertInstance: (componentId: string) => string | null;
+  detachInstance: (id: string) => void;
+  syncInstances: (componentId: string, record?: boolean) => number;
   reorderSelection: (mode: ReorderMode) => void;
   reparentNode: (nodeId: string, parentId: string | null, index: number) => void;
   translateSelection: (dx: number, dy: number, record?: boolean) => void;
@@ -130,6 +135,10 @@ function normalizeDoc(doc: SigmaDoc): SigmaDoc {
     page.ts = page.ts ?? 0;
     for (const node of Object.values(page.nodes)) {
       node.children = node.children ?? [];
+      node.points = node.points ?? [];
+      node.closed = node.closed ?? false;
+      node.component = node.component ?? false;
+      node.componentId = node.componentId ?? null;
     }
   }
   return out;
@@ -401,6 +410,22 @@ export const useEditor = create<EditorState>((set, get) => {
       }
       if (!changed) return;
       commitPage({ ...source, nodes }, record);
+
+      // Keep instances in sync when a layer inside a main component changes.
+      const components = new Set<string>();
+      for (const id of ids) {
+        let cur: SceneNode | undefined = source.nodes[id];
+        const seen = new Set<string>();
+        while (cur && !seen.has(cur.id)) {
+          seen.add(cur.id);
+          if (cur.component) {
+            components.add(cur.id);
+            break;
+          }
+          cur = cur.parentId ? source.nodes[cur.parentId] : undefined;
+        }
+      }
+      for (const componentId of components) get().syncInstances(componentId, false);
     },
     updateNode: (id, patch, record = true) => get().updateNodes([id], patch, record),
     addNode: (node, parentId = null, index, record = true) => {
@@ -616,6 +641,118 @@ export const useEditor = create<EditorState>((set, get) => {
         p.ts = now;
       });
       set({ selection: newSelection });
+    },
+    createComponent: (ids) => {
+      if (get().isReadOnly) return null;
+      const state = get();
+      const page = currentPage(state);
+      const roots = topLevelSelection(page, ids ?? state.selection);
+      if (roots.length !== 1) return null;
+      const node = page.nodes[roots[0]];
+      if (!node) return null;
+      get().updateNode(node.id, { component: true, componentId: null }, true);
+      return node.id;
+    },
+    insertInstance: (componentId) => {
+      if (get().isReadOnly) return null;
+      const state = get();
+      let sourcePage = state.doc.pages.find((p) => p.nodes[componentId]?.component);
+      if (!sourcePage) {
+        // Allow inserting by pointing at a component node id from any page.
+        sourcePage = state.doc.pages.find((p) => p.nodes[componentId]);
+      }
+      const component = sourcePage?.nodes[componentId];
+      if (!sourcePage || !component) return null;
+      const clip = collectSubtree(sourcePage, [componentId]);
+      const page = currentPage(state);
+      const { roots, nodes } = instantiateSubtree(page, { roots: clip.roots, nodes: clip.nodes }, () => uid());
+      const rootId = roots[0];
+      const root = nodes[rootId];
+      if (!root) return null;
+      const now = Date.now();
+      root.componentId = componentId;
+      root.component = false;
+      root.name = component.name;
+      root.x = component.x + 40;
+      root.y = component.y + 40;
+      root.parentId = null;
+      root.ts = now;
+      const next = structuredClone(state.doc);
+      const target = getPage(next, state.pageId);
+      for (const [id, node] of Object.entries(nodes)) {
+        if (id === rootId) {
+          target.nodes[id] = { ...node, ...root };
+        } else {
+          target.nodes[id] = { ...node, parentId: node.parentId === rootId ? rootId : node.parentId };
+        }
+      }
+      target.rootIds.push(rootId);
+      target.ts = now;
+      set({
+        doc: next,
+        past: [...state.past, state.doc].slice(-60),
+        future: [],
+        selection: [rootId],
+        editingId: null,
+        dirty: true,
+        changeSeq: state.changeSeq + 1,
+        syncStatus: "saving",
+      });
+      return rootId;
+    },
+    detachInstance: (id) => {
+      if (get().isReadOnly) return;
+      get().updateNode(id, { componentId: null, component: false }, true);
+    },
+    syncInstances: (componentId, record = true) => {
+      if (get().isReadOnly) return 0;
+      const state = get();
+      const sourcePage = state.doc.pages.find((p) => p.nodes[componentId]?.component) ?? state.doc.pages.find((p) => p.nodes[componentId]);
+      const component = sourcePage?.nodes[componentId];
+      if (!sourcePage || !component) return 0;
+      const clip = collectSubtree(sourcePage, [componentId]);
+      const next = structuredClone(state.doc);
+      next.tombstones = next.tombstones ?? {};
+      const now = Date.now();
+      let count = 0;
+      for (const page of next.pages) {
+        const instances = Object.values(page.nodes).filter((n) => n.componentId === componentId);
+        for (const instance of instances) {
+          const oldDescendants = descendantsOf(page, instance.id);
+          for (const old of oldDescendants) {
+            delete page.nodes[old.id];
+            next.tombstones![old.id] = now;
+          }
+          const { roots, nodes } = instantiateSubtree(page, { roots: clip.roots, nodes: clip.nodes }, () => uid());
+          const newRoot = nodes[roots[0]];
+          if (!newRoot) continue;
+          const preserved = {
+            id: instance.id,
+            x: instance.x,
+            y: instance.y,
+            name: instance.name,
+            parentId: instance.parentId,
+            componentId,
+          };
+          page.nodes[instance.id] = { ...newRoot, ...preserved, component: false, ts: now };
+          for (const [id, node] of Object.entries(nodes)) {
+            if (id === newRoot.id) continue;
+            page.nodes[id] = { ...node, parentId: node.parentId === newRoot.id ? instance.id : node.parentId, ts: now };
+          }
+          page.ts = now;
+          count++;
+        }
+      }
+      if (count === 0) return 0;
+      set({
+        doc: next,
+        past: record ? [...state.past, state.doc].slice(-60) : state.past,
+        future: record ? [] : state.future,
+        dirty: true,
+        changeSeq: state.changeSeq + 1,
+        syncStatus: "saving",
+      });
+      return count;
     },
     reorderSelection: (mode) => {
       if (get().isReadOnly) return;

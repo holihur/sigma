@@ -6,6 +6,7 @@ frontend/.vite/
 # Go build output
 sigma-server
 *.exe
+backend/internal/static/dist/
 
 # runtime data
 backend/data/
@@ -21,3 +22,6 @@ backend/data/
 .idea/
 .vscode/
 *.swp
+
+# GoReleaser output
+dist/

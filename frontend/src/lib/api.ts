@@ -1,12 +1,20 @@
 import type {
   Comment,
   FileMeta,
+  FigmaImportResult,
   Member,
   AIChatResponse,
+  AIContext,
   AISettings,
+  AISkill,
   Notification,
+  OIDCConfig,
+  OIDCExchange,
+  PersonalAccessToken,
+  CreatedPersonalAccessToken,
   SigmaDoc,
   TemplateMeta,
+  UpdateStatus,
   User,
   VersionMeta,
 } from "./types";
@@ -78,6 +86,9 @@ export const authApi = {
       body: { name, email, password },
     }),
   me: () => api<{ user: User }>("/auth/me"),
+  oidcConfig: () => api<OIDCConfig>("/auth/oidc/config"),
+  oidcExchange: (code: string) =>
+    api<OIDCExchange>("/auth/oidc/exchange", { method: "POST", body: { code } }),
 };
 
 // ---------- files ----------
@@ -144,6 +155,73 @@ export const aiApi = {
   test: () => api<{ ok: boolean; latencyMs: number; model: string; reply: string }>("/ai/test", { method: "POST" }),
   chat: (body: { fileId: string; pageId: string; message: string; sessionId?: string; selection?: string[] }) =>
     api<AIChatResponse>("/ai/chat", { method: "POST", body }),
+  context: () => api<AIContext>("/ai/context"),
+  saveContext: (body: { designMd: string; agentsMd: string }) =>
+    api<{ ok: boolean }>("/ai/context", { method: "PUT", body }),
+  skills: () => api<{ skills: AISkill[] }>("/ai/skills"),
+  uploadSkill: (body: { filename: string; content: string }) =>
+    api<{ skill: AISkill }>("/ai/skills", { method: "POST", body }),
+  deleteSkill: (id: string) => api<{ ok: boolean }>(`/ai/skills/${id}`, { method: "DELETE" }),
+};
+
+// ---------- personal access tokens / MCP ----------
+
+export const tokensApi = {
+  list: () => api<{ tokens: PersonalAccessToken[] }>("/tokens"),
+  create: (body: { name: string; scopes: string[]; expiresInDays: number }) =>
+    api<CreatedPersonalAccessToken>("/tokens", { method: "POST", body }),
+  remove: (id: string) => api<{ ok: true }>(`/tokens/${id}`, { method: "DELETE" }),
+};
+
+// ---------- Figma import / export ----------
+
+export const figmaApi = {
+  import: (body: { url: string; token: string; name?: string }) =>
+    api<FigmaImportResult>("/figma/import", { method: "POST", body }),
+  importJSON: async (data: string, name: string): Promise<FigmaImportResult> => {
+    const token = getToken();
+    const res = await fetch(`/api/figma/import-json?name=${encodeURIComponent(name)}`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "Content-Type": "application/json",
+      },
+      body: data,
+    });
+    const text = await res.text();
+    let payload: unknown = null;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch {
+      payload = { error: text };
+    }
+    if (!res.ok) {
+      if (res.status === 401 && token) {
+        setToken(null);
+        window.dispatchEvent(new CustomEvent("sigma:unauthorized"));
+      }
+      throw new ApiError((payload as { error?: string } | null)?.error ?? "Import failed", res.status);
+    }
+    return payload as FigmaImportResult;
+  },
+  exportJSON: async (id: string): Promise<{ text: string; filename: string }> => {
+    const token = getToken();
+    const res = await fetch(`/api/files/${id}/figma-json`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new ApiError("Export failed", res.status);
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = /filename="([^"]+)"/.exec(disposition);
+    return { text: await res.text(), filename: match?.[1] ?? "sigma-design.sigma.json" };
+  },
+};
+
+// ---------- system update ----------
+
+export const systemApi = {
+  updateStatus: () => api<UpdateStatus>("/system/update"),
+  checkUpdate: () => api<UpdateStatus>("/system/update/check", { method: "POST" }),
+  applyUpdate: () => api<{ ok: boolean; version: string; restarting: boolean }>("/system/update/apply", { method: "POST" }),
 };
 
 // ---------- public links & notifications ----------

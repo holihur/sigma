@@ -14,6 +14,10 @@ import { clamp, cn, isEditableTarget, round } from "@/lib/utils";
 import { Canvas } from "@/components/editor/Canvas";
 import { AIChatPanel } from "@/components/editor/AIChatPanel";
 import { AISettingsDialog } from "@/components/editor/AISettingsDialog";
+import { DeveloperDialog } from "@/components/editor/DeveloperDialog";
+import { ComponentsDialog } from "@/components/editor/ComponentsDialog";
+import { AgentContextDialog } from "@/components/editor/AgentContextDialog";
+import { figmaApi } from "@/lib/api";
 import { Toolbar } from "@/components/editor/Toolbar";
 import { TopBar } from "@/components/editor/TopBar";
 import { LayersPanel } from "@/components/editor/LayersPanel";
@@ -62,6 +66,9 @@ export default function EditorPage() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
   const [aiConfigVersion, setAiConfigVersion] = useState(0);
+  const [developerOpen, setDeveloperOpen] = useState(false);
+  const [componentsOpen, setComponentsOpen] = useState(false);
+  const [agentContextOpen, setAgentContextOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const { sendDoc, sendPresence } = useCollaboration(file?.id ?? null, !!file);
 
@@ -370,6 +377,7 @@ export default function EditorPage() {
           r: "rect",
           o: "ellipse",
           l: "line",
+          p: "vector",
           t: "text",
           c: "comment",
         };
@@ -393,6 +401,23 @@ export default function EditorPage() {
       const data = await filesApi.patch(file.id, { name });
       useEditor.getState().setFileMeta(data.file);
       document.title = `${data.file.name} — Sigma`;
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const handleExportFigma = async () => {
+    if (!file) return;
+    try {
+      const { text, filename } = await figmaApi.exportJSON(file.id);
+      const blob = new Blob([text], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(t("Figma JSON exported"));
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -486,6 +511,10 @@ export default function EditorPage() {
           setAiOpen(true);
           setAiSettingsOpen(true);
         }}
+        onOpenDeveloper={() => setDeveloperOpen(true)}
+        onExportFigma={handleExportFigma}
+        onOpenComponents={() => setComponentsOpen(true)}
+        onOpenAgentContext={() => setAgentContextOpen(true)}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -545,6 +574,9 @@ export default function EditorPage() {
           onOpenChange={setAiSettingsOpen}
           onSaved={() => setAiConfigVersion((v) => v + 1)}
         />
+        <DeveloperDialog open={developerOpen} onOpenChange={setDeveloperOpen} />
+        <ComponentsDialog open={componentsOpen} onOpenChange={setComponentsOpen} />
+        <AgentContextDialog open={agentContextOpen} onOpenChange={setAgentContextOpen} />
 
         {showComments && (
           <>

@@ -25,7 +25,6 @@ type nodeMeta struct {
 	Children []string `json:"children"`
 }
 
-
 func cloneDoc(in *Doc) *Doc {
 	out := &Doc{Pages: make([]Page, 0, len(in.Pages))}
 	if in.Tombstones != nil {
@@ -211,7 +210,6 @@ func Merge(base, incoming *Doc) *Doc {
 	return out
 }
 
-
 // PrepareRestore makes a restored snapshot authoritative: every node and page
 // gets a fresh timestamp, nodes that exist now but not in the snapshot are
 // tombstoned, and missing pages are tombstoned. This prevents a later LWW merge
@@ -256,7 +254,6 @@ func PrepareRestore(current, restored *Doc, now int64) *Doc {
 	}
 	return out
 }
-
 
 // ApplyDelta merges a partial document (only changed pages/nodes plus
 // tombstones) into the stored document.

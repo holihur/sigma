@@ -1,0 +1,18 @@
+# Example per-user unit. install.sh writes the real path into ~/.config/systemd/user/.
+[Unit]
+Description=Sigma collaborative design
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.sigma
+EnvironmentFile=%h/.sigma/sigma.env
+ExecStart=%h/.local/bin/sigma
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

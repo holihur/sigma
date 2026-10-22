@@ -29,6 +29,11 @@ type Shadow struct {
 	Color  string  `json:"color"`
 }
 
+type VectorPoint struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
 type Link struct {
 	Action        string `json:"action"`
 	TargetPageID  string `json:"targetPageId,omitempty"`
@@ -38,38 +43,42 @@ type Link struct {
 }
 
 type Node struct {
-	ID            string   `json:"id"`
-	Type          string   `json:"type"`
-	Name          string   `json:"name"`
-	X             float64  `json:"x"`
-	Y             float64  `json:"y"`
-	Width         float64  `json:"width"`
-	Height        float64  `json:"height"`
-	Rotation      float64  `json:"rotation"`
-	Opacity       float64  `json:"opacity"`
-	Visible       bool     `json:"visible"`
-	Locked        bool     `json:"locked"`
-	Fill          *Paint   `json:"fill"`
-	Stroke        *Paint   `json:"stroke"`
-	StrokeWidth   float64  `json:"strokeWidth"`
-	Radius        float64  `json:"radius"`
-	Shadow        *Shadow  `json:"shadow"`
-	Blur          float64  `json:"blur"`
-	Children      []string `json:"children"`
-	ParentID      *string  `json:"parentId"`
-	Clip          bool     `json:"clip"`
-	Text          string   `json:"text"`
-	FontSize      float64  `json:"fontSize"`
-	FontFamily    string   `json:"fontFamily"`
-	FontWeight    int      `json:"fontWeight"`
-	LineHeight    float64  `json:"lineHeight"`
-	LetterSpacing float64  `json:"letterSpacing"`
-	TextAlign     string   `json:"textAlign"`
-	VerticalAlign string   `json:"verticalAlign"`
-	Src           string   `json:"src"`
-	ObjectFit     string   `json:"objectFit"`
-	Link          *Link    `json:"link"`
-	TS            int64    `json:"ts"`
+	ID            string        `json:"id"`
+	Type          string        `json:"type"`
+	Name          string        `json:"name"`
+	X             float64       `json:"x"`
+	Y             float64       `json:"y"`
+	Width         float64       `json:"width"`
+	Height        float64       `json:"height"`
+	Rotation      float64       `json:"rotation"`
+	Opacity       float64       `json:"opacity"`
+	Visible       bool          `json:"visible"`
+	Locked        bool          `json:"locked"`
+	Fill          *Paint        `json:"fill"`
+	Stroke        *Paint        `json:"stroke"`
+	StrokeWidth   float64       `json:"strokeWidth"`
+	Radius        float64       `json:"radius"`
+	Shadow        *Shadow       `json:"shadow"`
+	Blur          float64       `json:"blur"`
+	Children      []string      `json:"children"`
+	ParentID      *string       `json:"parentId"`
+	Clip          bool          `json:"clip"`
+	Text          string        `json:"text"`
+	FontSize      float64       `json:"fontSize"`
+	FontFamily    string        `json:"fontFamily"`
+	FontWeight    int           `json:"fontWeight"`
+	LineHeight    float64       `json:"lineHeight"`
+	LetterSpacing float64       `json:"letterSpacing"`
+	TextAlign     string        `json:"textAlign"`
+	VerticalAlign string        `json:"verticalAlign"`
+	Src           string        `json:"src"`
+	ObjectFit     string        `json:"objectFit"`
+	Link          *Link         `json:"link"`
+	Points        []VectorPoint `json:"points,omitempty"`
+	Closed        bool          `json:"closed,omitempty"`
+	Component     bool          `json:"component,omitempty"`
+	ComponentID   string        `json:"componentId,omitempty"`
+	TS            int64         `json:"ts"`
 }
 
 type Page struct {
@@ -194,6 +203,15 @@ func NewNode(typ, name string, x, y, width, height float64) *Node {
 		if n.Name == "" {
 			n.Name = "Line"
 		}
+	case "vector":
+		n.Fill = nil
+		n.Stroke = Solid("#0ea5e9")
+		n.StrokeWidth = 2
+		n.Width = 1
+		n.Height = 1
+		if n.Name == "" {
+			n.Name = "Vector"
+		}
 	default:
 		if n.Name == "" {
 			n.Name = typ
@@ -279,6 +297,10 @@ type Patch struct {
 	LetterSpacing *float64
 	TextAlign     *string
 	Visible       *bool
+	Points        *[]VectorPoint
+	Closed        *bool
+	Component     *bool
+	ComponentID   *string
 }
 
 func (p *Page) Update(id string, patch Patch) (*Node, bool) {
@@ -340,6 +362,18 @@ func (p *Page) Update(id string, patch Patch) (*Node, bool) {
 	}
 	if patch.Visible != nil {
 		n.Visible = *patch.Visible
+	}
+	if patch.Points != nil {
+		n.Points = *patch.Points
+	}
+	if patch.Closed != nil {
+		n.Closed = *patch.Closed
+	}
+	if patch.Component != nil {
+		n.Component = *patch.Component
+	}
+	if patch.ComponentID != nil {
+		n.ComponentID = *patch.ComponentID
 	}
 	n.TS = now
 	p.TS = now
@@ -469,12 +503,12 @@ func (d *Doc) Summary(pageID string) map[string]any {
 		nodes = append(nodes, item)
 	}
 	return map[string]any{
-		"pages":  pages,
-		"pageId": p.ID,
-		"page":   p.Name,
+		"pages":   pages,
+		"pageId":  p.ID,
+		"page":    p.Name,
 		"rootIds": p.RootIDs,
-		"nodes":  nodes,
-		"count":  len(p.Nodes),
+		"nodes":   nodes,
+		"count":   len(p.Nodes),
 	}
 }
 

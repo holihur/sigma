@@ -303,7 +303,6 @@ func (a *API) wsAccess(fileID, token string) (ws.User, error) {
 	return ws.User{ID: u.ID, Name: u.Name, Color: u.Color, Role: role}, nil
 }
 
-
 func truncateRunes(s string, max int) string {
 	r := []rune(s)
 	if len(r) <= max {

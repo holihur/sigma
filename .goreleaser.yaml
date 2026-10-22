@@ -1,0 +1,57 @@
+version: 2
+
+project_name: sigma
+
+builds:
+  - id: sigma
+    dir: backend
+    main: .
+    binary: sigma
+    tags:
+      - embed_static
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}
+
+archives:
+  - id: sigma
+    formats: [binary]
+    name_template: "sigma-{{ .Os }}-{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+release:
+  github:
+    owner: holihur
+    name: sigma
+  draft: false
+  prerelease: auto
+  name_template: "Sigma {{ .Tag }}"
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"

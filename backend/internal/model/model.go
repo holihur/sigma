@@ -45,18 +45,18 @@ type FileDetail struct {
 }
 
 type Comment struct {
-	ID        string `json:"id"`
-	FileID    string `json:"fileId"`
-	PageID    string `json:"pageId"`
-	NodeID    string `json:"nodeId,omitempty"`
+	ID        string  `json:"id"`
+	FileID    string  `json:"fileId"`
+	PageID    string  `json:"pageId"`
+	NodeID    string  `json:"nodeId,omitempty"`
 	X         float64 `json:"x"`
 	Y         float64 `json:"y"`
-	Text      string `json:"text"`
-	AuthorID  string `json:"authorId"`
-	Author    string `json:"author"`
-	Color     string `json:"color"`
-	Resolved  bool   `json:"resolved"`
-	CreatedAt string `json:"createdAt"`
+	Text      string  `json:"text"`
+	AuthorID  string  `json:"authorId"`
+	Author    string  `json:"author"`
+	Color     string  `json:"color"`
+	Resolved  bool    `json:"resolved"`
+	CreatedAt string  `json:"createdAt"`
 }
 
 type VersionMeta struct {
@@ -81,7 +81,6 @@ type Member struct {
 func Now() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
-
 
 type Notification struct {
 	ID        string `json:"id"`

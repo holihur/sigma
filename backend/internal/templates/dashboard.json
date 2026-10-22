@@ -257,6 +257,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000492
           },
           "do_sidebar": {
@@ -294,6 +298,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000283
           },
           "do_logo": {
@@ -341,6 +349,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000284
           },
           "do_logo_mark": {
@@ -378,6 +390,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000285
           },
           "do_brand": {
@@ -415,6 +431,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000286
           },
           "do_workspace": {
@@ -452,6 +472,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000287
           },
           "do_nav_0": {
@@ -490,6 +514,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000288
           },
           "do_nav_icon_0": {
@@ -527,6 +555,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000289
           },
           "do_nav_label_0": {
@@ -564,6 +596,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000290
           },
           "do_nav_1": {
@@ -602,6 +638,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000291
           },
           "do_nav_icon_1": {
@@ -639,6 +679,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000292
           },
           "do_nav_label_1": {
@@ -676,6 +720,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000293
           },
           "do_nav_2": {
@@ -714,6 +762,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000294
           },
           "do_nav_icon_2": {
@@ -751,6 +803,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000295
           },
           "do_nav_label_2": {
@@ -788,6 +844,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000296
           },
           "do_nav_3": {
@@ -826,6 +886,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000297
           },
           "do_nav_icon_3": {
@@ -863,6 +927,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000298
           },
           "do_nav_label_3": {
@@ -900,6 +968,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000299
           },
           "do_nav_4": {
@@ -938,6 +1010,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000300
           },
           "do_nav_icon_4": {
@@ -975,6 +1051,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000301
           },
           "do_nav_label_4": {
@@ -1012,6 +1092,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000302
           },
           "do_divider": {
@@ -1050,6 +1134,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000303
           },
           "do_projects_label": {
@@ -1087,6 +1175,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000304
           },
           "do_proj_dot_0": {
@@ -1124,6 +1216,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000305
           },
           "do_proj_0": {
@@ -1161,6 +1257,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000306
           },
           "do_proj_dot_1": {
@@ -1198,6 +1298,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000307
           },
           "do_proj_1": {
@@ -1235,6 +1339,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000308
           },
           "do_proj_dot_2": {
@@ -1272,6 +1380,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000309
           },
           "do_proj_2": {
@@ -1309,6 +1421,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000310
           },
           "do_user_card": {
@@ -1351,6 +1467,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000311
           },
           "do_user_avatar": {
@@ -1398,6 +1518,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000312
           },
           "do_user_name": {
@@ -1435,6 +1559,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000313
           },
           "do_user_role": {
@@ -1472,6 +1600,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000314
           },
           "do_title": {
@@ -1509,6 +1641,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000315
           },
           "do_subtitle": {
@@ -1546,6 +1682,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000316
           },
           "do_search": {
@@ -1588,6 +1728,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000317
           },
           "do_search_icon": {
@@ -1625,6 +1769,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000318
           },
           "do_search_text": {
@@ -1662,6 +1810,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000319
           },
           "do_avatar_0": {
@@ -1702,6 +1854,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000320
           },
           "do_avatar_text_0": {
@@ -1739,6 +1895,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000321
           },
           "do_avatar_1": {
@@ -1779,6 +1939,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000322
           },
           "do_avatar_text_1": {
@@ -1816,6 +1980,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000323
           },
           "do_avatar_2": {
@@ -1856,6 +2024,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000324
           },
           "do_avatar_text_2": {
@@ -1893,6 +2065,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000325
           },
           "do_mobile_btn": {
@@ -1940,6 +2116,10 @@
               "targetFrameId": "df_mobile",
               "transition": "slide-left"
             },
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000326
           },
           "do_mobile_btn_text": {
@@ -1977,6 +2157,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000327
           },
           "do_export": {
@@ -2014,6 +2198,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000328
           },
           "do_export_text": {
@@ -2051,6 +2239,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000329
           },
           "do_kpi_0": {
@@ -2098,6 +2290,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000330
           },
           "do_kpi_label_0": {
@@ -2135,6 +2331,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000331
           },
           "do_kpi_value_0": {
@@ -2172,6 +2372,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000332
           },
           "do_kpi_delta_0": {
@@ -2209,6 +2413,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000333
           },
           "do_kpi_meta_0": {
@@ -2246,6 +2454,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000334
           },
           "do_spark_0_0": {
@@ -2284,6 +2496,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000335
           },
           "do_spark_0_1": {
@@ -2322,6 +2538,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000336
           },
           "do_spark_0_2": {
@@ -2360,6 +2580,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000337
           },
           "do_spark_0_3": {
@@ -2398,6 +2622,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000338
           },
           "do_spark_0_4": {
@@ -2436,6 +2664,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000339
           },
           "do_spark_0_5": {
@@ -2474,6 +2706,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000340
           },
           "do_spark_0_6": {
@@ -2512,6 +2748,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000341
           },
           "do_spark_0_7": {
@@ -2550,6 +2790,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000342
           },
           "do_kpi_1": {
@@ -2597,6 +2841,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000343
           },
           "do_kpi_label_1": {
@@ -2634,6 +2882,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000344
           },
           "do_kpi_value_1": {
@@ -2671,6 +2923,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000345
           },
           "do_kpi_delta_1": {
@@ -2708,6 +2964,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000346
           },
           "do_kpi_meta_1": {
@@ -2745,6 +3005,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000347
           },
           "do_spark_1_0": {
@@ -2783,6 +3047,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000348
           },
           "do_spark_1_1": {
@@ -2821,6 +3089,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000349
           },
           "do_spark_1_2": {
@@ -2859,6 +3131,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000350
           },
           "do_spark_1_3": {
@@ -2897,6 +3173,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000351
           },
           "do_spark_1_4": {
@@ -2935,6 +3215,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000352
           },
           "do_spark_1_5": {
@@ -2973,6 +3257,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000353
           },
           "do_spark_1_6": {
@@ -3011,6 +3299,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000354
           },
           "do_spark_1_7": {
@@ -3049,6 +3341,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000355
           },
           "do_kpi_2": {
@@ -3096,6 +3392,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000356
           },
           "do_kpi_label_2": {
@@ -3133,6 +3433,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000357
           },
           "do_kpi_value_2": {
@@ -3170,6 +3474,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000358
           },
           "do_kpi_delta_2": {
@@ -3207,6 +3515,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000359
           },
           "do_kpi_meta_2": {
@@ -3244,6 +3556,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000360
           },
           "do_spark_2_0": {
@@ -3282,6 +3598,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000361
           },
           "do_spark_2_1": {
@@ -3320,6 +3640,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000362
           },
           "do_spark_2_2": {
@@ -3358,6 +3682,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000363
           },
           "do_spark_2_3": {
@@ -3396,6 +3724,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000364
           },
           "do_spark_2_4": {
@@ -3434,6 +3766,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000365
           },
           "do_spark_2_5": {
@@ -3472,6 +3808,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000366
           },
           "do_spark_2_6": {
@@ -3510,6 +3850,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000367
           },
           "do_spark_2_7": {
@@ -3548,6 +3892,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000368
           },
           "do_kpi_3": {
@@ -3595,6 +3943,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000369
           },
           "do_kpi_label_3": {
@@ -3632,6 +3984,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000370
           },
           "do_kpi_value_3": {
@@ -3669,6 +4025,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000371
           },
           "do_kpi_delta_3": {
@@ -3706,6 +4066,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000372
           },
           "do_kpi_meta_3": {
@@ -3743,6 +4107,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000373
           },
           "do_spark_3_0": {
@@ -3781,6 +4149,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000374
           },
           "do_spark_3_1": {
@@ -3819,6 +4191,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000375
           },
           "do_spark_3_2": {
@@ -3857,6 +4233,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000376
           },
           "do_spark_3_3": {
@@ -3895,6 +4275,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000377
           },
           "do_spark_3_4": {
@@ -3933,6 +4317,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000378
           },
           "do_spark_3_5": {
@@ -3971,6 +4359,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000379
           },
           "do_spark_3_6": {
@@ -4009,6 +4401,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000380
           },
           "do_spark_3_7": {
@@ -4047,6 +4443,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000381
           },
           "do_chart": {
@@ -4088,6 +4488,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000382
           },
           "do_chart_title": {
@@ -4125,6 +4529,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000383
           },
           "do_chart_sub": {
@@ -4162,6 +4570,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000384
           },
           "do_chart_pill": {
@@ -4200,6 +4612,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000385
           },
           "do_chart_pill_text": {
@@ -4237,6 +4653,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000386
           },
           "do_grid_label_0": {
@@ -4274,6 +4694,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000387
           },
           "do_grid_line_0": {
@@ -4312,6 +4736,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000388
           },
           "do_grid_label_1": {
@@ -4349,6 +4777,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000389
           },
           "do_grid_line_1": {
@@ -4387,6 +4819,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000390
           },
           "do_grid_label_2": {
@@ -4424,6 +4860,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000391
           },
           "do_grid_line_2": {
@@ -4462,6 +4902,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000392
           },
           "do_grid_label_3": {
@@ -4499,6 +4943,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000393
           },
           "do_grid_line_3": {
@@ -4537,6 +4985,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000394
           },
           "do_grid_label_4": {
@@ -4574,6 +5026,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000395
           },
           "do_grid_line_4": {
@@ -4612,6 +5068,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000396
           },
           "do_bar_0": {
@@ -4659,6 +5119,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000397
           },
           "do_bar_1": {
@@ -4706,6 +5170,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000398
           },
           "do_bar_2": {
@@ -4753,6 +5221,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000399
           },
           "do_bar_3": {
@@ -4800,6 +5272,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000400
           },
           "do_bar_4": {
@@ -4847,6 +5323,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000401
           },
           "do_bar_5": {
@@ -4894,6 +5374,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000402
           },
           "do_bar_6": {
@@ -4941,6 +5425,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000403
           },
           "do_bar_7": {
@@ -4988,6 +5476,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000404
           },
           "do_bar_8": {
@@ -5035,6 +5527,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000405
           },
           "do_bar_9": {
@@ -5082,6 +5578,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000406
           },
           "do_bar_10": {
@@ -5129,6 +5629,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000407
           },
           "do_bar_11": {
@@ -5176,6 +5680,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000408
           },
           "do_month_0": {
@@ -5213,6 +5721,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000409
           },
           "do_month_1": {
@@ -5250,6 +5762,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000410
           },
           "do_month_2": {
@@ -5287,6 +5803,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000411
           },
           "do_month_3": {
@@ -5324,6 +5844,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000412
           },
           "do_month_4": {
@@ -5361,6 +5885,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000413
           },
           "do_month_5": {
@@ -5398,6 +5926,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000414
           },
           "do_month_6": {
@@ -5435,6 +5967,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000415
           },
           "do_month_7": {
@@ -5472,6 +6008,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000416
           },
           "do_month_8": {
@@ -5509,6 +6049,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000417
           },
           "do_month_9": {
@@ -5546,6 +6090,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000418
           },
           "do_month_10": {
@@ -5583,6 +6131,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000419
           },
           "do_month_11": {
@@ -5620,6 +6172,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000420
           },
           "do_channels": {
@@ -5661,6 +6217,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000421
           },
           "do_channels_title": {
@@ -5698,6 +6258,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000422
           },
           "do_ch_label_0": {
@@ -5735,6 +6299,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000423
           },
           "do_ch_value_0": {
@@ -5772,6 +6340,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000424
           },
           "do_ch_track_0": {
@@ -5810,6 +6382,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000425
           },
           "do_ch_bar_0": {
@@ -5847,6 +6423,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000426
           },
           "do_ch_label_1": {
@@ -5884,6 +6464,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000427
           },
           "do_ch_value_1": {
@@ -5921,6 +6505,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000428
           },
           "do_ch_track_1": {
@@ -5959,6 +6547,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000429
           },
           "do_ch_bar_1": {
@@ -5996,6 +6588,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000430
           },
           "do_ch_label_2": {
@@ -6033,6 +6629,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000431
           },
           "do_ch_value_2": {
@@ -6070,6 +6670,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000432
           },
           "do_ch_track_2": {
@@ -6108,6 +6712,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000433
           },
           "do_ch_bar_2": {
@@ -6145,6 +6753,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000434
           },
           "do_ch_label_3": {
@@ -6182,6 +6794,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000435
           },
           "do_ch_value_3": {
@@ -6219,6 +6835,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000436
           },
           "do_ch_track_3": {
@@ -6257,6 +6877,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000437
           },
           "do_ch_bar_3": {
@@ -6294,6 +6918,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000438
           },
           "do_ch_label_4": {
@@ -6331,6 +6959,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000439
           },
           "do_ch_value_4": {
@@ -6368,6 +7000,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000440
           },
           "do_ch_track_4": {
@@ -6406,6 +7042,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000441
           },
           "do_ch_bar_4": {
@@ -6443,6 +7083,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000442
           },
           "do_table": {
@@ -6484,6 +7128,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000443
           },
           "do_table_title": {
@@ -6521,6 +7169,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000444
           },
           "do_table_view": {
@@ -6558,6 +7210,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000445
           },
           "do_th_0": {
@@ -6595,6 +7251,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000446
           },
           "do_th_1": {
@@ -6632,6 +7292,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000447
           },
           "do_th_2": {
@@ -6669,6 +7333,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000448
           },
           "do_th_3": {
@@ -6706,6 +7374,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000449
           },
           "do_th_4": {
@@ -6743,6 +7415,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000450
           },
           "do_row_sep_0": {
@@ -6781,6 +7457,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000451
           },
           "do_row_avatar_0": {
@@ -6818,6 +7498,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000452
           },
           "do_row_name_0": {
@@ -6855,6 +7539,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000453
           },
           "do_row_plan_0": {
@@ -6892,6 +7580,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000454
           },
           "do_row_amount_0": {
@@ -6929,6 +7621,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000455
           },
           "do_row_badge_0": {
@@ -6967,6 +7663,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000456
           },
           "do_row_status_0": {
@@ -7004,6 +7704,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000457
           },
           "do_row_date_0": {
@@ -7041,6 +7745,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000458
           },
           "do_row_sep_1": {
@@ -7079,6 +7787,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000459
           },
           "do_row_avatar_1": {
@@ -7116,6 +7828,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000460
           },
           "do_row_name_1": {
@@ -7153,6 +7869,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000461
           },
           "do_row_plan_1": {
@@ -7190,6 +7910,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000462
           },
           "do_row_amount_1": {
@@ -7227,6 +7951,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000463
           },
           "do_row_badge_1": {
@@ -7265,6 +7993,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000464
           },
           "do_row_status_1": {
@@ -7302,6 +8034,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000465
           },
           "do_row_date_1": {
@@ -7339,6 +8075,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000466
           },
           "do_row_sep_2": {
@@ -7377,6 +8117,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000467
           },
           "do_row_avatar_2": {
@@ -7414,6 +8158,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000468
           },
           "do_row_name_2": {
@@ -7451,6 +8199,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000469
           },
           "do_row_plan_2": {
@@ -7488,6 +8240,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000470
           },
           "do_row_amount_2": {
@@ -7525,6 +8281,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000471
           },
           "do_row_badge_2": {
@@ -7563,6 +8323,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000472
           },
           "do_row_status_2": {
@@ -7600,6 +8364,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000473
           },
           "do_row_date_2": {
@@ -7637,6 +8405,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000474
           },
           "do_row_sep_3": {
@@ -7675,6 +8447,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000475
           },
           "do_row_avatar_3": {
@@ -7712,6 +8488,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000476
           },
           "do_row_name_3": {
@@ -7749,6 +8529,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000477
           },
           "do_row_plan_3": {
@@ -7786,6 +8570,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000478
           },
           "do_row_amount_3": {
@@ -7823,6 +8611,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000479
           },
           "do_row_badge_3": {
@@ -7861,6 +8653,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000480
           },
           "do_row_status_3": {
@@ -7898,6 +8694,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000481
           },
           "do_row_date_3": {
@@ -7935,6 +8735,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000482
           },
           "do_goal": {
@@ -7986,6 +8790,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000483
           },
           "do_goal_label": {
@@ -8023,6 +8831,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000484
           },
           "do_goal_value": {
@@ -8060,6 +8872,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000485
           },
           "do_goal_meta": {
@@ -8097,6 +8913,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000486
           },
           "do_goal_track": {
@@ -8135,6 +8955,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000487
           },
           "do_goal_bar": {
@@ -8172,6 +8996,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000488
           },
           "do_goal_pct": {
@@ -8209,6 +9037,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000489
           },
           "do_goal_hint": {
@@ -8246,6 +9078,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000490
           },
           "do_goal_hint2": {
@@ -8283,6 +9119,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000491
           }
         },
@@ -8403,6 +9243,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000565
           },
           "dm_time": {
@@ -8440,6 +9284,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000493
           },
           "dm_sig1": {
@@ -8477,6 +9325,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000494
           },
           "dm_sig2": {
@@ -8514,6 +9366,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000495
           },
           "dm_sig3": {
@@ -8551,6 +9407,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000496
           },
           "dm_battery": {
@@ -8593,6 +9453,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000497
           },
           "dm_battery_fill": {
@@ -8630,6 +9494,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000498
           },
           "dm_title": {
@@ -8667,6 +9535,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000499
           },
           "dm_sub": {
@@ -8704,6 +9576,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000500
           },
           "dm_avatar": {
@@ -8751,6 +9627,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000501
           },
           "dm_card": {
@@ -8802,6 +9682,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000502
           },
           "dm_card_label": {
@@ -8839,6 +9723,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000503
           },
           "dm_card_value": {
@@ -8876,6 +9764,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000504
           },
           "dm_card_delta": {
@@ -8913,6 +9805,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000505
           },
           "dm_spark_0": {
@@ -8951,6 +9847,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000506
           },
           "dm_spark_1": {
@@ -8989,6 +9889,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000507
           },
           "dm_spark_2": {
@@ -9027,6 +9931,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000508
           },
           "dm_spark_3": {
@@ -9065,6 +9973,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000509
           },
           "dm_spark_4": {
@@ -9103,6 +10015,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000510
           },
           "dm_spark_5": {
@@ -9141,6 +10057,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000511
           },
           "dm_spark_6": {
@@ -9179,6 +10099,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000512
           },
           "dm_spark_7": {
@@ -9217,6 +10141,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000513
           },
           "dm_spark_8": {
@@ -9255,6 +10183,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000514
           },
           "dm_spark_9": {
@@ -9293,6 +10225,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000515
           },
           "dm_kpi_0": {
@@ -9334,6 +10270,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000516
           },
           "dm_kpi_label_0": {
@@ -9371,6 +10311,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000517
           },
           "dm_kpi_value_0": {
@@ -9408,6 +10352,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000518
           },
           "dm_kpi_delta_0": {
@@ -9445,6 +10393,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000519
           },
           "dm_kpi_1": {
@@ -9486,6 +10438,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000520
           },
           "dm_kpi_label_1": {
@@ -9523,6 +10479,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000521
           },
           "dm_kpi_value_1": {
@@ -9560,6 +10520,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000522
           },
           "dm_kpi_delta_1": {
@@ -9597,6 +10561,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000523
           },
           "dm_kpi_2": {
@@ -9638,6 +10606,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000524
           },
           "dm_kpi_label_2": {
@@ -9675,6 +10647,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000525
           },
           "dm_kpi_value_2": {
@@ -9712,6 +10688,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000526
           },
           "dm_kpi_delta_2": {
@@ -9749,6 +10729,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000527
           },
           "dm_chart": {
@@ -9790,6 +10774,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000528
           },
           "dm_chart_title": {
@@ -9827,6 +10815,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000529
           },
           "dm_chart_sub": {
@@ -9864,6 +10856,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000530
           },
           "dm_bar_0": {
@@ -9911,6 +10907,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000531
           },
           "dm_bar_1": {
@@ -9958,6 +10958,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000532
           },
           "dm_bar_2": {
@@ -10005,6 +11009,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000533
           },
           "dm_bar_3": {
@@ -10052,6 +11060,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000534
           },
           "dm_bar_4": {
@@ -10099,6 +11111,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000535
           },
           "dm_bar_5": {
@@ -10146,6 +11162,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000536
           },
           "dm_bar_6": {
@@ -10193,6 +11213,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000537
           },
           "dm_bar_7": {
@@ -10240,6 +11264,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000538
           },
           "dm_bar_8": {
@@ -10287,6 +11315,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000539
           },
           "dm_bar_9": {
@@ -10334,6 +11366,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000540
           },
           "dm_bar_10": {
@@ -10381,6 +11417,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000541
           },
           "dm_bar_11": {
@@ -10428,6 +11468,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000542
           },
           "dm_month_0": {
@@ -10465,6 +11509,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000543
           },
           "dm_month_1": {
@@ -10502,6 +11550,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000544
           },
           "dm_month_2": {
@@ -10539,6 +11591,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000545
           },
           "dm_month_3": {
@@ -10576,6 +11632,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000546
           },
           "dm_month_4": {
@@ -10613,6 +11673,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000547
           },
           "dm_month_5": {
@@ -10650,6 +11714,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000548
           },
           "dm_channels": {
@@ -10691,6 +11759,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000549
           },
           "dm_channels_title": {
@@ -10728,6 +11800,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000550
           },
           "dm_ch_label_0": {
@@ -10765,6 +11841,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000551
           },
           "dm_ch_track_0": {
@@ -10803,6 +11883,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000552
           },
           "dm_ch_bar_0": {
@@ -10840,6 +11924,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000553
           },
           "dm_ch_val_0": {
@@ -10877,6 +11965,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000554
           },
           "dm_ch_label_1": {
@@ -10914,6 +12006,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000555
           },
           "dm_ch_track_1": {
@@ -10952,6 +12048,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000556
           },
           "dm_ch_bar_1": {
@@ -10989,6 +12089,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000557
           },
           "dm_ch_val_1": {
@@ -11026,6 +12130,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000558
           },
           "dm_ch_label_2": {
@@ -11063,6 +12171,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000559
           },
           "dm_ch_track_2": {
@@ -11101,6 +12213,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000560
           },
           "dm_ch_bar_2": {
@@ -11138,6 +12254,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000561
           },
           "dm_ch_val_2": {
@@ -11175,6 +12295,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000562
           },
           "dm_back": {
@@ -11220,6 +12344,10 @@
               "action": "back",
               "transition": "slide-left"
             },
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000563
           },
           "dm_back_text": {
@@ -11257,6 +12385,10 @@
             "src": "",
             "objectFit": "cover",
             "link": null,
+            "points": [],
+            "closed": false,
+            "component": false,
+            "componentId": null,
             "ts": 1760000000564
           }
         },

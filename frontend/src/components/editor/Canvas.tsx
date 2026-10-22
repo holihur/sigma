@@ -5,8 +5,11 @@ import {
   BringToFront,
   Clipboard,
   Copy,
+  Component as ComponentIcon,
   Group as GroupIcon,
   Image as ImageIcon,
+  RefreshCw,
+  Unlink,
   Layers,
   MessageCircle,
   Play,
@@ -92,6 +95,13 @@ type DragState =
       startLocal: Point;
       parentId: string | null;
       moved: boolean;
+    }
+  | {
+      kind: "vector-point";
+      nodeId: string;
+      index: number;
+      start: SceneNode;
+      moved: boolean;
     };
 
 interface CanvasProps {
@@ -142,6 +152,8 @@ export function Canvas({
   const hoveredId = useEditor((s) => s.hoveredId);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const draftRef = useRef<HTMLTextAreaElement>(null);
+  const penRef = useRef<{ nodeId: string; points: Point[]; parentId: string | null; history: boolean } | null>(null);
+  const lastPenClick = useRef<{ time: number; screen: Point } | null>(null);
   const lastCursorSent = useRef(0);
   const hoverFrame = useRef<number | null>(null);
 
@@ -316,6 +328,102 @@ export function Canvas({
     window.addEventListener("pointercancel", up);
   };
 
+  // ---------- vector pen ----------
+  const updatePenPoints = (points: Point[], parentId: string | null) => {
+    const pen = penRef.current;
+    if (!pen) return;
+    const local = points.map((p) => parentLocalPoint(page, parentId, p));
+    const minX = Math.min(...local.map((p) => p.x));
+    const minY = Math.min(...local.map((p) => p.y));
+    const maxX = Math.max(...local.map((p) => p.x));
+    const maxY = Math.max(...local.map((p) => p.y));
+    const width = Math.max(maxX - minX, 1);
+    const height = Math.max(maxY - minY, 1);
+    const normalized = local.map((p) => ({ x: (p.x - minX) / width, y: (p.y - minY) / height }));
+    store.getState().updateNode(pen.nodeId, { x: minX, y: minY, width, height, points: normalized }, false);
+  };
+
+  const finishPen = (closed: boolean) => {
+    const pen = penRef.current;
+    penRef.current = null;
+    lastPenClick.current = null;
+    if (!pen) return;
+    const st = store.getState();
+    const node = getPage(st.doc, pageId).nodes[pen.nodeId];
+    if (!node) return;
+    if (pen.points.length < 2) {
+      st.select([pen.nodeId]);
+      st.deleteSelection();
+      st.setTool("select");
+      return;
+    }
+    st.updateNode(pen.nodeId, {
+      closed,
+      fill: closed ? node.fill ?? { type: "solid", color: "#0ea5e9" } : null,
+      name: node.name === "Vector" ? "Vector" : node.name,
+    }, false);
+    st.select([pen.nodeId]);
+    st.setTool("select");
+  };
+
+  const onPenClick = (e: React.PointerEvent) => {
+    if (readOnly) return;
+    e.preventDefault();
+    const world = worldPoint(e);
+    const screen = screenPoint(e);
+    const now = performance.now();
+    const last = lastPenClick.current;
+    if (last && now - last.time < 320 && Math.hypot(screen.x - last.screen.x, screen.y - last.screen.y) < 8) {
+      finishPen(false);
+      return;
+    }
+    lastPenClick.current = { time: now, screen };
+    const pen = penRef.current;
+    if (!pen) {
+      const parent = frameAt(page, world);
+      const local = parentLocalPoint(page, parent?.id ?? null, world);
+      store.getState().pushHistory();
+      const node = createNode("vector", {
+        x: local.x,
+        y: local.y,
+        width: 1,
+        height: 1,
+        points: [{ x: 0, y: 0 }],
+        name: "Vector",
+      });
+      store.getState().addNode(node, parent?.id ?? null, undefined, false);
+      penRef.current = { nodeId: node.id, points: [world], parentId: parent?.id ?? null, history: true };
+      return;
+    }
+    const first = toScreen(pen.points[0]);
+    if (pen.points.length >= 2 && Math.hypot(screen.x - first.x, screen.y - first.y) < 12) {
+      finishPen(true);
+      return;
+    }
+    const points = [...pen.points, world];
+    pen.points = points;
+    updatePenPoints(points, pen.parentId);
+  };
+
+  useEffect(() => {
+    if (tool !== "vector" && penRef.current) finishPen(false);
+  }, [tool]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!penRef.current || isEditableTarget(e.target)) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        finishPen(false);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        finishPen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [page]);
+
   // ---------- background pointer down ----------
   const onBackgroundPointerDown = (e: React.PointerEvent) => {
     if (suppressRef.current) return;
@@ -346,6 +454,11 @@ export function Canvas({
 
     if (readOnly && tool !== "comment") {
       if (tool === "select") store.getState().select([]);
+      return;
+    }
+
+    if (tool === "vector") {
+      onPenClick(e);
       return;
     }
 
@@ -573,10 +686,81 @@ export function Canvas({
     );
   };
 
+  const onVectorAnchorStart = (e: React.PointerEvent, id: string, index: number) => {
+    if (readOnly) return;
+    const node = page.nodes[id];
+    if (!node || node.type !== "vector") return;
+    e.preventDefault();
+    e.stopPropagation();
+    const points = node.points ?? [];
+    if (e.altKey) {
+      if (points.length <= 2) {
+        toast.error(t("A vector needs at least two points"));
+        return;
+      }
+      store.getState().pushHistory();
+      store.getState().updateNode(id, { points: points.filter((_, i) => i !== index) }, false);
+      return;
+    }
+    store.getState().pushHistory();
+    dragRef.current = { kind: "vector-point", nodeId: id, index, start: { ...node }, moved: false };
+    beginGesture(
+      (ev) => {
+        if (suppressRef.current) return;
+        const d = dragRef.current;
+        if (!d || d.kind !== "vector-point") return;
+        const local = parentLocalPoint(page, d.nodeId, worldPoint(ev));
+        const x = clamp(local.x / Math.max(d.start.width, 1), 0, 1);
+        const y = clamp(local.y / Math.max(d.start.height, 1), 0, 1);
+        const next = (d.start.points ?? []).map((p, i) => (i === d.index ? { x, y } : p));
+        d.moved = true;
+        store.getState().updateNode(d.nodeId, { points: next }, false);
+      },
+      () => {
+        dragRef.current = null;
+      },
+    );
+  };
+
+  const addVectorPoint = (node: SceneNode, world: Point) => {
+    const local = parentLocalPoint(page, node.id, world);
+    const nx = clamp(local.x / Math.max(node.width, 1), 0, 1);
+    const ny = clamp(local.y / Math.max(node.height, 1), 0, 1);
+    const points = [...(node.points ?? [])];
+    if (points.some((p) => Math.hypot(p.x - nx, p.y - ny) < 0.025)) return;
+    if (points.length < 2) {
+      points.push({ x: nx, y: ny });
+    } else {
+      const segments = points.length + (node.closed ? 1 : 0);
+      let best = points.length - 1;
+      let bestDist = Infinity;
+      for (let i = 0; i < segments; i++) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const len = dx * dx + dy * dy;
+        const t = len === 0 ? 0 : clamp(((nx - a.x) * dx + (ny - a.y) * dy) / len, 0, 1);
+        const px = a.x + t * dx, py = a.y + t * dy;
+        const dist = Math.hypot(nx - px, ny - py);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = i;
+        }
+      }
+      points.splice(best + 1, 0, { x: nx, y: ny });
+    }
+    store.getState().pushHistory();
+    store.getState().updateNode(node.id, { points }, false);
+  };
+
   const onNodeDoubleClick = (e: React.MouseEvent, id: string) => {
     if (readOnly) return;
     const node = page.nodes[id];
     if (!node) return;
+    if (node.type === "vector") {
+      addVectorPoint(node, worldPoint(e));
+      return;
+    }
     if (node.type === "text") {
       store.getState().pushHistory();
       store.getState().select([id]);
@@ -851,6 +1035,7 @@ export function Canvas({
         selfUserId={selfUserId}
         onResizeStart={onResizeStart}
         onRotateStart={onRotateStart}
+        onVectorAnchorStart={onVectorAnchorStart}
       />
 
       {/* comment pins */}
@@ -935,6 +1120,36 @@ export function Canvas({
             }}
           />
           <div className="my-1 h-px bg-border" />
+          {ctxNode.component ? (
+            <MenuRow
+              icon={<RefreshCw className="size-3.5" />}
+              label={t("Update instances")}
+              onClick={() => {
+                const count = store.getState().syncInstances(ctxNode.id);
+                toast.success(t("Updated {count} instances", { count }));
+                setContextMenu(null);
+              }}
+            />
+          ) : ctxNode.componentId ? (
+            <MenuRow
+              icon={<Unlink className="size-3.5" />}
+              label={t("Detach instance")}
+              onClick={() => {
+                store.getState().detachInstance(ctxNode.id);
+                setContextMenu(null);
+              }}
+            />
+          ) : (
+            <MenuRow
+              icon={<ComponentIcon className="size-3.5" />}
+              label={t("Create component")}
+              onClick={() => {
+                const id = store.getState().createComponent([ctxNode.id]);
+                if (id) toast.success(t("Component created"));
+                setContextMenu(null);
+              }}
+            />
+          )}
           <MenuRow
             icon={<GroupIcon className="size-3.5" />}
             label={t("Group selection")}

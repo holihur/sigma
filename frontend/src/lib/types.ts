@@ -1,4 +1,9 @@
-export type NodeType = "frame" | "group" | "rect" | "ellipse" | "text" | "image" | "line";
+export type NodeType = "frame" | "group" | "rect" | "ellipse" | "text" | "image" | "line" | "vector";
+
+export interface VectorPoint {
+  x: number;
+  y: number;
+}
 
 export type Paint =
   | { type: "solid"; color: string; opacity?: number }
@@ -63,6 +68,15 @@ export interface SceneNode {
   objectFit: "cover" | "contain" | "fill";
 
   link: PrototypeLink | null;
+
+  /** Vector path points, normalized to 0..1 inside the node box. */
+  points: VectorPoint[];
+  closed: boolean;
+
+  /** Component library. Main components have component=true; instances reference the main node. */
+  component: boolean;
+  componentId: string | null;
+
   ts: number;
 }
 
@@ -163,6 +177,7 @@ export type Tool =
   | "line"
   | "text"
   | "image"
+  | "vector"
   | "comment";
 
 export interface Viewport {
@@ -229,4 +244,63 @@ export interface AIChatResponse {
   actions: AIAction[];
   doc: SigmaDoc;
   version: number;
+}
+
+export interface PersonalAccessToken {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  lastUsedAt: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface CreatedPersonalAccessToken {
+  token: string;
+  pat: PersonalAccessToken;
+}
+
+export interface OIDCConfig {
+  enabled: boolean;
+  label: string;
+}
+
+export interface OIDCExchange {
+  token: string;
+  user: User;
+  returnTo: string;
+}
+
+export interface UpdateStatus {
+  currentVersion: string;
+  latestVersion: string;
+  updateAvailable: boolean;
+  autoUpdate: boolean;
+  interval: string;
+  lastChecked: string;
+  lastError: string;
+  restartPending: boolean;
+  repo: string;
+  asset: string;
+}
+
+export interface FigmaImportResult {
+  file: FileMeta;
+  pages: number;
+  nodes: number;
+}
+
+export interface AIContext {
+  designMd: string;
+  agentsMd: string;
+  updatedAt?: string;
+}
+
+export interface AISkill {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -212,7 +212,7 @@ func (m *OpenAICompatibleModel) generate(ctx context.Context, req *model.LLMRequ
 		finish = genai.FinishReasonMaxTokens
 	}
 	return &model.LLMResponse{
-		Content:    &genai.Content{Role: genai.RoleModel, Parts: parts},
+		Content: &genai.Content{Role: genai.RoleModel, Parts: parts},
 		UsageMetadata: &genai.GenerateContentResponseUsageMetadata{
 			PromptTokenCount:     resp.Usage.PromptTokens,
 			CandidatesTokenCount: resp.Usage.CompletionTokens,
