@@ -41,6 +41,11 @@ type VectorPoint struct {
 	Out *VectorHandle `json:"out,omitempty"`
 }
 
+type VectorSubpath struct {
+	Points []VectorPoint `json:"points"`
+	Closed bool          `json:"closed"`
+}
+
 type Link struct {
 	Action        string `json:"action"`
 	TargetPageID  string `json:"targetPageId,omitempty"`
@@ -50,42 +55,44 @@ type Link struct {
 }
 
 type Node struct {
-	ID            string        `json:"id"`
-	Type          string        `json:"type"`
-	Name          string        `json:"name"`
-	X             float64       `json:"x"`
-	Y             float64       `json:"y"`
-	Width         float64       `json:"width"`
-	Height        float64       `json:"height"`
-	Rotation      float64       `json:"rotation"`
-	Opacity       float64       `json:"opacity"`
-	Visible       bool          `json:"visible"`
-	Locked        bool          `json:"locked"`
-	Fill          *Paint        `json:"fill"`
-	Stroke        *Paint        `json:"stroke"`
-	StrokeWidth   float64       `json:"strokeWidth"`
-	Radius        float64       `json:"radius"`
-	Shadow        *Shadow       `json:"shadow"`
-	Blur          float64       `json:"blur"`
-	Children      []string      `json:"children"`
-	ParentID      *string       `json:"parentId"`
-	Clip          bool          `json:"clip"`
-	Text          string        `json:"text"`
-	FontSize      float64       `json:"fontSize"`
-	FontFamily    string        `json:"fontFamily"`
-	FontWeight    int           `json:"fontWeight"`
-	LineHeight    float64       `json:"lineHeight"`
-	LetterSpacing float64       `json:"letterSpacing"`
-	TextAlign     string        `json:"textAlign"`
-	VerticalAlign string        `json:"verticalAlign"`
-	Src           string        `json:"src"`
-	ObjectFit     string        `json:"objectFit"`
-	Link          *Link         `json:"link"`
-	Points        []VectorPoint `json:"points,omitempty"`
-	Closed        bool          `json:"closed,omitempty"`
-	Component     bool          `json:"component,omitempty"`
-	ComponentID   string        `json:"componentId,omitempty"`
-	TS            int64         `json:"ts"`
+	ID            string          `json:"id"`
+	Type          string          `json:"type"`
+	Name          string          `json:"name"`
+	X             float64         `json:"x"`
+	Y             float64         `json:"y"`
+	Width         float64         `json:"width"`
+	Height        float64         `json:"height"`
+	Rotation      float64         `json:"rotation"`
+	Opacity       float64         `json:"opacity"`
+	Visible       bool            `json:"visible"`
+	Locked        bool            `json:"locked"`
+	Fill          *Paint          `json:"fill"`
+	Stroke        *Paint          `json:"stroke"`
+	StrokeWidth   float64         `json:"strokeWidth"`
+	Radius        float64         `json:"radius"`
+	Shadow        *Shadow         `json:"shadow"`
+	Blur          float64         `json:"blur"`
+	Children      []string        `json:"children"`
+	ParentID      *string         `json:"parentId"`
+	Clip          bool            `json:"clip"`
+	Text          string          `json:"text"`
+	FontSize      float64         `json:"fontSize"`
+	FontFamily    string          `json:"fontFamily"`
+	FontWeight    int             `json:"fontWeight"`
+	LineHeight    float64         `json:"lineHeight"`
+	LetterSpacing float64         `json:"letterSpacing"`
+	TextAlign     string          `json:"textAlign"`
+	VerticalAlign string          `json:"verticalAlign"`
+	Src           string          `json:"src"`
+	ObjectFit     string          `json:"objectFit"`
+	Link          *Link           `json:"link"`
+	Points        []VectorPoint   `json:"points,omitempty"`
+	Closed        bool            `json:"closed,omitempty"`
+	Subpaths      []VectorSubpath `json:"subpaths,omitempty"`
+	FillRule      string          `json:"fillRule,omitempty"`
+	Component     bool            `json:"component,omitempty"`
+	ComponentID   string          `json:"componentId,omitempty"`
+	TS            int64           `json:"ts"`
 }
 
 type Page struct {
@@ -214,8 +221,6 @@ func NewNode(typ, name string, x, y, width, height float64) *Node {
 		n.Fill = nil
 		n.Stroke = Solid("#0ea5e9")
 		n.StrokeWidth = 2
-		n.Width = 1
-		n.Height = 1
 		if n.Name == "" {
 			n.Name = "Vector"
 		}

@@ -12,6 +12,13 @@ export interface VectorPoint {
   out?: VectorHandle;
 }
 
+export interface VectorSubpath {
+  points: VectorPoint[];
+  closed: boolean;
+  subpaths?: VectorSubpath[];
+  fillRule?: "nonzero" | "evenodd";
+}
+
 export type Paint =
   | { type: "solid"; color: string; opacity?: number }
   | { type: "linear"; angle: number; stops: { color: string; position: number }[] };
@@ -79,6 +86,8 @@ export interface SceneNode {
   /** Vector path points, normalized to 0..1 inside the node box. */
   points: VectorPoint[];
   closed: boolean;
+  subpaths?: VectorSubpath[];
+  fillRule?: "nonzero" | "evenodd";
 
   /** Component library. Main components have component=true; instances reference the main node. */
   component: boolean;

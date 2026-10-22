@@ -24,13 +24,18 @@ import {
   Spline,
   CornerDownRight,
   PenTool,
+  Combine,
+  Split,
+  WandSparkles,
+  ArrowUpFromLine,
+  Loader2,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { toPng, toSvg } from "html-to-image";
 import type { Page, Paint, SceneNode, SigmaDoc, Transition } from "@/lib/types";
 import { FONT_FAMILIES, FONT_WEIGHTS, createNode, defaultGradient, getPage, nodeAABB } from "@/lib/nodes";
-import { canConvertToVector, cornerPoint, removePoint, shapeToVector, smoothPoint } from "@/lib/vector";
+import { allVectorPoints, canConvertToVector, cornerPoint, removePoint, shapeToVector, smoothPoint, subpathPatch, vectorSubpaths } from "@/lib/vector";
 import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
@@ -106,6 +111,7 @@ function DesignTab({
     return (
       <>
         <AlignSection count={selected.length} onAlign={align} onDistribute={distribute} />
+        {selected.length > 1 && <PathfinderSection readOnly={readOnly} />}
         {selected.length > 1 && (
           <Section title={t("Selection")}>
             <SelectionBounds page={page} ids={ids} />
@@ -205,7 +211,9 @@ function DesignTab({
         </div>
       </Section>
 
+      {selected.length >= 2 && <PathfinderSection readOnly={readOnly} />}
       <VectorSection node={node} readOnly={readOnly} />
+      <ImageTraceSection node={node} readOnly={readOnly} />
 
       <AppearanceSection
         opacity={node.opacity}
@@ -305,22 +313,97 @@ function SelectionBounds({ page, ids }: { page: Page; ids: string[] }) {
   );
 }
 
+function PathfinderSection({ readOnly }: { readOnly: boolean }) {
+  const t = useT();
+  const run = useEditor((s) => s.pathfinder);
+  const items: { kind: "union" | "subtract" | "intersect" | "exclude"; label: string }[] = [
+    { kind: "union", label: t("Union") },
+    { kind: "subtract", label: t("Subtract") },
+    { kind: "intersect", label: t("Intersect") },
+    { kind: "exclude", label: t("Exclude") },
+  ];
+  return (
+    <Section title={t("Pathfinder")}>
+      <div className="grid grid-cols-2 gap-1.5">
+        {items.map((item) => (
+          <Button
+            key={item.kind}
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 text-[10px]"
+            disabled={readOnly}
+            onClick={() => run(item.kind)}
+          >
+            <Combine className="size-3" /> {item.label}
+          </Button>
+        ))}
+      </div>
+      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+        {t("Uses the bottom layer as the base. Curves are preserved when possible.")}
+      </p>
+    </Section>
+  );
+}
+
+function ImageTraceSection({ node, readOnly }: { node: SceneNode; readOnly: boolean }) {
+  const t = useT();
+  const trace = useEditor((s) => s.traceSelectedImage);
+  const [busy, setBusy] = useState(false);
+  if (node.type !== "image" || !node.src) return null;
+  return (
+    <Section title={t("Image trace")}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full gap-1.5 text-[11px]"
+        disabled={readOnly || busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            const ok = await trace();
+            if (ok) toast.success(t("Image traced to vector"));
+            else toast.error(t("Could not trace this image"));
+          } catch (e) {
+            toast.error((e as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? <Loader2 className="size-3.5 animate-spin" /> : <WandSparkles className="size-3.5" />}
+        {t("Trace to vector")}
+      </Button>
+      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+        {t("Uses local color tracing. Works best on logos, icons and flat illustrations.")}
+      </p>
+    </Section>
+  );
+}
+
 function VectorSection({ node, readOnly }: { node: SceneNode; readOnly: boolean }) {
   const t = useT();
   const updateNode = useEditor((s) => s.updateNode);
   const pushHistory = useEditor((s) => s.pushHistory);
   const selectedPoint = useEditor((s) => s.selectedPoint);
   const setSelectedPoint = useEditor((s) => s.setSelectedPoint);
+  const split = useEditor((s) => s.splitCompound);
+  const simplify = useEditor((s) => s.simplifySelectedVector);
+  const offset = useEditor((s) => s.offsetSelectedVector);
+  const outline = useEditor((s) => s.outlineSelectedStroke);
+  const [offsetBy, setOffsetBy] = useState(4);
   const isVector = node.type === "vector";
   const canConvert = canConvertToVector(node);
   if (!isVector && !canConvert) return null;
-  const points = node.points ?? [];
-  const hasPoint = selectedPoint != null && selectedPoint >= 0 && selectedPoint < points.length;
+  const subpaths = vectorSubpaths(node);
+  const points = subpaths.flatMap((sub) => sub.points);
+  const selectedLocation = selectedPoint != null ? allVectorPoints(node)[selectedPoint] : null;
+  const hasPoint = !!selectedLocation;
 
-  const updatePoints = (next: typeof points) => {
+  const updateSubpath = (pathIndex: number, next: typeof subpaths) => {
     if (readOnly) return;
     pushHistory();
-    updateNode(node.id, { points: next }, false);
+    const updated = subpaths.map((sub, i) => (i === pathIndex ? { ...sub, points: next[pathIndex].points } : sub));
+    updateNode(node.id, subpathPatch(updated), false);
   };
 
   return (
@@ -355,7 +438,7 @@ function VectorSection({ node, readOnly }: { node: SceneNode; readOnly: boolean 
         <>
           <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
             <span>{t("{count} points", { count: points.length })}</span>
-            <span>{node.closed ? t("Closed path") : t("Open path")}</span>
+            <span>{subpaths.length > 1 ? t("{count} subpaths", { count: subpaths.length }) : node.closed ? t("Closed path") : t("Open path")}</span>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             <Button
@@ -366,7 +449,7 @@ function VectorSection({ node, readOnly }: { node: SceneNode; readOnly: boolean 
               onClick={() => {
                 const nextClosed = !node.closed;
                 pushHistory();
-                updateNode(node.id, { closed: nextClosed, fill: nextClosed ? node.fill ?? { type: "solid", color: "#0ea5e9" } : null }, false);
+                updateNode(node.id, { ...subpathPatch(subpaths.map((sub) => ({ ...sub, closed: nextClosed }))), closed: nextClosed, fill: nextClosed ? node.fill ?? { type: "solid", color: "#0ea5e9" } : null }, false);
               }}
             >
               <Spline className="size-3.5" /> {node.closed ? t("Open path") : t("Close path")}
@@ -377,13 +460,18 @@ function VectorSection({ node, readOnly }: { node: SceneNode; readOnly: boolean 
               className="gap-1.5 text-[10px]"
               disabled={readOnly || !hasPoint}
               onClick={() => {
-                if (selectedPoint == null) return;
-                const p = points[selectedPoint];
+                if (!selectedLocation) return;
+                const sub = subpaths[selectedLocation.path];
+                const p = sub.points[selectedLocation.index];
                 const smooth = !(p.in || p.out);
-                updatePoints(smooth ? smoothPoint(points, selectedPoint, node.closed) : cornerPoint(points, selectedPoint));
+                const nextPoints = smooth
+                  ? smoothPoint(sub.points, selectedLocation.index, sub.closed)
+                  : cornerPoint(sub.points, selectedLocation.index);
+                const next = subpaths.map((s, i) => (i === selectedLocation.path ? { ...s, points: nextPoints } : s));
+                updateSubpath(selectedLocation.path, next);
               }}
             >
-              {hasPoint && selectedPoint != null && (points[selectedPoint].in || points[selectedPoint].out) ? (
+              {selectedLocation && (selectedLocation.point.in || selectedLocation.point.out) ? (
                 <><CornerDownRight className="size-3.5" /> {t("Make corner")}</>
               ) : (
                 <><Spline className="size-3.5" /> {t("Smooth point")}</>
@@ -393,10 +481,13 @@ function VectorSection({ node, readOnly }: { node: SceneNode; readOnly: boolean 
               variant="outline"
               size="sm"
               className="gap-1.5 text-[10px] text-destructive"
-              disabled={readOnly || !hasPoint || points.length <= 2}
+              disabled={readOnly || !hasPoint || (selectedLocation ? subpaths[selectedLocation.path].points.length <= 2 : true)}
               onClick={() => {
-                if (selectedPoint == null) return;
-                updatePoints(removePoint(points, selectedPoint));
+                if (!selectedLocation) return;
+                const sub = subpaths[selectedLocation.path];
+                if (sub.points.length <= 2) return;
+                const next = subpaths.map((s, i) => (i === selectedLocation.path ? { ...s, points: removePoint(s.points, selectedLocation.index) } : s));
+                updateSubpath(selectedLocation.path, next);
                 setSelectedPoint(null);
               }}
             >
@@ -411,6 +502,38 @@ function VectorSection({ node, readOnly }: { node: SceneNode; readOnly: boolean 
             >
               <CornerDownRight className="size-3.5" /> {t("Deselect point")}
             </Button>
+          </div>
+          <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+            <Button variant="outline" size="sm" className="gap-1 text-[10px]" disabled={readOnly || (node.subpaths?.length ?? 0) <= 1} onClick={() => split()}>
+              <Split className="size-3" /> {t("Split paths")}
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1 text-[10px]" disabled={readOnly} onClick={() => simplify()}>
+              <WandSparkles className="size-3" /> {t("Simplify")}
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1 text-[10px]" disabled={readOnly} onClick={() => offset(offsetBy)}>
+              <ArrowUpFromLine className="size-3" /> {t("Offset +")}
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1 text-[10px]" disabled={readOnly} onClick={() => offset(-offsetBy)}>
+              <ArrowUpFromLine className="size-3 rotate-180" /> {t("Offset −")}
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1 text-[10px]" disabled={readOnly || !node.stroke} onClick={() => outline()}>
+              <PenTool className="size-3" /> {t("Outline stroke")}
+            </Button>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground">{t("Offset")}</span>
+              <NumberField value={offsetBy} min={1} max={64} onChange={setOffsetBy} className="h-7 min-w-0 flex-1" />
+            </div>
+          </div>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span className="text-[10px] text-muted-foreground">{t("Fill rule")}</span>
+            <button
+              type="button"
+              className="rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-secondary"
+              disabled={readOnly}
+              onClick={() => { pushHistory(); updateNode(node.id, { fillRule: node.fillRule === "evenodd" ? "nonzero" : "evenodd" }, false); }}
+            >
+              {node.fillRule === "evenodd" ? "evenodd" : "nonzero"}
+            </button>
           </div>
           <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
             {t("Double-click the path to add a point. Drag anchors or handles; Alt-click deletes an anchor.")}

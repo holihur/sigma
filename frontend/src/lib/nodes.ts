@@ -42,6 +42,8 @@ export function createNode(type: NodeType, overrides: Partial<SceneNode> = {}): 
     link: null,
     points: [],
     closed: false,
+    subpaths: [],
+    fillRule: "nonzero",
     component: false,
     componentId: null,
     ts: Date.now(),
@@ -118,16 +120,22 @@ export function labelFor(type: NodeType): string {
 
 export function paintToCss(paint: Paint | null | undefined, fallback = "transparent"): string {
   if (!paint) return fallback;
+  // Be defensive with legacy documents: older generators could store a raw
+  // CSS color string where a Paint object was expected.
+  if (typeof paint === "string") return paint || fallback;
   if (paint.type === "solid") {
+    const color = paint.color || fallback;
     return paint.opacity !== undefined && paint.opacity < 1
-      ? hexToRgba(paint.color, paint.opacity)
-      : paint.color;
+      ? hexToRgba(color, paint.opacity)
+      : color;
   }
-  const stops = [...paint.stops]
+  const stops = Array.isArray(paint.stops) ? [...paint.stops] : [];
+  if (stops.length === 0) return (paint as { color?: string }).color || fallback;
+  const cssStops = stops
     .sort((a, b) => a.position - b.position)
     .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
     .join(", ");
-  return `linear-gradient(${paint.angle}deg, ${stops})`;
+  return `linear-gradient(${paint.angle ?? 90}deg, ${cssStops})`;
 }
 
 export function shadowToCss(shadow: Shadow | null | undefined): string | undefined {

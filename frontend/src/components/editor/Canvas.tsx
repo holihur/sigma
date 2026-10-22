@@ -48,7 +48,7 @@ import {
 import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
-import { insertPointOnVector, mirrorHandle, movePoint } from "@/lib/vector";
+import { allVectorPoints, insertPointOnVector, mirrorHandle, movePoint, subpathPatch, vectorSubpaths } from "@/lib/vector";
 import { clamp, cn, isEditableTarget, uid } from "@/lib/utils";
 import { NodeView } from "./NodeView";
 import { SelectionOverlay, type ResizeHandle } from "./SelectionOverlay";
@@ -756,20 +756,28 @@ export function Canvas({
     if (!node || node.type !== "vector") return;
     e.preventDefault();
     e.stopPropagation();
-    const points = node.points ?? [];
+    const flat = allVectorPoints(node);
+    const location = flat[index];
+    if (!location) return;
+    const subpaths = vectorSubpaths(node).map((sub) => ({ ...sub, points: sub.points.map((p) => ({ ...p })) }));
     store.getState().setSelectedPoint(index);
     if (e.altKey) {
-      if (points.length <= 2) {
+      if (subpaths[location.path].points.length <= 2 && subpaths.length === 1) {
         toast.error(t("A vector needs at least two points"));
         return;
       }
       store.getState().pushHistory();
-      store.getState().updateNode(id, { points: points.filter((_, i) => i !== index) }, false);
+      subpaths[location.path].points = subpaths[location.path].points.filter((_, i) => i !== location.index);
+      store.getState().updateNode(id, subpathPatch(subpaths.filter((sub) => sub.points.length > 0)), false);
       store.getState().setSelectedPoint(null);
       return;
     }
     store.getState().pushHistory();
-    dragRef.current = { kind: "vector-point", nodeId: id, index, start: { ...node, points: points.map((p) => ({ ...p })) }, moved: false };
+    dragRef.current = {
+      kind: "vector-point", nodeId: id, index,
+      start: { ...node, subpaths, points: subpaths[0]?.points ?? [], closed: subpaths[0]?.closed ?? false },
+      moved: false,
+    };
     beginGesture(
       (ev) => {
         if (suppressRef.current) return;
@@ -778,9 +786,12 @@ export function Canvas({
         const local = parentLocalPoint(page, d.nodeId, worldPoint(ev));
         const x = clamp(local.x / Math.max(d.start.width, 1), 0, 1);
         const y = clamp(local.y / Math.max(d.start.height, 1), 0, 1);
-        const next = (d.start.points ?? []).map((p, i) => (i === d.index ? movePoint(p, x, y) : p));
+        const current = allVectorPoints({ ...d.start, subpaths: d.start.subpaths } as SceneNode)[d.index];
+        if (!current) return;
+        const next = (d.start.subpaths ?? []).map((sub) => ({ ...sub, points: sub.points.map((p) => ({ ...p })) }));
+        next[current.path].points[current.index] = movePoint(next[current.path].points[current.index], x, y);
         d.moved = true;
-        store.getState().updateNode(d.nodeId, { points: next }, false);
+        store.getState().updateNode(d.nodeId, subpathPatch(next), false);
       },
       () => {
         dragRef.current = null;
@@ -794,25 +805,32 @@ export function Canvas({
     if (!node || node.type !== "vector") return;
     e.preventDefault();
     e.stopPropagation();
+    const flat = allVectorPoints(node);
+    const location = flat[index];
+    if (!location) return;
+    const subpaths = vectorSubpaths(node).map((sub) => ({ ...sub, points: sub.points.map((p) => ({ ...p })) }));
     store.getState().setSelectedPoint(index);
     store.getState().pushHistory();
     dragRef.current = {
       kind: "vector-handle", nodeId: id, index, which,
-      start: { ...node, points: (node.points ?? []).map((p) => ({ ...p })) }, moved: false,
+      start: { ...node, subpaths, points: subpaths[0]?.points ?? [], closed: subpaths[0]?.closed ?? false },
+      moved: false,
     };
     beginGesture(
       (ev) => {
         if (suppressRef.current) return;
         const d = dragRef.current;
         if (!d || d.kind !== "vector-handle") return;
+        const current = allVectorPoints({ ...d.start, subpaths: d.start.subpaths } as SceneNode)[d.index];
+        if (!current) return;
         const local = parentLocalPoint(page, d.nodeId, worldPoint(ev));
         const h = { x: local.x / Math.max(d.start.width, 1), y: local.y / Math.max(d.start.height, 1) };
-        const points = (d.start.points ?? []).map((p, i) => {
-          if (i !== d.index) return p;
-          return ev.altKey ? { ...p, [d.which]: h } : mirrorHandle(p, d.which, h);
-        });
+        const next = (d.start.subpaths ?? []).map((sub) => ({ ...sub, points: sub.points.map((p) => ({ ...p })) }));
+        next[current.path].points[current.index] = ev.altKey
+          ? { ...next[current.path].points[current.index], [d.which]: h }
+          : mirrorHandle(next[current.path].points[current.index], d.which, h);
         d.moved = true;
-        store.getState().updateNode(d.nodeId, { points }, false);
+        store.getState().updateNode(d.nodeId, subpathPatch(next), false);
       },
       () => {
         dragRef.current = null;
@@ -824,29 +842,34 @@ export function Canvas({
     const local = parentLocalPoint(page, node.id, world);
     const nx = clamp(local.x / Math.max(node.width, 1), 0, 1);
     const ny = clamp(local.y / Math.max(node.height, 1), 0, 1);
-    const points = [...(node.points ?? [])];
-    if (points.some((p) => Math.hypot(p.x - nx, p.y - ny) < 0.025)) return;
-    let segment = points.length - 1;
-    if (node.closed || points.length > 1) {
-      let bestDist = Infinity;
-      const segments = points.length + (node.closed ? 1 : 0);
+    const subpaths = vectorSubpaths(node).map((sub) => ({ ...sub, points: sub.points.map((p) => ({ ...p })) }));
+    let bestPath = 0;
+    let bestSegment = 0;
+    let bestDist = Infinity;
+    subpaths.forEach((sub, path) => {
+      if (sub.points.length < 2) return;
+      const segments = sub.points.length + (sub.closed ? 1 : 0);
       for (let i = 0; i < segments; i++) {
-        const a = points[i];
-        const b = points[(i + 1) % points.length];
+        const a = sub.points[i];
+        const b = sub.points[(i + 1) % sub.points.length];
         const dx = b.x - a.x, dy = b.y - a.y;
         const len = dx * dx + dy * dy;
         const t = len === 0 ? 0 : clamp(((nx - a.x) * dx + (ny - a.y) * dy) / len, 0, 1);
         const dist = Math.hypot(nx - (a.x + t * dx), ny - (a.y + t * dy));
         if (dist < bestDist) {
           bestDist = dist;
-          segment = i;
+          bestPath = path;
+          bestSegment = i;
         }
       }
-    }
-    const inserted = insertPointOnVector(points, Math.max(0, segment), nx, ny, node.closed);
+    });
+    if (subpaths[bestPath].points.some((p) => Math.hypot(p.x - nx, p.y - ny) < 0.025)) return;
+    const inserted = insertPointOnVector(subpaths[bestPath].points, bestSegment, nx, ny, subpaths[bestPath].closed);
+    subpaths[bestPath].points = inserted.points;
     store.getState().pushHistory();
-    store.getState().updateNode(node.id, { points: inserted.points }, false);
-    store.getState().setSelectedPoint(inserted.index);
+    store.getState().updateNode(node.id, subpathPatch(subpaths), false);
+    const before = subpaths.slice(0, bestPath).reduce((n, sub) => n + sub.points.length, 0);
+    store.getState().setSelectedPoint(before + inserted.index);
   };
 
   const onNodeDoubleClick = (e: React.MouseEvent, id: string) => {

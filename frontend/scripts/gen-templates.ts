@@ -73,7 +73,7 @@ const ellipse = (id, name, x, y, width, height, opts = {}) =>
   node("ellipse", { id, name, x, y, width, height, fill: opts.fill ?? solid("#ffffff"), stroke: opts.stroke, strokeWidth: opts.strokeWidth ?? 1, opacity: opts.opacity ?? 1, blur: opts.blur ?? 0, shadow: opts.shadow });
 
 const frame = (id, name, x, y, width, height, opts = {}, children = []) =>
-  node("frame", { id, name, x, y, width, height, fill: opts.fill ?? solid("#ffffff"), radius: opts.radius ?? 0, clip: opts.clip ?? true, shadow: opts.shadow, opacity: opts.opacity ?? 1 }, children);
+  node("frame", { id, name, x, y, width, height, fill: opts.fill ?? solid("#ffffff"), radius: opts.radius ?? 0, clip: opts.clip ?? true, shadow: opts.shadow, opacity: opts.opacity ?? 1, component: opts.component ?? false }, children);
 
 const page = (id, name, roots) => ({
   id,
@@ -552,6 +552,132 @@ function foundations(prefix, title, subtitle, colors, opts) {
   ]);
 }
 
+
+/* ------------------------------------------------------------------ */
+/*  Shared component library board                                    */
+/* ------------------------------------------------------------------ */
+
+function componentBoard(prefix, title, opts) {
+  const component = (id, name, x, y, w, h, fill, radius, children) =>
+    frame(`${prefix}_${id}`, name, x, y, w, h, {
+      fill: typeof fill === "string" ? solid(fill) : fill ?? solid(opts.surface),
+      radius: radius ?? opts.radius,
+      component: true,
+    }, children);
+  return frame(`${prefix}_components`, `${title} components`, 0, 0, 1200, 900, { fill: solid(opts.bg), radius: 0 }, [
+    text(`${prefix}_c_title`, "Title", "Components", 48, 40, 420, 42, { size: 30, weight: 700, color: opts.text, family: opts.family }),
+    text(`${prefix}_c_sub`, "Subtitle", "Reusable controls from the " + title + " language. Every framed control is a main component.", 48, 86, 820, 22, { size: 13, color: opts.muted, family: opts.family }),
+    text(`${prefix}_c_actions`, "Section", "Actions", 48, 132, 200, 20, { size: 10, weight: 700, color: opts.muted, letterSpacing: 0.8, family: opts.family }),
+
+    component("btn_primary", "Button / Primary", 48, 160, 156, 44, solid(opts.primary), opts.radius, [
+      text(`${prefix}_bp_t`, "Label", "Primary", 0, 0, 156, 44, { size: 12, weight: 600, color: opts.onPrimary, align: "center", valign: "middle", family: opts.family }),
+    ]),
+    component("btn_secondary", "Button / Secondary", 220, 160, 156, 44, solid(opts.surface), opts.radius, [
+      rect(`${prefix}_bs_border`, "Border", 0, 0, 156, 44, { fill: solid(opts.surface), stroke: solid(opts.border), radius: opts.radius }),
+      text(`${prefix}_bs_t`, "Label", "Secondary", 0, 0, 156, 44, { size: 12, weight: 600, color: opts.text, align: "center", valign: "middle", family: opts.family }),
+    ]),
+    component("btn_ghost", "Button / Ghost", 392, 160, 140, 44, solid(opts.surface), opts.radius, [
+      text(`${prefix}_bg_t`, "Label", "Ghost", 0, 0, 140, 44, { size: 12, weight: 600, color: opts.primary, align: "center", valign: "middle", family: opts.family }),
+    ]),
+    component("btn_danger", "Button / Danger", 548, 160, 140, 44, solid(opts.danger), opts.radius, [
+      text(`${prefix}_bd_t`, "Label", "Delete", 0, 0, 140, 44, { size: 12, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: opts.family }),
+    ]),
+
+    text(`${prefix}_c_inputs`, "Section", "Inputs", 48, 234, 200, 20, { size: 10, weight: 700, color: opts.muted, letterSpacing: 0.8, family: opts.family }),
+    component("input", "Input / Text", 48, 262, 300, 78, undefined, opts.radius, [
+      text(`${prefix}_in_l`, "Label", "Email address", 0, 0, 300, 18, { size: 11, weight: 600, color: opts.text, family: opts.family }),
+      rect(`${prefix}_in_f`, "Field", 0, 26, 300, 42, { fill: solid(opts.surface), stroke: solid(opts.border), radius: opts.radius }),
+      text(`${prefix}_in_p`, "Placeholder", "you@company.com", 14, 26, 270, 42, { size: 12, color: opts.muted, valign: "middle", family: opts.family }),
+    ]),
+    component("select", "Input / Select", 376, 262, 240, 78, undefined, opts.radius, [
+      text(`${prefix}_sel_l`, "Label", "Role", 0, 0, 240, 18, { size: 11, weight: 600, color: opts.text, family: opts.family }),
+      rect(`${prefix}_sel_f`, "Field", 0, 26, 240, 42, { fill: solid(opts.surface), stroke: solid(opts.border), radius: opts.radius }),
+      text(`${prefix}_sel_v`, "Value", "Designer", 14, 26, 190, 42, { size: 12, color: opts.text, valign: "middle", family: opts.family }),
+      text(`${prefix}_sel_c`, "Chevron", "⌄", 208, 26, 20, 42, { size: 14, color: opts.muted, valign: "middle", family: opts.family }),
+    ]),
+    component("search", "Input / Search", 644, 262, 300, 44, solid(opts.surface), opts.radius, [
+      text(`${prefix}_se_i`, "Icon", "⌕", 14, 0, 24, 44, { size: 16, color: opts.muted, valign: "middle", family: opts.family }),
+      text(`${prefix}_se_p`, "Placeholder", "Search components", 44, 0, 240, 44, { size: 12, color: opts.muted, valign: "middle", family: opts.family }),
+    ]),
+
+    text(`${prefix}_c_controls`, "Section", "Selection & controls", 48, 378, 260, 20, { size: 10, weight: 700, color: opts.muted, letterSpacing: 0.8, family: opts.family }),
+    component("checkbox", "Control / Checkbox", 48, 406, 160, 28, undefined, 0, [
+      rect(`${prefix}_cb_b`, "Box", 0, 4, 20, 20, { radius: 4, fill: solid(opts.primary) }),
+      text(`${prefix}_cb_c`, "Check", "✓", 0, 4, 20, 20, { size: 11, weight: 700, color: "#FFFFFF", align: "center", valign: "middle", family: opts.family }),
+      text(`${prefix}_cb_t`, "Label", "Remember me", 30, 4, 130, 20, { size: 12, color: opts.text, valign: "middle", family: opts.family }),
+    ]),
+    component("radio", "Control / Radio", 236, 406, 160, 28, undefined, 0, [
+      ellipse(`${prefix}_rd_o`, "Outer", 0, 4, 20, 20, { fill: solid(opts.surface), stroke: solid(opts.primary), strokeWidth: 2 }),
+      ellipse(`${prefix}_rd_i`, "Inner", 5, 9, 10, 10, { fill: solid(opts.primary) }),
+      text(`${prefix}_rd_t`, "Label", "Team plan", 30, 4, 120, 20, { size: 12, color: opts.text, valign: "middle", family: opts.family }),
+    ]),
+    component("switch", "Control / Switch", 424, 406, 150, 28, undefined, 0, [
+      text(`${prefix}_sw_t`, "Label", "Notifications", 0, 4, 90, 20, { size: 12, color: opts.text, valign: "middle", family: opts.family }),
+      rect(`${prefix}_sw_tr`, "Track", 100, 4, 44, 22, { radius: 11, fill: solid(opts.primary) }),
+      ellipse(`${prefix}_sw_k`, "Knob", 120, 6, 18, 18, { fill: solid("#FFFFFF") }),
+    ]),
+    component("slider", "Control / Slider", 604, 406, 250, 28, undefined, 0, [
+      text(`${prefix}_sl_t`, "Label", "Volume", 0, 4, 60, 20, { size: 12, color: opts.text, valign: "middle", family: opts.family }),
+      rect(`${prefix}_sl_tr`, "Track", 68, 15, 180, 4, { radius: 2, fill: solid(opts.border) }),
+      rect(`${prefix}_sl_fill`, "Fill", 68, 15, 108, 4, { radius: 2, fill: solid(opts.primary) }),
+      ellipse(`${prefix}_sl_k`, "Knob", 168, 9, 16, 16, { fill: solid("#FFFFFF"), stroke: solid(opts.primary), strokeWidth: 2 }),
+    ]),
+
+    text(`${prefix}_c_display`, "Section", "Data display", 48, 466, 260, 20, { size: 10, weight: 700, color: opts.muted, letterSpacing: 0.8, family: opts.family }),
+    component("tags", "Tag / Status", 48, 494, 250, 30, undefined, 0, [
+      rect(`${prefix}_tag1`, "Tag", 0, 0, 72, 26, { radius: 999, fill: solid(opts.chip) }),
+      text(`${prefix}_tag1_t`, "Tag", "Active", 0, 0, 72, 26, { size: 10, weight: 600, color: opts.primary, align: "center", valign: "middle", family: opts.family }),
+      rect(`${prefix}_tag2`, "Tag", 84, 0, 74, 26, { radius: 999, fill: solid(opts.chip) }),
+      text(`${prefix}_tag2_t`, "Tag", "Review", 84, 0, 74, 26, { size: 10, weight: 600, color: opts.primary, align: "center", valign: "middle", family: opts.family }),
+      rect(`${prefix}_tag3`, "Tag", 170, 0, 70, 26, { radius: 999, fill: solid(opts.danger, 0.12) }),
+      text(`${prefix}_tag3_t`, "Tag", "Alert", 170, 0, 70, 26, { size: 10, weight: 600, color: opts.danger, align: "center", valign: "middle", family: opts.family }),
+    ]),
+    component("avatar", "Avatar / User", 334, 494, 240, 56, undefined, 0, [
+      ellipse(`${prefix}_av_bg`, "Avatar", 0, 0, 44, 44, { fill: solid(opts.chip) }),
+      text(`${prefix}_av_t`, "Initials", "MC", 0, 0, 44, 44, { size: 13, weight: 700, color: opts.primary, align: "center", valign: "middle", family: opts.family }),
+      text(`${prefix}_av_n`, "Name", "Maya Chen", 58, 4, 170, 18, { size: 12, weight: 600, color: opts.text, family: opts.family }),
+      text(`${prefix}_av_e`, "Email", "maya@company.com", 58, 24, 180, 16, { size: 10, color: opts.muted, family: opts.family }),
+    ]),
+    component("card", "Card / Basic", 48, 566, 330, 222, solid(opts.surface), opts.radius, [
+      rect(`${prefix}_cd_media`, "Media", 0, 0, 330, 108, { fill: solid(opts.primary), radius: opts.radius }),
+      text(`${prefix}_cd_t`, "Title", "Project card", 18, 126, 290, 22, { size: 14, weight: 600, color: opts.text, family: opts.family }),
+      text(`${prefix}_cd_b`, "Body", "A reusable container with consistent spacing, radius and surface treatment.", 18, 154, 290, 40, { size: 11, color: opts.muted, lineHeight: 1.5, family: opts.family }),
+      rect(`${prefix}_cd_btn`, "Action", 18, 202, 100, 24, { radius: Math.max(2, opts.radius - 2), fill: solid(opts.chip) }),
+      text(`${prefix}_cd_btn_t`, "Action", "Open →", 18, 202, 100, 24, { size: 10, weight: 600, color: opts.primary, align: "center", valign: "middle", family: opts.family }),
+    ]),
+    component("modal", "Dialog / Confirmation", 400, 566, 360, 232, solid(opts.surface), opts.radius, [
+      text(`${prefix}_md_t`, "Title", "Delete project?", 20, 18, 300, 24, { size: 15, weight: 600, color: opts.text, family: opts.family }),
+      text(`${prefix}_md_b`, "Body", "This action cannot be undone. All project data will be permanently removed.", 20, 50, 320, 44, { size: 11, color: opts.muted, lineHeight: 1.5, family: opts.family }),
+      rect(`${prefix}_md_cancel`, "Secondary", 188, 184, 72, 30, { radius: Math.max(2, opts.radius - 2), fill: solid(opts.surface), stroke: solid(opts.border) }),
+      text(`${prefix}_md_cancel_t`, "Label", "Cancel", 188, 184, 72, 30, { size: 10, weight: 600, color: opts.text, align: "center", valign: "middle", family: opts.family }),
+      rect(`${prefix}_md_delete`, "Danger", 270, 184, 70, 30, { radius: Math.max(2, opts.radius - 2), fill: solid(opts.danger) }),
+      text(`${prefix}_md_delete_t`, "Label", "Delete", 270, 184, 70, 30, { size: 10, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: opts.family }),
+    ]),
+    component("table", "Table / Compact", 782, 566, 370, 270, solid(opts.surface), opts.radius, [
+      text(`${prefix}_tb_t`, "Title", "Team members", 16, 14, 240, 20, { size: 12, weight: 600, color: opts.text, family: opts.family }),
+      text(`${prefix}_tb_a`, "Action", "View all", 300, 14, 54, 18, { size: 9, color: opts.primary, align: "right", family: opts.family }),
+      rect(`${prefix}_tb_head`, "Header", 0, 44, 370, 28, { fill: solid(opts.bg) }),
+      ...["Name", "Role", "Status"].map((h, i) => text(`${prefix}_tb_h_${i}`, "Header", h, 16 + [0, 148, 266][i], 50, 90, 16, { size: 8, weight: 600, color: opts.muted, family: opts.family })),
+      ...[["Maya Chen", "Designer", "Active"], ["Noah Patel", "Engineer", "Active"], ["Lena Park", "PM", "Away"], ["Owen Diaz", "Research", "Active"]].map(([name, role, status], i) => [
+        ...(i > 0 ? [rect(`${prefix}_tb_sep_${i}`, "Separator", 16, 76 + i * 42, 338, 1, { fill: solid(opts.border) })] : []),
+        ellipse(`${prefix}_tb_av_${i}`, "Avatar", 16, 88 + i * 42, 22, 22, { fill: solid(opts.chip) }),
+        text(`${prefix}_tb_name_${i}`, "Name", name, 46, 88 + i * 42, 100, 22, { size: 9, weight: 500, color: opts.text, valign: "middle", family: opts.family }),
+        text(`${prefix}_tb_role_${i}`, "Role", role, 164, 88 + i * 42, 90, 22, { size: 9, color: opts.muted, valign: "middle", family: opts.family }),
+        ellipse(`${prefix}_tb_dot_${i}`, "Status dot", 282, 96 + i * 42, 6, 6, { fill: solid(status === "Away" ? opts.danger : opts.primary) }),
+        text(`${prefix}_tb_status_${i}`, "Status", status, 294, 88 + i * 42, 60, 22, { size: 8, color: opts.muted, valign: "middle", family: opts.family }),
+      ]).flat(),
+    ]),
+
+    text(`${prefix}_c_nav`, "Section", "Navigation", 48, 806, 260, 20, { size: 10, weight: 700, color: opts.muted, letterSpacing: 0.8, family: opts.family }),
+    component("tabs", "Tabs / Underline", 48, 834, 320, 36, undefined, 0, [
+      text(`${prefix}_tab1`, "Tab", "Overview", 0, 0, 88, 34, { size: 12, weight: 600, color: opts.primary, valign: "middle", family: opts.family }),
+      rect(`${prefix}_tab_ind`, "Indicator", 0, 32, 88, 2, { fill: solid(opts.primary) }),
+      text(`${prefix}_tab2`, "Tab", "Activity", 100, 0, 80, 34, { size: 12, color: opts.muted, valign: "middle", family: opts.family }),
+      text(`${prefix}_tab3`, "Tab", "Settings", 192, 0, 80, 34, { size: 12, color: opts.muted, valign: "middle", family: opts.family }),
+    ]),
+  ]);
+}
+
 /* ------------------------------------------------------------------ */
 /*  Material Design 3                                                  */
 /* ------------------------------------------------------------------ */
@@ -589,8 +715,11 @@ const materialFound = foundations("mat", "Material 3", "Material You tokens, Rob
   ["Primary", "#6750A4"], ["Primary container", "#EADDFF"], ["Secondary", "#625B71"], ["Tertiary", "#7D5260"], ["Surface", "#FFFBFE"], ["Error", "#B3261E"],
 ], { bg: "#FFFBFE", surface: "#FFFFFF", text: "#1D1B20", muted: "#49454F", primary: "#6750A4", onPrimary: "#FFFFFF", border: "#CAC4D0", chip: "#E8DEF8", radius: 16, family: "Roboto" });
 
+const materialComponents = componentBoard("matc", "Material 3", {
+  bg: "#FFFBFE", surface: "#FFFFFF", text: "#1D1B20", muted: "#49454F", primary: "#6750A4", onPrimary: "#FFFFFF", border: "#CAC4D0", chip: "#E8DEF8", danger: "#B3261E", radius: 16, family: "Roboto",
+});
 const materialDoc = {
-  pages: [page("mat_page", "Home", [materialHome]), page("mat_found_page", "Foundations", [materialFound])],
+  pages: [page("mat_page", "Home", [materialHome]), page("mat_found_page", "Foundations", [materialFound]), page("mat_components_page", "Components", [materialComponents])],
   tombstones: {},
 };
 
@@ -640,8 +769,11 @@ const iosFound = foundations("ios", "Apple HIG", "Human Interface Guidelines col
   ["Blue", "#007AFF"], ["Green", "#34C759"], ["Red", "#FF3B30"], ["Orange", "#FF9500"], ["Grouped bg", "#F2F2F7"], ["Label", "#000000"],
 ], { bg: "#F2F2F7", surface: "#FFFFFF", text: "#000000", muted: "#8E8E93", primary: "#007AFF", onPrimary: "#FFFFFF", border: "#D1D1D6", chip: "#E5F1FF", radius: 12, family: "SF Pro Display" });
 
+const iosComponents = componentBoard("iosc", "Apple HIG", {
+  bg: "#F2F2F7", surface: "#FFFFFF", text: "#000000", muted: "#8E8E93", primary: "#007AFF", onPrimary: "#FFFFFF", border: "#D1D1D6", chip: "#E5F1FF", danger: "#FF3B30", radius: 12, family: "SF Pro Display",
+});
 const iosDoc = {
-  pages: [page("ios_page", "Settings", [iosHome]), page("ios_found_page", "Foundations", [iosFound])],
+  pages: [page("ios_page", "Settings", [iosHome]), page("ios_found_page", "Foundations", [iosFound]), page("ios_components_page", "Components", [iosComponents])],
   tombstones: {},
 };
 
@@ -700,8 +832,11 @@ const fluentFound = foundations("flu", "Fluent 2", "Microsoft Fluent tokens, Seg
   ["Brand", "#0F6CBD"], ["Brand hover", "#115EA3"], ["Neutral bg", "#F5F5F5"], ["Surface", "#FFFFFF"], ["Stroke", "#D1D1D1"], ["Text", "#242424"],
 ], { bg: "#F5F5F5", surface: "#FFFFFF", text: "#242424", muted: "#616161", primary: "#0F6CBD", onPrimary: "#FFFFFF", border: "#D1D1D1", chip: "#EBF3FC", radius: 8, family: "Segoe UI" });
 
+const fluentComponents = componentBoard("fluc", "Fluent 2", {
+  bg: "#F5F5F5", surface: "#FFFFFF", text: "#242424", muted: "#616161", primary: "#0F6CBD", onPrimary: "#FFFFFF", border: "#D1D1D1", chip: "#EBF3FC", danger: "#C50F1F", radius: 8, family: "Segoe UI",
+});
 const fluentDoc = {
-  pages: [page("flu_page", "Dashboard", [fluentHome]), page("flu_found_page", "Foundations", [fluentFound])],
+  pages: [page("flu_page", "Dashboard", [fluentHome]), page("flu_found_page", "Foundations", [fluentFound]), page("flu_components_page", "Components", [fluentComponents])],
   tombstones: {},
 };
 
@@ -756,8 +891,423 @@ const carbonFound = foundations("car", "IBM Carbon", "Carbon color tokens, IBM P
   ["Blue 60", "#0F62FE"], ["Gray 10", "#F4F4F4"], ["Gray 90", "#262626"], ["Red 60", "#DA1E28"], ["Green 50", "#24A148"], ["Yellow 30", "#F1C21B"],
 ], { bg: "#F4F4F4", surface: "#FFFFFF", text: "#161616", muted: "#525252", primary: "#0F62FE", onPrimary: "#FFFFFF", border: "#E0E0E0", chip: "#E8F0FF", radius: 0, family: "IBM Plex Sans" });
 
+const carbonComponents = componentBoard("carc", "IBM Carbon", {
+  bg: "#F4F4F4", surface: "#FFFFFF", text: "#161616", muted: "#525252", primary: "#0F62FE", onPrimary: "#FFFFFF", border: "#E0E0E0", chip: "#E8F0FF", danger: "#DA1E28", radius: 0, family: "IBM Plex Sans",
+});
 const carbonDoc = {
-  pages: [page("car_page", "Data platform", [carbonHome]), page("car_found_page", "Foundations", [carbonFound])],
+  pages: [page("car_page", "Data platform", [carbonHome]), page("car_found_page", "Foundations", [carbonFound]), page("car_components_page", "Components", [carbonComponents])],
+  tombstones: {},
+};
+
+
+/* ------------------------------------------------------------------ */
+/*  Ant Design (Alibaba / Ant Group)                                  */
+/* ------------------------------------------------------------------ */
+
+const antHome = frame("ant_home", "Ant Design · Dashboard", 0, 0, 1440, 900, { fill: solid("#F5F5F5") }, [
+  rect("ant_header", "Header", 0, 0, 1440, 64, { fill: solid("#FFFFFF"), stroke: solid("#F0F0F0") }),
+  rect("ant_logo", "Logo", 24, 18, 28, 28, { radius: 6, fill: solid("#1677FF") }),
+  text("ant_brand", "Brand", "Ant Design", 64, 18, 160, 28, { size: 16, weight: 600, color: "#000000E0", family: "PingFang SC" }),
+  ...["Dashboard", "Projects", "Reports", "Settings"].map((label, i) =>
+    text(`ant_nav_${i}`, "Nav", label, 280 + i * 92, 18, 88, 28, { size: 13, weight: i === 0 ? 600 : 400, color: i === 0 ? "#1677FF" : "#000000A6", valign: "middle", family: "PingFang SC" }),
+  ),
+  rect("ant_search", "Search", 900, 16, 300, 32, { radius: 6, fill: solid("#F5F5F5"), stroke: solid("#D9D9D9") }),
+  text("ant_search_t", "Search", "Search…", 916, 16, 260, 32, { size: 12, color: "#00000040", valign: "middle", family: "PingFang SC" }),
+  ellipse("ant_avatar", "Avatar", 1360, 16, 32, 32, { fill: solid("#1677FF") }),
+  text("ant_avatar_t", "Avatar", "M", 1360, 16, 32, 32, { size: 12, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "PingFang SC" }),
+  rect("ant_sider", "Sider", 0, 64, 224, 836, { fill: solid("#001529") }),
+  text("ant_sider_brand", "Sider brand", "Ant Design Pro", 20, 80, 180, 24, { size: 14, weight: 600, color: "#FFFFFF", family: "PingFang SC" }),
+  ...[["⌂", "Dashboard"], ["▦", "Projects"], ["◫", "Reports"], ["◎", "Team"], ["⚙", "Settings"]].map(([g, label], i) => [
+    ...(i === 0 ? [rect(`ant_menu_active_${i}`, "Active menu", 8, 120 + i * 44, 208, 40, { radius: 8, fill: solid("#1677FF") })] : []),
+    text(`ant_menu_icon_${i}`, "Icon", g, 20, 120 + i * 44, 24, 40, { size: 15, color: i === 0 ? "#FFFFFF" : "#FFFFFFA6", valign: "middle", family: "PingFang SC" }),
+    text(`ant_menu_${i}`, "Menu", label, 52, 120 + i * 44, 150, 40, { size: 13, weight: i === 0 ? 600 : 400, color: i === 0 ? "#FFFFFF" : "#FFFFFFA6", valign: "middle", family: "PingFang SC" }),
+  ]).flat(),
+  text("ant_breadcrumb", "Breadcrumb", "Home / Dashboard", 272, 84, 280, 20, { size: 12, color: "#00000073", family: "PingFang SC" }),
+  text("ant_title", "Title", "Dashboard", 272, 108, 420, 38, { size: 28, weight: 600, color: "#000000E0", family: "PingFang SC" }),
+  text("ant_sub", "Subtitle", "Welcome back, Maya. Here is what is happening today.", 272, 148, 600, 20, { size: 13, color: "#00000073", family: "PingFang SC" }),
+  rect("ant_primary", "Primary button", 1214, 104, 164, 36, { radius: 6, fill: solid("#1677FF") }),
+  text("ant_primary_t", "Label", "+ New project", 1214, 104, 164, 36, { size: 13, weight: 500, color: "#FFFFFF", align: "center", valign: "middle", family: "PingFang SC" }),
+  ...[["Active projects", "24", "↑ 12.5%"], ["Team members", "128", "↑ 8.2%"], ["Tasks completed", "1,284", "↑ 21.3%"], ["Revenue", "$86.4k", "↓ 2.1%"]].map(([label, value, trend], i) => [
+    rect(`ant_card_${i}`, "Statistic card", 272 + i * 280, 188, 264, 112, { radius: 8, fill: solid("#FFFFFF"), stroke: solid("#F0F0F0") }),
+    text(`ant_card_l_${i}`, "Label", label, 288 + i * 280, 204, 220, 18, { size: 12, color: "#00000073", family: "PingFang SC" }),
+    text(`ant_card_v_${i}`, "Value", value, 288 + i * 280, 226, 220, 38, { size: 28, weight: 600, color: "#000000E0", family: "PingFang SC" }),
+    text(`ant_card_t_${i}`, "Trend", trend, 288 + i * 280, 268, 220, 18, { size: 11, color: i === 3 ? "#FF4D4F" : "#52C41A", family: "PingFang SC" }),
+  ]).flat(),
+  rect("ant_table", "Table card", 272, 328, 1106, 440, { radius: 8, fill: solid("#FFFFFF"), stroke: solid("#F0F0F0") }),
+  text("ant_table_title", "Title", "Recent projects", 292, 348, 280, 24, { size: 16, weight: 600, color: "#000000E0", family: "PingFang SC" }),
+  text("ant_table_link", "Link", "View all →", 1298, 350, 60, 20, { size: 12, color: "#1677FF", align: "right", family: "PingFang SC" }),
+  rect("ant_table_head", "Table header", 272, 390, 1106, 40, { fill: solid("#FAFAFA"), stroke: solid("#F0F0F0") }),
+  ...["Project", "Owner", "Status", "Progress", "Updated"].map((h, i) => text(`ant_th_${i}`, "Header", h, 292 + [0, 360, 570, 760, 980][i], 400, 140, 20, { size: 12, weight: 500, color: "#00000073", family: "PingFang SC" })),
+  ...[
+    ["Aurora design system", "Maya Chen", "In progress", 82, "2h ago"],
+    ["Mobile checkout", "Noah Patel", "At risk", 46, "5h ago"],
+    ["Billing migration", "Lena Park", "Completed", 100, "Yesterday"],
+    ["Search revamp", "Owen Diaz", "In review", 92, "2d ago"],
+    ["Admin console", "Iris Kim", "In progress", 71, "3d ago"],
+  ].map(([name, owner, status, progress, updated], i) => [
+    ...(i > 0 ? [rect(`ant_sep_${i}`, "Separator", 292, 430 + i * 64, 1066, 1, { fill: solid("#F0F0F0") })] : []),
+    text(`ant_name_${i}`, "Project", name, 292, 444 + i * 64, 300, 40, { size: 13, weight: 500, color: "#000000E0", valign: "middle", family: "PingFang SC" }),
+    text(`ant_owner_${i}`, "Owner", owner, 652, 444 + i * 64, 170, 40, { size: 12, color: "#000000A6", valign: "middle", family: "PingFang SC" }),
+    rect(`ant_tag_${i}`, "Status tag", 862, 456 + i * 64, 92, 22, { radius: 4, fill: solid(status === "At risk" ? "#FFF1F0" : status === "Completed" ? "#F6FFED" : "#E6F4FF") }),
+    text(`ant_tag_t_${i}`, "Status", status, 862, 456 + i * 64, 92, 22, { size: 10, weight: 500, color: status === "At risk" ? "#FF4D4F" : status === "Completed" ? "#52C41A" : "#1677FF", align: "center", valign: "middle", family: "PingFang SC" }),
+    rect(`ant_progress_track_${i}`, "Progress track", 990, 466 + i * 64, 120, 6, { radius: 3, fill: solid("#F0F0F0") }),
+    rect(`ant_progress_${i}`, "Progress", 990, 466 + i * 64, (120 * progress) / 100, 6, { radius: 3, fill: solid(progress < 50 ? "#FF4D4F" : "#1677FF") }),
+    text(`ant_upd_${i}`, "Updated", updated, 1160, 444 + i * 64, 120, 40, { size: 11, color: "#00000073", valign: "middle", family: "PingFang SC" }),
+  ]).flat(),
+]);
+
+const antFound = foundations("ant", "Ant Design", "Ant Group blue, neutral tokens, 6px controls and data-dense enterprise components.", [
+  ["Primary", "#1677FF"], ["Success", "#52C41A"], ["Warning", "#FAAD14"], ["Error", "#FF4D4F"], ["Border", "#D9D9D9"], ["Container", "#FFFFFF"],
+], { bg: "#F5F5F5", surface: "#FFFFFF", text: "#000000E0", muted: "#00000073", primary: "#1677FF", onPrimary: "#FFFFFF", border: "#D9D9D9", chip: "#E6F4FF", radius: 6, family: "PingFang SC" });
+
+const antComponents = componentBoard("antc", "Ant Design", {
+  bg: "#F5F5F5", surface: "#FFFFFF", text: "#000000E0", muted: "#00000073", primary: "#1677FF", onPrimary: "#FFFFFF", border: "#D9D9D9", chip: "#E6F4FF", danger: "#FF4D4F", radius: 6, family: "PingFang SC",
+});
+const antDoc = {
+  pages: [page("ant_page", "Dashboard", [antHome]), page("ant_found_page", "Foundations", [antFound]), page("ant_components_page", "Components", [antComponents])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
+/*  ByteDance Arco Design                                             */
+/* ------------------------------------------------------------------ */
+
+const arcoHome = frame("arco_home", "ByteDance Arco · Console", 0, 0, 1440, 900, { fill: solid("#F7F8FA") }, [
+  rect("arco_header", "Header", 0, 0, 1440, 64, { fill: solid("#FFFFFF"), stroke: solid("#E5E6EB") }),
+  rect("arco_logo", "Logo", 24, 18, 28, 28, { radius: 4, fill: solid("#165DFF") }),
+  text("arco_brand", "Brand", "Arco Design", 64, 18, 180, 28, { size: 16, weight: 600, color: "#1D2129", family: "PingFang SC" }),
+  ...["Overview", "Projects", "Reports", "Team"].map((label, i) =>
+    text(`arco_nav_${i}`, "Nav", label, 300 + i * 86, 18, 80, 28, { size: 13, weight: i === 0 ? 600 : 400, color: i === 0 ? "#165DFF" : "#4E5969", valign: "middle", family: "PingFang SC" }),
+  ),
+  rect("arco_search", "Search", 920, 16, 280, 32, { radius: 4, fill: solid("#F2F3F5"), stroke: solid("#E5E6EB") }),
+  text("arco_search_t", "Search", "Search projects", 936, 16, 250, 32, { size: 12, color: "#86909C", valign: "middle", family: "PingFang SC" }),
+  ellipse("arco_avatar", "Avatar", 1360, 16, 32, 32, { fill: solid("#165DFF") }),
+  text("arco_avatar_t", "Avatar", "M", 1360, 16, 32, 32, { size: 12, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "PingFang SC" }),
+  rect("arco_side", "Sidebar", 0, 64, 224, 836, { fill: solid("#FFFFFF"), stroke: solid("#E5E6EB") }),
+  text("arco_side_title", "Section", "Workspace", 20, 84, 180, 20, { size: 10, weight: 600, color: "#86909C", letterSpacing: 0.8, family: "PingFang SC" }),
+  ...[["⌂", "Overview"], ["▦", "Projects"], ["◫", "Reports"], ["◎", "Team"], ["⚙", "Settings"]].map(([g, label], i) => [
+    ...(i === 0 ? [rect(`arco_active_${i}`, "Active", 8, 116 + i * 44, 208, 38, { radius: 4, fill: solid("#E8F3FF") })] : []),
+    text(`arco_icon_${i}`, "Icon", g, 20, 116 + i * 44, 22, 38, { size: 14, color: i === 0 ? "#165DFF" : "#86909C", valign: "middle", family: "PingFang SC" }),
+    text(`arco_label_${i}`, "Label", label, 52, 116 + i * 44, 150, 38, { size: 13, weight: i === 0 ? 600 : 400, color: i === 0 ? "#165DFF" : "#4E5969", valign: "middle", family: "PingFang SC" }),
+  ]).flat(),
+  text("arco_breadcrumb", "Breadcrumb", "Workspace / Overview", 272, 84, 300, 20, { size: 12, color: "#86909C", family: "PingFang SC" }),
+  text("arco_title", "Title", "Overview", 272, 108, 400, 38, { size: 28, weight: 600, color: "#1D2129", family: "PingFang SC" }),
+  text("arco_sub", "Subtitle", "Track delivery, quality and team velocity in real time.", 272, 148, 620, 20, { size: 13, color: "#4E5969", family: "PingFang SC" }),
+  rect("arco_primary", "Primary button", 1214, 104, 164, 36, { radius: 4, fill: solid("#165DFF") }),
+  text("arco_primary_t", "Label", "+ New project", 1214, 104, 164, 36, { size: 13, weight: 500, color: "#FFFFFF", align: "center", valign: "middle", family: "PingFang SC" }),
+  ...[["Projects", "24", "↑ 12.5%"], ["Team velocity", "86", "↑ 6.8%"], ["Tasks done", "1,284", "↑ 18.2%"], ["Open bugs", "12", "↓ 7.4%"]].map(([label, value, trend], i) => [
+    rect(`arco_card_${i}`, "Metric card", 272 + i * 280, 188, 264, 112, { radius: 4, fill: solid("#FFFFFF"), stroke: solid("#E5E6EB") }),
+    text(`arco_card_l_${i}`, "Label", label, 288 + i * 280, 204, 220, 18, { size: 12, color: "#4E5969", family: "PingFang SC" }),
+    text(`arco_card_v_${i}`, "Value", value, 288 + i * 280, 226, 220, 38, { size: 28, weight: 600, color: "#1D2129", family: "PingFang SC" }),
+    text(`arco_card_t_${i}`, "Trend", trend, 288 + i * 280, 268, 220, 18, { size: 11, color: i === 3 ? "#F53F3F" : "#00B42A", family: "PingFang SC" }),
+  ]).flat(),
+  rect("arco_table", "Table card", 272, 328, 1106, 440, { radius: 4, fill: solid("#FFFFFF"), stroke: solid("#E5E6EB") }),
+  text("arco_table_title", "Title", "Project delivery", 292, 348, 280, 24, { size: 16, weight: 600, color: "#1D2129", family: "PingFang SC" }),
+  text("arco_table_link", "Link", "View all →", 1298, 350, 60, 20, { size: 12, color: "#165DFF", align: "right", family: "PingFang SC" }),
+  rect("arco_head", "Table header", 272, 390, 1106, 40, { fill: solid("#F7F8FA"), stroke: solid("#E5E6EB") }),
+  ...["Project", "Owner", "Status", "Priority", "Updated"].map((h, i) => text(`arco_th_${i}`, "Header", h, 292 + [0, 350, 560, 760, 980][i], 400, 140, 20, { size: 12, weight: 500, color: "#4E5969", family: "PingFang SC" })),
+  ...[
+    ["Aurora design system", "Maya Chen", "On track", "High", "2h ago"],
+    ["Mobile checkout", "Noah Patel", "At risk", "High", "5h ago"],
+    ["Billing migration", "Lena Park", "Done", "Medium", "Yesterday"],
+    ["Search revamp", "Owen Diaz", "In review", "Low", "2d ago"],
+    ["Admin console", "Iris Kim", "On track", "Medium", "3d ago"],
+  ].map(([name, owner, status, priority, updated], i) => [
+    ...(i > 0 ? [rect(`arco_sep_${i}`, "Separator", 292, 430 + i * 64, 1066, 1, { fill: solid("#F2F3F5") })] : []),
+    text(`arco_name_${i}`, "Project", name, 292, 444 + i * 64, 290, 40, { size: 13, weight: 500, color: "#1D2129", valign: "middle", family: "PingFang SC" }),
+    text(`arco_owner_${i}`, "Owner", owner, 642, 444 + i * 64, 170, 40, { size: 12, color: "#4E5969", valign: "middle", family: "PingFang SC" }),
+    rect(`arco_tag_${i}`, "Status tag", 852, 456 + i * 64, 82, 22, { radius: 2, fill: solid(status === "At risk" ? "#FFECE8" : status === "Done" ? "#E8FFEA" : "#E8F3FF") }),
+    text(`arco_tag_t_${i}`, "Status", status, 852, 456 + i * 64, 82, 22, { size: 10, weight: 500, color: status === "At risk" ? "#F53F3F" : status === "Done" ? "#00B42A" : "#165DFF", align: "center", valign: "middle", family: "PingFang SC" }),
+    text(`arco_pri_${i}`, "Priority", priority, 970, 444 + i * 64, 100, 40, { size: 11, color: "#4E5969", valign: "middle", family: "PingFang SC" }),
+    text(`arco_upd_${i}`, "Updated", updated, 1160, 444 + i * 64, 120, 40, { size: 11, color: "#86909C", valign: "middle", family: "PingFang SC" }),
+  ]).flat(),
+]);
+
+const arcoFound = foundations("arco", "Arco Design", "ByteDance Arco blue, compact 4px geometry and data-dense console patterns.", [
+  ["Primary", "#165DFF"], ["Success", "#00B42A"], ["Warning", "#FF7D00"], ["Danger", "#F53F3F"], ["Border", "#E5E6EB"], ["Surface", "#FFFFFF"],
+], { bg: "#F7F8FA", surface: "#FFFFFF", text: "#1D2129", muted: "#4E5969", primary: "#165DFF", onPrimary: "#FFFFFF", border: "#E5E6EB", chip: "#E8F3FF", radius: 4, family: "PingFang SC" });
+
+const arcoComponents = componentBoard("arcoc", "ByteDance Arco", {
+  bg: "#F7F8FA", surface: "#FFFFFF", text: "#1D2129", muted: "#4E5969", primary: "#165DFF", onPrimary: "#FFFFFF", border: "#E5E6EB", chip: "#E8F3FF", danger: "#F53F3F", radius: 4, family: "PingFang SC",
+});
+const arcoDoc = {
+  pages: [page("arco_page", "Console", [arcoHome]), page("arco_found_page", "Foundations", [arcoFound]), page("arco_components_page", "Components", [arcoComponents])],
+  tombstones: {},
+};
+
+
+/* ------------------------------------------------------------------ */
+/*  Element Plus (Eleme)                                              */
+/* ------------------------------------------------------------------ */
+
+const elementHome = frame("el_home", "Element Plus · Admin", 0, 0, 1440, 900, { fill: solid("#F5F7FA") }, [
+  rect("el_header", "Header", 0, 0, 1440, 60, { fill: solid("#FFFFFF"), stroke: solid("#E4E7ED") }),
+  rect("el_logo", "Logo", 24, 16, 28, 28, { radius: 4, fill: solid("#409EFF") }),
+  text("el_brand", "Brand", "Element Plus", 64, 16, 180, 28, { size: 16, weight: 600, color: "#303133", family: "Helvetica Neue" }),
+  ...["Dashboard", "Projects", "Reports", "Settings"].map((label, i) =>
+    text(`el_nav_${i}`, "Nav", label, 300 + i * 88, 16, 80, 28, { size: 13, weight: i === 0 ? 600 : 400, color: i === 0 ? "#409EFF" : "#606266", valign: "middle", family: "Helvetica Neue" }),
+  ),
+  rect("el_search", "Search", 920, 14, 280, 32, { radius: 4, fill: solid("#FFFFFF"), stroke: solid("#DCDFE6") }),
+  text("el_search_t", "Search", "Search…", 936, 14, 250, 32, { size: 12, color: "#C0C4CC", valign: "middle", family: "Helvetica Neue" }),
+  ellipse("el_avatar", "Avatar", 1358, 14, 32, 32, { fill: solid("#409EFF") }),
+  text("el_avatar_t", "Avatar", "M", 1358, 14, 32, 32, { size: 12, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "Helvetica Neue" }),
+  rect("el_side", "Sidebar", 0, 60, 220, 840, { fill: solid("#304156") }),
+  text("el_side_title", "Section", "Workspace", 20, 80, 180, 20, { size: 10, weight: 600, color: "#AEB9C8", letterSpacing: 0.8, family: "Helvetica Neue" }),
+  ...[["⌂", "Dashboard"], ["▦", "Projects"], ["◫", "Reports"], ["◎", "Team"], ["⚙", "Settings"]].map(([g, label], i) => [
+    ...(i === 0 ? [rect(`el_active_${i}`, "Active", 0, 112 + i * 46, 220, 42, { fill: solid("#263445") }), rect(`el_active_bar_${i}`, "Accent", 0, 112 + i * 46, 3, 42, { fill: solid("#409EFF") })] : []),
+    text(`el_icon_${i}`, "Icon", g, 22, 112 + i * 46, 22, 42, { size: 14, color: i === 0 ? "#409EFF" : "#BFCBD9", valign: "middle", family: "Helvetica Neue" }),
+    text(`el_label_${i}`, "Label", label, 54, 112 + i * 46, 150, 42, { size: 13, weight: i === 0 ? 600 : 400, color: i === 0 ? "#FFFFFF" : "#BFCBD9", valign: "middle", family: "Helvetica Neue" }),
+  ]).flat(),
+  text("el_breadcrumb", "Breadcrumb", "Home / Dashboard", 268, 80, 300, 20, { size: 12, color: "#909399", family: "Helvetica Neue" }),
+  text("el_title", "Title", "Dashboard", 268, 104, 400, 38, { size: 28, weight: 600, color: "#303133", family: "Helvetica Neue" }),
+  text("el_sub", "Subtitle", "Welcome back, Maya. Here is your workspace overview.", 268, 144, 620, 20, { size: 13, color: "#606266", family: "Helvetica Neue" }),
+  rect("el_primary", "Primary button", 1212, 102, 164, 36, { radius: 4, fill: solid("#409EFF") }),
+  text("el_primary_t", "Label", "+ New project", 1212, 102, 164, 36, { size: 13, weight: 500, color: "#FFFFFF", align: "center", valign: "middle", family: "Helvetica Neue" }),
+  ...[["Active projects", "24", "↑ 12.5%"], ["Team members", "128", "↑ 8.2%"], ["Tasks completed", "1,284", "↑ 21.3%"], ["Open issues", "12", "↓ 7.4%"]].map(([label, value, trend], i) => [
+    rect(`el_card_${i}`, "Statistic card", 268 + i * 280, 184, 264, 112, { radius: 4, fill: solid("#FFFFFF"), stroke: solid("#EBEEF5") }),
+    text(`el_card_l_${i}`, "Label", label, 284 + i * 280, 200, 220, 18, { size: 12, color: "#909399", family: "Helvetica Neue" }),
+    text(`el_card_v_${i}`, "Value", value, 284 + i * 280, 224, 220, 38, { size: 28, weight: 600, color: "#303133", family: "Helvetica Neue" }),
+    text(`el_card_t_${i}`, "Trend", trend, 284 + i * 280, 264, 220, 18, { size: 11, color: i === 3 ? "#F56C6C" : "#67C23A", family: "Helvetica Neue" }),
+  ]).flat(),
+  rect("el_table", "Table card", 268, 324, 1108, 444, { radius: 4, fill: solid("#FFFFFF"), stroke: solid("#EBEEF5") }),
+  text("el_table_title", "Title", "Recent projects", 288, 344, 280, 24, { size: 16, weight: 600, color: "#303133", family: "Helvetica Neue" }),
+  text("el_table_link", "Link", "View all →", 1296, 346, 60, 20, { size: 12, color: "#409EFF", align: "right", family: "Helvetica Neue" }),
+  rect("el_head", "Table header", 268, 386, 1108, 40, { fill: solid("#F5F7FA"), stroke: solid("#EBEEF5") }),
+  ...["Project", "Owner", "Status", "Progress", "Updated"].map((h, i) => text(`el_th_${i}`, "Header", h, 288 + [0, 350, 560, 750, 980][i], 396, 140, 20, { size: 12, weight: 600, color: "#909399", family: "Helvetica Neue" })),
+  ...[
+    ["Aurora design system", "Maya Chen", "In progress", 82, "2h ago"],
+    ["Mobile checkout", "Noah Patel", "Alert", 46, "5h ago"],
+    ["Billing migration", "Lena Park", "Completed", 100, "Yesterday"],
+    ["Search revamp", "Owen Diaz", "Review", 92, "2d ago"],
+    ["Admin console", "Iris Kim", "In progress", 71, "3d ago"],
+  ].map(([name, owner, status, progress, updated], i) => [
+    ...(i > 0 ? [rect(`el_sep_${i}`, "Separator", 288, 426 + i * 64, 1068, 1, { fill: solid("#EBEEF5") })] : []),
+    text(`el_name_${i}`, "Project", name, 288, 440 + i * 64, 290, 40, { size: 13, weight: 500, color: "#303133", valign: "middle", family: "Helvetica Neue" }),
+    text(`el_owner_${i}`, "Owner", owner, 638, 440 + i * 64, 170, 40, { size: 12, color: "#606266", valign: "middle", family: "Helvetica Neue" }),
+    rect(`el_tag_${i}`, "Status tag", 848, 452 + i * 64, 90, 22, { radius: 2, fill: solid(status === "Alert" ? "#FEF0F0" : status === "Completed" ? "#F0F9EB" : "#ECF5FF") }),
+    text(`el_tag_t_${i}`, "Status", status, 848, 452 + i * 64, 90, 22, { size: 10, weight: 500, color: status === "Alert" ? "#F56C6C" : status === "Completed" ? "#67C23A" : "#409EFF", align: "center", valign: "middle", family: "Helvetica Neue" }),
+    rect(`el_progress_track_${i}`, "Track", 970, 462 + i * 64, 120, 6, { radius: 3, fill: solid("#EBEEF5") }),
+    rect(`el_progress_${i}`, "Progress", 970, 462 + i * 64, (120 * progress) / 100, 6, { radius: 3, fill: solid(progress < 50 ? "#F56C6C" : "#409EFF") }),
+    text(`el_upd_${i}`, "Updated", updated, 1160, 440 + i * 64, 120, 40, { size: 11, color: "#909399", valign: "middle", family: "Helvetica Neue" }),
+  ]).flat(),
+]);
+
+const elementFound = foundations("el", "Element Plus", "Eleme Element blue, compact 4px controls and classic admin console patterns.", [
+  ["Primary", "#409EFF"], ["Success", "#67C23A"], ["Warning", "#E6A23C"], ["Danger", "#F56C6C"], ["Border", "#DCDFE6"], ["Surface", "#FFFFFF"],
+], { bg: "#F5F7FA", surface: "#FFFFFF", text: "#303133", muted: "#909399", primary: "#409EFF", onPrimary: "#FFFFFF", border: "#DCDFE6", chip: "#ECF5FF", radius: 4, family: "Helvetica Neue" });
+
+const elementComponents = componentBoard("elc", "Element Plus", {
+  bg: "#F5F7FA", surface: "#FFFFFF", text: "#303133", muted: "#909399", primary: "#409EFF", onPrimary: "#FFFFFF", border: "#DCDFE6", chip: "#ECF5FF", danger: "#F56C6C", radius: 4, family: "Helvetica Neue",
+});
+const elementDoc = {
+  pages: [page("el_page", "Dashboard", [elementHome]), page("el_found_page", "Foundations", [elementFound]), page("el_components_page", "Components", [elementComponents])],
+  tombstones: {},
+};
+
+
+/* ------------------------------------------------------------------ */
+/*  Sigma Originals — own visual language                             */
+/*  Paper / Ink / Cobalt / Acid / Coral, hard borders, offset shadows */
+/* ------------------------------------------------------------------ */
+
+const SIG = {
+  paper: "#F2EEE3",
+  paper2: "#E9E3D4",
+  ink: "#111111",
+  cobalt: "#2F4BFF",
+  acid: "#D8FF3E",
+  coral: "#FF5A36",
+  muted: "#6F6A5F",
+  white: "#FFFFFF",
+};
+
+const sigmaOpts = {
+  bg: SIG.paper, surface: SIG.white, text: SIG.ink, muted: SIG.muted,
+  primary: SIG.cobalt, onPrimary: "#FFFFFF", border: SIG.ink,
+  chip: SIG.acid, danger: SIG.coral, radius: 0, family: "Inter Variable",
+};
+
+const signalScreens = frame("sig_screens", "Signal · Screens", 0, 0, 390, 844, { fill: solid(SIG.paper), radius: 0 }, [
+  ...statusBar("sig", false),
+  text("sig_brand", "Brand", "SIGNAL", 24, 58, 160, 22, { size: 13, weight: 800, color: SIG.ink, letterSpacing: 2.5 }),
+  text("sig_index", "Index", "01 / 03", 300, 58, 66, 18, { size: 10, weight: 600, color: SIG.muted, align: "right", letterSpacing: 0.8 }),
+  text("sig_eyebrow", "Eyebrow", "A QUIETER WAY TO STAY AWAKE", 24, 130, 330, 18, { size: 9, weight: 700, color: SIG.cobalt, letterSpacing: 1.6 }),
+  text("sig_headline", "Headline", "Less feed.\nMore signal.", 24, 158, 350, 128, { size: 50, weight: 800, color: SIG.ink, lineHeight: 0.96, letterSpacing: -2.4 }),
+  rect("sig_rule", "Rule", 24, 306, 342, 2, { fill: solid(SIG.ink), radius: 0 }),
+  text("sig_body", "Body", "A reading app for people who want fewer tabs and better questions. No infinite scroll. No algorithm. Just five things worth your attention.", 24, 326, 310, 76, { size: 13, weight: 400, color: SIG.muted, lineHeight: 1.6 }),
+
+  rect("sig_card", "Signal card", 24, 430, 342, 236, { fill: solid(SIG.cobalt), stroke: solid(SIG.ink), strokeWidth: 2, radius: 0, shadow: shadow(9, 9, 0, 0, SIG.ink) }),
+  ellipse("sig_sun", "Acid sun", 242, 456, 96, 96, { fill: solid(SIG.acid), stroke: solid(SIG.ink), strokeWidth: 2 }),
+  text("sig_card_no", "Card number", "S/01", 42, 452, 80, 20, { size: 10, weight: 700, color: "#FFFFFF", letterSpacing: 1.2 }),
+  text("sig_card_title", "Card title", "The cost of\nattention.", 42, 494, 190, 82, { size: 30, weight: 800, color: "#FFFFFF", lineHeight: 1, letterSpacing: -1 }),
+  text("sig_card_meta", "Meta", "12 MIN READ · ESSAY", 42, 618, 220, 18, { size: 9, weight: 600, color: SIG.acid, letterSpacing: 1.2 }),
+
+  text("sig_section", "Section", "TODAY’S FIVE", 24, 712, 200, 20, { size: 10, weight: 800, color: SIG.ink, letterSpacing: 1.4 }),
+  ...[
+    ["01", "The unreasonable effectiveness of walking", "6 min"],
+    ["02", "A field guide to noticing", "9 min"],
+    ["03", "What silence does to a room", "4 min"],
+  ].map(([no, title, time], i) => [
+    rect(`sig_row_sep_${i}`, "Separator", 24, 740 + i * 34, 342, 1, { fill: solid(SIG.ink, 0.25) }),
+    text(`sig_row_no_${i}`, "Number", no, 24, 748 + i * 34, 28, 20, { size: 9, weight: 700, color: SIG.cobalt }),
+    text(`sig_row_title_${i}`, "Title", title, 60, 748 + i * 34, 250, 20, { size: 11, weight: 500, color: SIG.ink }),
+    text(`sig_row_time_${i}`, "Time", time, 312, 748 + i * 34, 54, 20, { size: 9, color: SIG.muted, align: "right" }),
+  ]).flat().slice(0, 9),
+]);
+
+const signalArchive = frame("sig_archive", "Signal · Archive", 470, 0, 390, 844, { fill: solid(SIG.ink), radius: 0 }, [
+  ...statusBar("sig2", true),
+  text("sig2_brand", "Brand", "SIGNAL / ARCHIVE", 24, 58, 240, 22, { size: 12, weight: 800, color: SIG.paper, letterSpacing: 2 }),
+  text("sig2_count", "Count", "137", 24, 120, 200, 100, { size: 92, weight: 800, color: SIG.acid, lineHeight: 1, letterSpacing: -5 }),
+  text("sig2_label", "Label", "PIECES STILL WORTH READING", 28, 218, 300, 18, { size: 9, weight: 700, color: SIG.paper, letterSpacing: 1.4 }),
+  rect("sig2_rule", "Rule", 24, 258, 342, 2, { fill: solid(SIG.paper) }),
+  ...["Design", "Attention", "Tools", "Cities", "Systems"].map((label, i) => [
+    rect(`sig2_tag_${i}`, "Tag", 24 + (i % 3) * 112, 286 + Math.floor(i / 3) * 44, 100, 30, { fill: solid(i === 1 ? SIG.acid : "transparent"), stroke: solid(SIG.paper), strokeWidth: 1, radius: 0 }),
+    text(`sig2_tag_t_${i}`, "Tag", label, 24 + (i % 3) * 112, 286 + Math.floor(i / 3) * 44, 100, 30, { size: 9, weight: 600, color: i === 1 ? SIG.ink : SIG.paper, align: "center", valign: "middle" }),
+  ]).flat(),
+  ...[
+    ["APR 12", "The shape of a good question", "Essay"],
+    ["APR 08", "Rooms that make you stay", "Field note"],
+    ["MAR 30", "Against the infinite scroll", "Essay"],
+    ["MAR 21", "A small case for slow tools", "Interview"],
+  ].map(([date, title, kind], i) => [
+    text(`sig2_date_${i}`, "Date", date, 24, 420 + i * 88, 70, 18, { size: 9, weight: 600, color: SIG.muted, letterSpacing: 0.8 }),
+    text(`sig2_title_${i}`, "Title", title, 24, 440 + i * 88, 320, 26, { size: 18, weight: 600, color: SIG.paper, letterSpacing: -0.4 }),
+    text(`sig2_kind_${i}`, "Kind", kind, 24, 468 + i * 88, 200, 18, { size: 9, color: SIG.acid, letterSpacing: 0.6 }),
+    rect(`sig2_sep_${i}`, "Separator", 24, 496 + i * 88, 342, 1, { fill: solid(SIG.paper, 0.25) }),
+  ]).flat(),
+  rect("sig2_cta", "Start reading", 24, 770, 342, 50, { fill: solid(SIG.acid), stroke: solid(SIG.paper), strokeWidth: 1, radius: 0 }),
+  text("sig2_cta_t", "Start reading", "START READING →", 24, 770, 342, 50, { size: 11, weight: 800, color: SIG.ink, align: "center", valign: "middle", letterSpacing: 1.2 }),
+]);
+
+const signalFound = foundations("sig", "Sigma Signal", "Our own language: paper, ink, cobalt and acid. Hard edges, no gradients, no decoration without purpose.", [
+  ["Paper", SIG.paper], ["Ink", SIG.ink], ["Cobalt", SIG.cobalt], ["Acid", SIG.acid], ["Coral", SIG.coral], ["Muted", SIG.muted],
+], sigmaOpts);
+const signalComponents = componentBoard("sig", "Sigma Signal", sigmaOpts);
+
+const signalDoc = {
+  pages: [page("sig_page", "Screens", [signalScreens, signalArchive]), page("sig_found", "Foundations", [signalFound]), page("sig_components", "Components", [signalComponents])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
+/*  Field Notes — editorial website                                   */
+/* ------------------------------------------------------------------ */
+
+const fieldNotes = frame("fn_home", "Field Notes · Home", 0, 0, 1440, 1024, { fill: solid(SIG.paper), radius: 0 }, [
+  rect("fn_top", "Top rule", 0, 0, 1440, 2, { fill: solid(SIG.ink) }),
+  text("fn_brand", "Brand", "FIELD NOTES", 48, 26, 220, 24, { size: 14, weight: 800, color: SIG.ink, letterSpacing: 2.4 }),
+  ...["Index", "Essays", "Objects", "About"].map((label, i) => text(`fn_nav_${i}`, "Nav", label, 760 + i * 100, 28, 86, 20, { size: 11, weight: 600, color: SIG.ink, letterSpacing: 0.6 })),
+  rect("fn_sub", "Subscribe", 1188, 22, 204, 32, { fill: solid(SIG.ink), radius: 0 }),
+  text("fn_sub_t", "Subscribe", "SUBSCRIBE →", 1188, 22, 204, 32, { size: 10, weight: 700, color: SIG.paper, align: "center", valign: "middle", letterSpacing: 1.2 }),
+
+  text("fn_kicker", "Kicker", "A JOURNAL OF USEFUL OBSERVATIONS · ISSUE 07", 48, 108, 620, 18, { size: 10, weight: 700, color: SIG.cobalt, letterSpacing: 1.2 }),
+  text("fn_h1", "Headline", "MAKE\nNOISE\nTHAT\nMATTERS.", 48, 136, 760, 430, { size: 112, weight: 800, color: SIG.ink, lineHeight: 0.82, letterSpacing: -7 }),
+  rect("fn_acid", "Acid block", 820, 146, 180, 180, { fill: solid(SIG.acid), stroke: solid(SIG.ink), strokeWidth: 2, radius: 0, shadow: shadow(10, 10, 0, 0, SIG.ink) }),
+  ellipse("fn_circle", "Circle", 890, 200, 100, 100, { fill: solid(SIG.cobalt), stroke: solid(SIG.ink), strokeWidth: 2 }),
+  text("fn_circle_t", "Circle text", "07", 890, 200, 100, 100, { size: 36, weight: 800, color: SIG.acid, align: "center", valign: "middle", letterSpacing: -1 }),
+  text("fn_intro", "Intro", "We collect what survives the feed: essays, field notes, objects and small systems for paying attention.", 820, 356, 520, 80, { size: 18, weight: 400, color: SIG.ink, lineHeight: 1.45 }),
+  rect("fn_cta", "Read issue", 820, 460, 220, 48, { fill: solid(SIG.ink), radius: 0 }),
+  text("fn_cta_t", "Read issue", "READ ISSUE 07 →", 820, 460, 220, 48, { size: 11, weight: 700, color: SIG.paper, align: "center", valign: "middle", letterSpacing: 1 }),
+  rect("fn_rule", "Rule", 48, 606, 1344, 2, { fill: solid(SIG.ink) }),
+  text("fn_feat_label", "Label", "FROM THE CURRENT ISSUE", 48, 628, 300, 18, { size: 10, weight: 700, color: SIG.muted, letterSpacing: 1.2 }),
+
+  ...[
+    ["01", "The unreasonable\neffectiveness of walking", "Essay · 12 min", SIG.cobalt],
+    ["02", "A field guide\nto noticing", "Field note · 9 min", SIG.coral],
+    ["03", "Rooms that\nmake you stay", "Interview · 18 min", SIG.acid],
+  ].map(([no, title, meta, color], i) => [
+    rect(`fn_card_${i}`, "Story card", 48 + i * 456, 668, 432, 300, { fill: solid(SIG.paper2), stroke: solid(SIG.ink), strokeWidth: 2, radius: 0, shadow: shadow(8, 8, 0, 0, SIG.ink) }),
+    rect(`fn_card_top_${i}`, "Color bar", 48 + i * 456, 668, 432, 16, { fill: solid(color as string), stroke: solid(SIG.ink), strokeWidth: 0, radius: 0 }),
+    text(`fn_card_no_${i}`, "Number", no as string, 66 + i * 456, 700, 60, 20, { size: 10, weight: 700, color: SIG.ink, letterSpacing: 1 }),
+    text(`fn_card_title_${i}`, "Title", title as string, 66 + i * 456, 732, 380, 100, { size: 28, weight: 700, color: SIG.ink, lineHeight: 1.05, letterSpacing: -0.8 }),
+    text(`fn_card_meta_${i}`, "Meta", meta as string, 66 + i * 456, 916, 380, 20, { size: 9, weight: 600, color: SIG.muted, letterSpacing: 0.8 }),
+  ]).flat(),
+
+  text("fn_footer", "Footer", "FIELD NOTES / ISSUE 07 / 2026", 48, 1000, 600, 16, { size: 9, weight: 600, color: SIG.muted, letterSpacing: 1 }),
+  text("fn_footer2", "Footer", "PRINTED IN THE BROWSER", 1170, 1000, 220, 16, { size: 9, weight: 600, color: SIG.muted, letterSpacing: 1, align: "right" }),
+]);
+
+const fieldNotesSystem = foundations("fn", "Field Notes", "Editorial rules: oversized type, hard borders, paper stock and a single acid highlight.", [
+  ["Paper", SIG.paper], ["Paper 2", SIG.paper2], ["Ink", SIG.ink], ["Cobalt", SIG.cobalt], ["Acid", SIG.acid], ["Coral", SIG.coral],
+], sigmaOpts);
+const fieldNotesComponents = componentBoard("fn", "Field Notes", sigmaOpts);
+const fieldNotesDoc = {
+  pages: [page("fn_page", "Home", [fieldNotes]), page("fn_found", "Foundations", [fieldNotesSystem]), page("fn_components", "Components", [fieldNotesComponents])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
+/*  Atlas — dark operational dashboard                                */
+/* ------------------------------------------------------------------ */
+
+const atlas = frame("atlas_home", "Atlas · Operations", 0, 0, 1440, 900, { fill: solid("#0B0D0C"), radius: 0 }, [
+  rect("atlas_top", "Top bar", 0, 0, 1440, 56, { fill: solid("#0B0D0C"), stroke: solid("#2A2E2A") }),
+  text("atlas_brand", "Brand", "ATLAS", 24, 18, 120, 20, { size: 12, weight: 800, color: SIG.acid, letterSpacing: 2.4 }),
+  text("atlas_mode", "Mode", "OPERATIONS / LIVE", 148, 20, 220, 16, { size: 9, weight: 600, color: "#8A908A", letterSpacing: 1.1 }),
+  ...["Overview", "Fleet", "Incidents", "Logs"].map((label, i) => text(`atlas_nav_${i}`, "Nav", label, 840 + i * 104, 20, 88, 16, { size: 10, weight: 600, color: i === 0 ? SIG.acid : "#8A908A", letterSpacing: 0.6 })),
+  text("atlas_clock", "Clock", "09:41:07 UTC", 1280, 20, 136, 16, { size: 9, weight: 600, color: "#8A908A", letterSpacing: 1, align: "right" }),
+
+  rect("atlas_side", "Sidebar", 0, 56, 200, 844, { fill: solid("#0F1210"), stroke: solid("#2A2E2A") }),
+  text("atlas_side_label", "Label", "CONTROL", 20, 80, 160, 16, { size: 9, weight: 700, color: "#5F665F", letterSpacing: 1.2 }),
+  ...["OPS BOARD", "INCIDENTS", "CAPACITY", "AUDIT"].map((label, i) => [
+    ...(i === 0 ? [rect(`atlas_active_${i}`, "Active", 0, 108 + i * 44, 200, 36, { fill: solid(SIG.acid) })] : []),
+    text(`atlas_nav2_${i}`, "Menu", label, 20, 108 + i * 44, 170, 36, { size: 10, weight: 700, color: i === 0 ? SIG.ink : "#8A908A", valign: "middle", letterSpacing: 0.8 }),
+  ]).flat(),
+  text("atlas_side_footer", "Footer", "SIGMA ORIGINALS\nBUILD 07", 20, 820, 150, 40, { size: 8, weight: 600, color: "#5F665F", letterSpacing: 1, lineHeight: 1.6 }),
+
+  text("atlas_kicker", "Kicker", "SYSTEM HEALTH / 24H", 232, 84, 300, 18, { size: 9, weight: 700, color: "#8A908A", letterSpacing: 1.2 }),
+  text("atlas_title", "Title", "Everything\nstill running.", 232, 108, 520, 118, { size: 54, weight: 800, color: SIG.paper, lineHeight: 0.95, letterSpacing: -2.2 }),
+  rect("atlas_status", "Status", 1136, 90, 272, 42, { fill: solid(SIG.acid), radius: 0 }),
+  text("atlas_status_t", "Status", "● ALL SYSTEMS NOMINAL", 1136, 90, 272, 42, { size: 9, weight: 800, color: SIG.ink, align: "center", valign: "middle", letterSpacing: 1 }),
+
+  ...[
+    ["THROUGHPUT", "48.2k", "req/min", "+12.4%"],
+    ["P95 LATENCY", "84ms", "p95", "−8.1%"],
+    ["ERROR RATE", "0.12%", "24h", "−0.04"],
+    ["OPEN INCIDENTS", "02", "active", "1 critical"],
+  ].map(([label, value, meta, delta], i) => [
+    rect(`atlas_metric_${i}`, "Metric", 232 + i * 288, 260, 272, 128, { fill: solid("#0F1210"), stroke: solid("#2A2E2A"), radius: 0 }),
+    text(`atlas_metric_l_${i}`, "Label", label, 248 + i * 288, 276, 240, 16, { size: 8, weight: 700, color: "#8A908A", letterSpacing: 1 }),
+    text(`atlas_metric_v_${i}`, "Value", value, 248 + i * 288, 300, 240, 44, { size: 32, weight: 700, color: i === 3 ? SIG.coral : SIG.paper, letterSpacing: -1 }),
+    text(`atlas_metric_m_${i}`, "Meta", meta, 248 + i * 288, 348, 90, 16, { size: 8, color: "#5F665F", letterSpacing: 0.6 }),
+    text(`atlas_metric_d_${i}`, "Delta", delta, 390 + i * 288, 348, 90, 16, { size: 8, weight: 700, color: i === 3 ? SIG.coral : SIG.acid, align: "right" }),
+  ]).flat(),
+
+  rect("atlas_chart", "Chart panel", 232, 420, 680, 300, { fill: solid("#0F1210"), stroke: solid("#2A2E2A") }),
+  text("atlas_chart_t", "Title", "TRAFFIC / LAST 24H", 252, 438, 300, 16, { size: 9, weight: 700, color: "#8A908A", letterSpacing: 1 }),
+  ...[28, 42, 36, 58, 50, 70, 62, 84, 74, 92, 68, 96, 82, 100, 76, 88].map((h, i) =>
+    rect(`atlas_bar_${i}`, "Bar", 256 + i * 39, 666 - h * 1.6, 24, h * 1.6, { fill: solid(i % 4 === 0 ? SIG.acid : "#2F4BFF"), radius: 0 }),
+  ),
+  ...[["00", 256], ["06", 512], ["12", 768], ["18", 880]].map(([label, x], i) =>
+    text(`atlas_axis_${i}`, "Axis", label as string, x as number, 684, 40, 14, { size: 8, color: "#5F665F" }),
+  ),
+
+  rect("atlas_table", "Incidents", 936, 420, 472, 300, { fill: solid("#0F1210"), stroke: solid("#2A2E2A") }),
+  text("atlas_table_t", "Title", "INCIDENT QUEUE", 956, 438, 280, 16, { size: 9, weight: 700, color: "#8A908A", letterSpacing: 1 }),
+  ...[
+    ["P1", "edge-03 packet loss", "MITIGATING"],
+    ["P2", "billing worker backlog", "OPEN"],
+    ["P3", "search index lag", "MONITOR"],
+  ].map(([p, title, status], i) => [
+    text(`atlas_inc_p_${i}`, "Priority", p, 956, 476 + i * 58, 28, 18, { size: 9, weight: 800, color: p === "P1" ? SIG.coral : SIG.acid }),
+    text(`atlas_inc_t_${i}`, "Title", title, 992, 474 + i * 58, 300, 20, { size: 11, weight: 500, color: SIG.paper }),
+    text(`atlas_inc_s_${i}`, "Status", status, 992, 494 + i * 58, 300, 14, { size: 8, weight: 600, color: "#8A908A", letterSpacing: 0.8 }),
+    rect(`atlas_inc_sep_${i}`, "Separator", 956, 520 + i * 58, 432, 1, { fill: solid("#2A2E2A") }),
+  ]).flat(),
+
+  rect("atlas_footer", "Footer", 232, 740, 1176, 120, { fill: solid(SIG.paper), stroke: solid(SIG.ink), strokeWidth: 2, shadow: shadow(8, 8, 0, 0, SIG.acid), radius: 0 }),
+  text("atlas_footer_t", "Footer title", "NO DASHBOARD WITHOUT A DECISION.", 252, 760, 720, 32, { size: 24, weight: 800, color: SIG.ink, letterSpacing: -0.8 }),
+  text("atlas_footer_b", "Footer body", "Every panel answers a question. Every alert has an owner. Every number has a timestamp.", 252, 800, 820, 36, { size: 11, color: SIG.muted, lineHeight: 1.5 }),
+  text("atlas_footer_tag", "Footer tag", "SIGMA / ATLAS", 1240, 760, 148, 16, { size: 8, weight: 700, color: SIG.cobalt, align: "right", letterSpacing: 1 }),
+]);
+
+const atlasFound = foundations("atlas", "Atlas", "Operational dark mode: ink panels, acid signals, cobalt data and zero decorative gradients.", [
+  ["Ink", "#0B0D0C"], ["Panel", "#0F1210"], ["Acid", SIG.acid], ["Cobalt", SIG.cobalt], ["Paper", SIG.paper], ["Coral", SIG.coral],
+], { bg: "#0B0D0C", surface: "#0F1210", text: SIG.paper, muted: "#8A908A", primary: SIG.acid, onPrimary: SIG.ink, border: "#2A2E2A", chip: "#1A1F1A", danger: SIG.coral, radius: 0, family: "Inter Variable" });
+const atlasComponents = componentBoard("atlas", "Atlas", { bg: "#0B0D0C", surface: "#0F1210", text: SIG.paper, muted: "#8A908A", primary: SIG.acid, onPrimary: SIG.ink, border: "#2A2E2A", chip: "#1A1F1A", danger: SIG.coral, radius: 0, family: "Inter Variable" });
+const atlasDoc = {
+  pages: [page("atlas_page", "Operations", [atlas]), page("atlas_found", "Foundations", [atlasFound]), page("atlas_components", "Components", [atlasComponents])],
   tombstones: {},
 };
 
@@ -767,36 +1317,6 @@ const outDir = path.resolve(process.cwd(), "../backend/internal/templates");
 fs.mkdirSync(outDir, { recursive: true });
 
 const templates = [
-  {
-    meta: {
-      id: "mobile",
-      name: "Mobile app",
-      description: "A 3-step onboarding flow with prototype links and a design system page.",
-      accent: "#7C5CFF",
-      icon: "smartphone",
-    },
-    doc: mobileDoc,
-  },
-  {
-    meta: {
-      id: "website",
-      name: "Landing page",
-      description: "A polished SaaS marketing site with features and a linked pricing page.",
-      accent: "#F472B6",
-      icon: "globe",
-    },
-    doc: websiteDoc,
-  },
-  {
-    meta: {
-      id: "dashboard",
-      name: "Analytics dashboard",
-      description: "A data-rich desktop dashboard with KPIs, charts and a mobile companion.",
-      accent: "#34D399",
-      icon: "layout-dashboard",
-    },
-    doc: dashboardDoc,
-  },
   {
     meta: {
       id: "material",
@@ -836,6 +1356,36 @@ const templates = [
       icon: "layout-dashboard",
     },
     doc: carbonDoc,
+  },
+  {
+    meta: {
+      id: "ant",
+      name: "Ant Design",
+      description: "Alibaba Ant Group enterprise patterns, #1677FF primary, Chinese typography and data tables.",
+      accent: "#1677FF",
+      icon: "layout-dashboard",
+    },
+    doc: antDoc,
+  },
+  {
+    meta: {
+      id: "arco",
+      name: "ByteDance Arco",
+      description: "ByteDance Arco console patterns, #165DFF primary, compact 4px geometry and data-dense tables.",
+      accent: "#165DFF",
+      icon: "layout-dashboard",
+    },
+    doc: arcoDoc,
+  },
+  {
+    meta: {
+      id: "element",
+      name: "Element Plus",
+      description: "Eleme Element blue, classic admin sidebar, 4px controls and enterprise table patterns.",
+      accent: "#409EFF",
+      icon: "layout-dashboard",
+    },
+    doc: elementDoc,
   },
 ];
 

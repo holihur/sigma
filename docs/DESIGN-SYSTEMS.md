@@ -1,6 +1,6 @@
 # 设计系统模板
 
-Sigma 内置 8 套模板，其中 4 套按常见设计系统组织，包含首页和 Foundations（色彩、字阶、组件）两页。
+Sigma 内置 8 套模板：7 套常见设计系统 + 空白画布。每套设计系统包含 Home / Foundations / Components 三页，Components 页中的控件是主组件，可直接插入实例。
 
 ## Material Design 3
 
@@ -119,14 +119,64 @@ Design.md 建议：
 - Status: green #24A148, red #DA1E28, yellow #F1C21B.
 ```
 
-## 其他模板
+## 通用模板
 
 | id | 说明 |
 | --- | --- |
 | `blank` | 1440×900 空白画布 |
-| `mobile` | 3 步移动端 Onboarding + 设计基础 |
-| `website` | SaaS Landing + Pricing |
-| `dashboard` | 桌面分析看板 + 移动端 |
+
+> 移动应用、落地页、数据看板三套通用模板已移除，只保留有明确设计语言归属的模板。
+
+## Ant Design
+
+模板 id：`ant`
+
+| Token | 值 |
+| --- | --- |
+| Primary | `#1677FF` |
+| Success | `#52C41A` |
+| Warning | `#FAAD14` |
+| Error | `#FF4D4F` |
+| Border | `#D9D9D9` |
+| Container | `#FFFFFF` |
+| Radius | 6（控件）/ 8（卡片） |
+| Type | PingFang SC：28 / 16 / 14 / 12 |
+
+包含 Dashboard、Foundations、Components。
+
+## ByteDance Arco
+
+模板 id：`arco`
+
+| Token | 值 |
+| --- | --- |
+| Primary | `#165DFF` |
+| Success | `#00B42A` |
+| Warning | `#FF7D00` |
+| Danger | `#F53F3F` |
+| Border | `#E5E6EB` |
+| Surface | `#FFFFFF` |
+| Radius | 4 |
+| Type | PingFang SC：28 / 16 / 13 / 12 |
+
+包含 Console、Foundations、Components。
+
+## Element Plus
+
+模板 id：`element`
+
+| Token | 值 |
+| --- | --- |
+| Primary | `#409EFF` |
+| Success | `#67C23A` |
+| Warning | `#E6A23C` |
+| Danger | `#F56C6C` |
+| Border | `#DCDFE6` |
+| Surface | `#FFFFFF` |
+| Radius | 4 |
+| Type | Helvetica Neue：28 / 16 / 13 / 12 |
+
+包含 Dashboard、Foundations、Components。
 
 ## 生成模板
 

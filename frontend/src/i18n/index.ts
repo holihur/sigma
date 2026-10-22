@@ -46,6 +46,15 @@ const zh: Record<string, string> = {
   "Create design": "创建设计",
   "Design name": "设计名称",
   "Blank canvas": "空白画布",
+  "Sigma Signal": "Sigma Signal",
+  "Sigma's own mobile language: paper, ink, cobalt and acid with hard borders and editorial type.":
+    "Sigma 自有移动端语言：纸感、墨黑、钴蓝与酸性绿，硬边框和编辑感排版。",
+  "Field Notes": "Field Notes",
+  "An editorial website with oversized type, offset shadows and a single acid highlight.":
+    "编辑感网站：超大字号、偏移实色阴影和单一酸性绿高亮。",
+  "Atlas Ops": "Atlas Ops",
+  "A dark operational dashboard built on ink panels, acid signals and cobalt data.":
+    "深色运维仪表盘：墨黑面板、酸性绿告警和钴蓝数据。",
   "Material Design 3": "Material Design 3",
   "Material You color roles, Roboto type scale, expressive cards, FAB and navigation bar.":
     "Material You 色彩角色、Roboto 字阶、表现力卡片、FAB 与导航栏。",
@@ -398,6 +407,9 @@ const zh: Record<string, string> = {
     "不支持二进制 .fig 文件。请使用 Figma REST API 或内置 Sigma 插件。",
   "Export Figma JSON": "导出 Figma JSON",
   "Figma JSON exported": "Figma JSON 已导出",
+  "Import SVG": "导入 SVG",
+  "Imported {count} vector paths": "已导入 {count} 条矢量路径",
+  "No vector paths found in this SVG": "此 SVG 中没有找到矢量路径",
   "Import": "导入",
 
   // Components / vector
@@ -439,6 +451,25 @@ const zh: Record<string, string> = {
   "Deselect point": "取消选择锚点",
   "Double-click the path to add a point. Drag anchors or handles; Alt-click deletes an anchor.":
     "双击路径添加锚点；拖拽锚点或控制柄；Alt + 点击删除锚点。",
+  "Pathfinder": "路径查找器",
+  "Union": "合并",
+  "Subtract": "减去",
+  "Intersect": "相交",
+  "Exclude": "排除",
+  "Uses the bottom layer as the base. Curves are preserved when possible.": "以底层图层为基座，尽可能保留曲线。",
+  "Image trace": "图像描摹",
+  "Trace to vector": "描摹为矢量",
+  "Image traced to vector": "图像已描摹为矢量",
+  "Could not trace this image": "无法描摹该图像",
+  "Uses local color tracing. Works best on logos, icons and flat illustrations.": "使用本地颜色描摹，最适合 Logo、图标和扁平插画。",
+  "Split paths": "拆分路径",
+  "Simplify": "简化",
+  "Offset +": "外扩",
+  "Offset −": "内缩",
+  "Outline stroke": "描边转轮廓",
+  "Offset": "偏移",
+  "Fill rule": "填充规则",
+  "{count} subpaths": "{count} 个子路径",
 
   // Agent context & skills
   "Agent context & skills": "Agent 上下文与技能",

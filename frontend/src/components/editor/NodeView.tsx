@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import type { Page, SceneNode, Tool } from "@/lib/types";
 import { nodeLabel, paintToCss, shadowToCss } from "@/lib/nodes";
-import { vectorPathData } from "@/lib/vector";
+import { vectorPathData, vectorSubpaths } from "@/lib/vector";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n";
 import { Image as ImageIcon, Lock } from "lucide-react";
@@ -160,7 +160,8 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
         <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" style={{ pointerEvents: "none" }}>
           <path
             d={d}
-            fill={node.closed ? fill : "none"}
+            fill={vectorSubpaths(node).some((s) => s.closed) ? fill : "none"}
+            fillRule={node.fillRule ?? "nonzero"}
             stroke={strokeColor}
             strokeWidth={node.strokeWidth}
             vectorEffect="non-scaling-stroke"

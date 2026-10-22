@@ -134,26 +134,29 @@ async function importNode(page, n, parent, offsetX, offsetY, pageFilter) {
     node.strokes = paintOf(n.stroke);
     node.strokeWeight = Math.max(1, n.strokeWidth || 1);
   } else if (n.type === "vector") {
-    const pts = n.points || [];
-    if (pts.length < 2) throw new Error("Vector " + (n.name || n.id) + " needs at least two points.");
+    const subpaths = (n.subpaths && n.subpaths.length ? n.subpaths : [{ points: n.points || [], closed: !!n.closed }])
+      .filter((s) => (s.points || []).length >= 2);
+    if (!subpaths.length) throw new Error("Vector " + (n.name || n.id) + " needs at least two points.");
     const w = Math.max(1, n.width || 1);
     const h = Math.max(1, n.height || 0);
     const fmt = (p) => `${(p.x * w).toFixed(3)} ${(p.y * h).toFixed(3)}`;
-    let d = "M " + fmt(pts[0]);
-    const segments = n.closed ? pts.length : pts.length - 1;
-    for (let i = 0; i < segments; i++) {
-      const a = pts[i];
-      const b = pts[(i + 1) % pts.length];
-      if (a.out || b.in) {
-        d += " C " + fmt(a.out || a) + ", " + fmt(b.in || b) + ", " + fmt(b);
-      } else {
-        d += " L " + fmt(b);
+    let d = "";
+    for (const sub of subpaths) {
+      const pts = sub.points;
+      d += " M " + fmt(pts[0]);
+      const segments = sub.closed ? pts.length : pts.length - 1;
+      for (let i = 0; i < segments; i++) {
+        const a = pts[i];
+        const b = pts[(i + 1) % pts.length];
+        if (a.out || b.in) d += " C " + fmt(a.out || a) + ", " + fmt(b.in || b) + ", " + fmt(b);
+        else d += " L " + fmt(b);
       }
+      if (sub.closed) d += " Z";
     }
-    if (n.closed) d += " Z";
+    const closed = subpaths.some((s) => s.closed);
     node = figma.createVector();
-    node.vectorPaths = [{ windingRule: n.closed ? "NONZERO" : "NONE", data: d }];
-    node.fills = n.closed ? paintOf(n.fill) : [];
+    node.vectorPaths = [{ windingRule: n.fillRule === "evenodd" ? "EVENODD" : closed ? "NONZERO" : "NONE", data: d }];
+    node.fills = closed ? paintOf(n.fill) : [];
   } else if (n.type === "image") {
     node = figma.createRectangle();
     node.fills = paintOf(n.fill);

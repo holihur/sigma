@@ -1,4 +1,4 @@
-import type { SceneNode, VectorHandle, VectorPoint } from "./types";
+import type { SceneNode, VectorHandle, VectorPoint, VectorSubpath } from "./types";
 
 export const vectorPoint = (x: number, y: number): VectorPoint => ({ x, y });
 
@@ -6,26 +6,45 @@ export function hasHandles(p: VectorPoint): boolean {
   return !!(p.in || p.out);
 }
 
+export function vectorSubpaths(node: SceneNode): VectorSubpath[] {
+  if (node.subpaths && node.subpaths.length > 0) return node.subpaths;
+  return [{ points: node.points ?? [], closed: !!node.closed }];
+}
+
+export function subpathPatch(subpaths: VectorSubpath[]): Partial<SceneNode> {
+  const first = subpaths[0] ?? { points: [], closed: false };
+  return { subpaths, points: first.points, closed: first.closed };
+}
+
+export function allVectorPoints(node: SceneNode): { path: number; index: number; point: VectorPoint }[] {
+  const out: { path: number; index: number; point: VectorPoint }[] = [];
+  vectorSubpaths(node).forEach((sub, path) => sub.points.forEach((point, index) => out.push({ path, index, point })));
+  return out;
+}
+
 export function vectorPathData(node: SceneNode, scale = 1000): string {
-  const pts = node.points ?? [];
-  if (pts.length === 0) return "";
   const X = (v: number) => (v * scale).toFixed(3);
   const Y = (v: number) => (v * scale).toFixed(3);
   const point = (p: VectorPoint) => `${X(p.x)} ${Y(p.y)}`;
-  let d = `M ${point(pts[0])}`;
-  const count = node.closed ? pts.length : pts.length - 1;
-  for (let i = 0; i < count; i++) {
-    const a = pts[i];
-    const b = pts[(i + 1) % pts.length];
-    if (a.out || b.in) {
-      const c1 = a.out ?? a;
-      const c2 = b.in ?? b;
-      d += ` C ${X(c1.x)} ${Y(c1.y)}, ${X(c2.x)} ${Y(c2.y)}, ${point(b)}`;
-    } else {
-      d += ` L ${point(b)}`;
+  let d = "";
+  for (const sub of vectorSubpaths(node)) {
+    const pts = sub.points;
+    if (pts.length === 0) continue;
+    d += `M ${point(pts[0])}`;
+    const count = sub.closed ? pts.length : pts.length - 1;
+    for (let i = 0; i < count; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % pts.length];
+      if (a.out || b.in) {
+        const c1 = a.out ?? a;
+        const c2 = b.in ?? b;
+        d += ` C ${X(c1.x)} ${Y(c1.y)}, ${X(c2.x)} ${Y(c2.y)}, ${point(b)}`;
+      } else {
+        d += ` L ${point(b)}`;
+      }
     }
+    if (sub.closed) d += " Z";
   }
-  if (node.closed) d += " Z";
   return d;
 }
 

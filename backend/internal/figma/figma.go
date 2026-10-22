@@ -74,12 +74,19 @@ type rawNode struct {
 	Opacity              *float64      `json:"opacity"`
 	Visible              *bool         `json:"visible"`
 	ClipsContent         bool          `json:"clipsContent"`
+	FillGeometry         []rawGeometry `json:"fillGeometry"`
+	StrokeGeometry       []rawGeometry `json:"strokeGeometry"`
 	Characters           string        `json:"characters"`
 	Style                *rawTextStyle `json:"style"`
 	Effects              []rawEffect   `json:"effects"`
 	TextAlignVertical    string        `json:"textAlignVertical"`
 	Rotation             *float64      `json:"rotation"`
 	LayoutMode           string        `json:"layoutMode"`
+}
+
+type rawGeometry struct {
+	Path        string `json:"path"`
+	WindingRule string `json:"windingRule"`
 }
 
 type rawBox struct {
@@ -239,6 +246,12 @@ func emit(n *rawNode, page *design.Page, parentID string, originX, originY float
 		w = box.Width
 		h = box.Height
 	}
+	if (typ == "VECTOR" || typ == "BOOLEAN_OPERATION" || typ == "STAR" || typ == "POLYGON" || typ == "REGULAR_POLYGON") && len(n.FillGeometry) > 0 {
+		if v := vectorNode(n, box, originX, originY); v != nil {
+			page.Add(v, parentID, -1)
+			return
+		}
+	}
 	nodeType := "rect"
 	switch typ {
 	case "FRAME", "COMPONENT", "COMPONENT_SET", "INSTANCE":
@@ -307,6 +320,118 @@ func emit(n *rawNode, page *design.Page, parentID string, originX, originY float
 			emit(&n.Children[i], page, node.ID, childOriginX, childOriginY)
 		}
 	}
+}
+
+func vectorNode(n *rawNode, box *rawBox, originX, originY float64) *design.Node {
+	var subpaths []design.VectorSubpath
+	fillRule := ""
+	for _, g := range n.FillGeometry {
+		if strings.TrimSpace(g.Path) == "" {
+			continue
+		}
+		paths := parsePathData(g.Path)
+		subpaths = append(subpaths, paths...)
+		if fillRule == "" && g.WindingRule != "" {
+			fillRule = strings.ToLower(g.WindingRule)
+		}
+	}
+	if len(subpaths) == 0 {
+		for _, g := range n.StrokeGeometry {
+			if strings.TrimSpace(g.Path) != "" {
+				subpaths = append(subpaths, parsePathData(g.Path)...)
+			}
+		}
+	}
+	if len(subpaths) == 0 {
+		return nil
+	}
+	baseX, baseY := 0.0, 0.0
+	if box != nil {
+		minX, minY, maxX, maxY := pathBounds(subpaths)
+		if minX >= box.X-1 && maxX <= box.X+box.Width+1 && minY >= box.Y-1 && maxY <= box.Y+box.Height+1 {
+			baseX, baseY = box.X, box.Y
+		}
+	}
+	_ = originX
+	_ = originY
+	minX, minY, maxX, maxY := pathBounds(subpaths)
+	if box == nil {
+		box = &rawBox{X: minX, Y: minY, Width: maxX - minX, Height: maxY - minY}
+	}
+	w := math.Max(box.Width, 1)
+	h := math.Max(box.Height, 1)
+	for i := range subpaths {
+		for j := range subpaths[i].Points {
+			pt := &subpaths[i].Points[j]
+			pt.X = (pt.X - baseX) / w
+			pt.Y = (pt.Y - baseY) / h
+			if pt.In != nil {
+				pt.In.X = (pt.In.X - baseX) / w
+				pt.In.Y = (pt.In.Y - baseY) / h
+			}
+			if pt.Out != nil {
+				pt.Out.X = (pt.Out.X - baseX) / w
+				pt.Out.Y = (pt.Out.Y - baseY) / h
+			}
+		}
+	}
+	name := n.Name
+	if name == "" {
+		name = "Vector"
+	}
+	node := design.NewNode("vector", name, box.X, box.Y, w, h)
+	node.Subpaths = subpaths
+	node.Points = subpaths[0].Points
+	node.Closed = subpaths[0].Closed
+	if fillRule == "evenodd" || fillRule == "even-odd" {
+		node.FillRule = "evenodd"
+	} else if fillRule != "" {
+		node.FillRule = "nonzero"
+	}
+	applyPaint(node, n)
+	if node.Fill == nil && len(n.StrokeGeometry) > 0 {
+		node.Fill = nil
+	}
+	applyStroke(node, n)
+	applyEffects(node, n)
+	if n.Visible != nil {
+		node.Visible = *n.Visible
+	}
+	if n.Opacity != nil {
+		node.Opacity = clamp(*n.Opacity, 0, 1)
+	}
+	return node
+}
+
+func pathBounds(subpaths []design.VectorSubpath) (minX, minY, maxX, maxY float64) {
+	minX, minY = math.Inf(1), math.Inf(1)
+	maxX, maxY = math.Inf(-1), math.Inf(-1)
+	add := func(x, y float64) {
+		if x < minX {
+			minX = x
+		}
+		if y < minY {
+			minY = y
+		}
+		if x > maxX {
+			maxX = x
+		}
+		if y > maxY {
+			maxY = y
+		}
+	}
+	for _, sub := range subpaths {
+		for _, p := range sub.Points {
+			add(p.X, p.Y)
+			if p.In != nil {
+				add(p.In.X, p.In.Y)
+			}
+			if p.Out != nil {
+				add(p.Out.X, p.Out.Y)
+			}
+		}
+	}
+	return
 }
 
 func applyPaint(node *design.Node, n *rawNode) {

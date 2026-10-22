@@ -8,6 +8,7 @@ import {
   worldToScreen,
 } from "@/lib/nodes";
 import type { Point } from "@/lib/types";
+import { vectorSubpaths } from "@/lib/vector";
 
 export type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 
@@ -103,13 +104,14 @@ export function SelectionOverlay({
   const showHandles = !readOnly && !!target && !editing;
   const vectorAnchors: Point[] = [];
   const vectorHandles: { point: Point; which: "in" | "out"; anchor: Point }[] = [];
+  let flatPoints: { x: number; y: number; in?: { x: number; y: number }; out?: { x: number; y: number } }[] = [];
   if (!readOnly && !editing && target?.type === "vector") {
     const m = nodeMatrix(page, target.id);
-    const points = target.points ?? [];
-    for (const p of points) {
+    flatPoints = vectorSubpaths(target).flatMap((sub) => sub.points);
+    for (const p of flatPoints) {
       vectorAnchors.push(toScreen(applyMatrix(m, { x: p.x * target.width, y: p.y * target.height })));
     }
-    const p = selectedPoint != null ? points[selectedPoint] : null;
+    const p = selectedPoint != null ? flatPoints[selectedPoint] : null;
     if (p) {
       const anchor = toScreen(applyMatrix(m, { x: p.x * target.width, y: p.y * target.height }));
       for (const which of ["in", "out"] as const) {

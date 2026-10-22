@@ -29,6 +29,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - 无限画布、缩放平移、点阵网格、框选、吸附辅助线、旋转、八向缩放。
 - Frame、矩形、椭圆、直线、文本、图片、**可编辑矢量路径**。
 - 钢笔工具逐点绘制路径，拖拽生成贝塞尔控制柄；平滑 / 尖角切换、双击加锚点、拖拽控制柄、`Alt` + 点击删锚点，闭合路径自动填充，矩形 / 椭圆 / 直线可一键转为矢量。
+- **路径处理**：Pathfinder（合并 / 减去 / 相交 / 排除）、复合子路径与 `nonzero/evenodd` 填充规则、SVG 文件导入、描边转轮廓、外扩 / 内缩、路径简化、拆分、位图描摹为矢量。
 - 图层树、显示 / 隐藏、锁定、拖拽排序、跨 Frame 拖拽、分组 / 取消分组。
 - 位置尺寸、透明度、圆角、纯色 / 渐变、描边、阴影、模糊、字体排版、图片填充、对齐 / 分布。
 - **组件实例**：把任意图层转换为主组件，在组件库中一键插入实例；组件内部属性变化自动同步，也可手动更新实例或分离实例。
@@ -57,24 +58,24 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 
 ### 4. 设计系统模板
 
-内置 8 套模板，其中 4 套直接对应常见设计系统：
+内置 8 套模板：7 套常见设计系统 + 空白画布。每套设计系统都包含 **Home / Foundations / Components** 三页。
 
 | 模板 | 设计系统 | 内容 |
 | --- | --- | --- |
-| Material Design 3 | Material You 色彩角色、Roboto 字阶、FAB、导航栏 | 首页 + Foundations |
-| Apple HIG | iOS 分组设置、SF Pro、开关、Tab Bar | 设置页 + Foundations |
-| Microsoft Fluent 2 | Command Bar、Segoe UI、指标卡片、数据表 | Dashboard + Foundations |
-| IBM Carbon | UI Shell、侧边导航、IBM Plex Sans、数据表 | 数据平台 + Foundations |
-| Mobile app | 通用移动端 Onboarding | 3 步流程 + 设计基础 |
-| Landing page | SaaS 营销站 | Landing + Pricing |
-| Analytics dashboard | 数据看板 | Desktop + Mobile |
+| Material Design 3 | Material You 色彩角色、Roboto 字阶、FAB、导航栏 | 首页 + Foundations + Components |
+| Apple HIG | iOS 分组设置、SF Pro、开关、Tab Bar | 设置页 + Foundations + Components |
+| Microsoft Fluent 2 | Command Bar、Segoe UI、指标卡片、数据表 | Dashboard + Foundations + Components |
+| IBM Carbon | UI Shell、侧边导航、IBM Plex Sans、数据表 | 数据平台 + Foundations + Components |
+| Ant Design | 阿里 Ant Group 企业级模式、`#1677FF` | Dashboard + Foundations + Components |
+| ByteDance Arco | 字节 Arco、`#165DFF`、紧凑 4px | Console + Foundations + Components |
+| Element Plus | 饿了么 Element、`#409EFF`、经典后台 | Dashboard + Foundations + Components |
 | Blank canvas | 从零开始 | 空画布 |
 
 ![Design systems](docs/screenshots/30-design-systems.png)
 
 ### 5. 互操作与平台能力
 
-- **Figma 导入**：通过 Figma REST API 导入文件（URL + Personal Access Token），自动转换为 Sigma 页面、Frame、文本、颜色、渐变、圆角、阴影。
+- **Figma 导入**：通过 Figma REST API 导入文件（URL + Personal Access Token），自动转换为 Sigma 页面、Frame、文本、矢量路径、颜色、渐变、圆角、阴影。
 - **Figma 导出**：导出 Sigma JSON，配套 Figma 开发插件一键还原到 Figma，保留 Frame、文本、颜色、渐变、阴影和图片。
 - **MCP Server**：标准 JSON-RPC MCP 端点，暴露文件、页面、图层、创建 / 更新 / 删除、原型链接等工具。
 - **PAT + Scope**：为 MCP 创建个人访问令牌，支持 `mcp:read` / `mcp:write` 最小权限、过期时间和撤销。
@@ -100,17 +101,17 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 | --- | --- |
 | ![AI settings](docs/screenshots/33-ai-providers.png) | ![AI chat](docs/screenshots/22-ai-chat.png) |
 
-| 个人中心 | Agent 上下文与 Skills |
+| 个人中心 | 移动端顶栏 |
 | --- | --- |
-| ![Profile](docs/screenshots/32-profile.png) | ![Agent context](docs/screenshots/27-agent-context.png) |
+| ![Profile](docs/screenshots/32-profile.png) | ![Mobile topbar](docs/screenshots/34-mobile-topbar.png) |
 
 | 文件面板 | 协作编辑器 |
 | --- | --- |
 | ![Dashboard](docs/screenshots/09-dashboard-thumbnails.png) | ![Editor](docs/screenshots/05-editor-dashboard.png) |
 
-| 原型演示 | 公开链接 |
+| 分享与权限 | 公开原型 |
 | --- | --- |
-| ![Prototype](docs/screenshots/04-prototype-mobile.png) | ![Share](docs/screenshots/10-share.png) |
+| ![Share](docs/screenshots/10-share.png) | ![Public prototype](docs/screenshots/18-public-prototype.png) |
 
 ## 一键安装
 

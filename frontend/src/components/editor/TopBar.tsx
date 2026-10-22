@@ -19,6 +19,7 @@ import {
   Sparkles,
   Settings2,
   FileDown,
+  FileUp,
   BookOpen,
   Component as ComponentIcon,
   PanelLeft,
@@ -27,6 +28,7 @@ import {
   Terminal,
   UserRound,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/store/auth";
 import { useI18n, useT } from "@/i18n";
 import { ShortcutsDialog } from "./ShortcutsDialog";
@@ -99,6 +101,7 @@ export function TopBar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [draft, setDraft] = useState(file?.name ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
+  const svgRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDraft(file?.name ?? "");
@@ -234,14 +237,14 @@ export function TopBar({
         <button
           title={t("Pages & layers")}
           onClick={onOpenLayers}
-          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:size-8 lg:hidden"
+          className="hidden size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:flex sm:size-8 lg:hidden"
         >
           <PanelLeft className="size-4" />
         </button>
         <button
           title={t("Properties")}
           onClick={onOpenProperties}
-          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:size-8 xl:hidden"
+          className="hidden size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:flex sm:size-8 xl:hidden"
         >
           <SlidersHorizontal className="size-4" />
         </button>
@@ -260,7 +263,7 @@ export function TopBar({
               title={t("Comments")}
               onClick={() => setShowComments(!showComments)}
               className={cn(
-                "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:size-8",
+                "hidden size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground sm:flex sm:size-8",
                 showComments && "bg-secondary text-foreground",
               )}
             >
@@ -292,11 +295,24 @@ export function TopBar({
               <ChevronDown className="hidden size-3 text-muted-foreground sm:block" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="max-h-[72dvh] w-56 overflow-y-auto">
             <DropdownMenuLabel className="normal-case">
               <div className="text-[12px] font-medium text-foreground">{user?.name}</div>
               <div className="truncate text-[10px] text-muted-foreground">{user?.email}</div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onOpenLayers}>
+              <PanelLeft className="size-4" /> {t("Pages & layers")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenProperties}>
+              <SlidersHorizontal className="size-4" /> {t("Properties")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowComments(!showComments)}>
+              <MessageCircle className="size-4" /> {t("Comments")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShortcutsOpen(true)}>
+              <MoreHorizontal className="size-4" /> {t("Keyboard shortcuts")}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setProfileOpen(true)}>
               <UserRound className="size-4" /> {t("Personal settings")}
@@ -315,6 +331,9 @@ export function TopBar({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onExportFigma}>
               <FileDown className="size-4" /> {t("Export Figma JSON")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => svgRef.current?.click()}>
+              <FileUp className="size-4" /> {t("Import SVG")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onVersions}>
               <History className="size-4" /> {t("Version history")}
@@ -359,6 +378,25 @@ export function TopBar({
       </header>
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
+      <input
+        ref={svgRef}
+        type="file"
+        accept=".svg,image/svg+xml"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file) return;
+          try {
+            const text = await file.text();
+            const count = await useEditor.getState().importSVG(text, file.name.replace(/\.svg$/i, ""));
+            if (count > 0) toast.success(t("Imported {count} vector paths", { count }));
+            else toast.error(t("No vector paths found in this SVG"));
+          } catch (err) {
+            toast.error((err as Error).message);
+          }
+        }}
+      />
     </TooltipProvider>
   );
 }

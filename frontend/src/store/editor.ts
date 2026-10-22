@@ -13,6 +13,11 @@ import type {
 } from "@/lib/types";
 import { collectSubtree, instantiateSubtree, mergeDocs } from "@/lib/merge";
 import {
+  combineVectors, offsetVector, outlineStroke, pathfinder, simplifyVector, splitCompound,
+  svgToNodes, traceImage, type PathfinderKind,
+} from "@/lib/vector-ops";
+import { subpathPatch } from "@/lib/vector";
+import {
   ancestorsOf,
   applyMatrix,
   descendantsOf,
@@ -91,6 +96,14 @@ interface EditorState {
   insertInstance: (componentId: string) => string | null;
   detachInstance: (id: string) => void;
   syncInstances: (componentId: string, record?: boolean) => number;
+  pathfinder: (kind: PathfinderKind) => boolean;
+  combineSelectedVectors: () => boolean;
+  splitCompound: () => boolean;
+  simplifySelectedVector: () => boolean;
+  offsetSelectedVector: (delta: number) => boolean;
+  outlineSelectedStroke: () => boolean;
+  importSVG: (svg: string, name?: string) => Promise<number>;
+  traceSelectedImage: () => Promise<boolean>;
   reorderSelection: (mode: ReorderMode) => void;
   reparentNode: (nodeId: string, parentId: string | null, index: number) => void;
   translateSelection: (dx: number, dy: number, record?: boolean) => void;
@@ -139,6 +152,8 @@ function normalizeDoc(doc: SigmaDoc): SigmaDoc {
       node.children = node.children ?? [];
       node.points = node.points ?? [];
       node.closed = node.closed ?? false;
+      node.subpaths = node.subpaths ?? [];
+      node.fillRule = node.fillRule ?? "nonzero";
       node.component = node.component ?? false;
       node.componentId = node.componentId ?? null;
     }
@@ -208,6 +223,23 @@ export const useEditor = create<EditorState>((set, get) => {
       changeSeq: state.changeSeq + 1,
       syncStatus: "saving",
     });
+  };
+
+  const removeSubtree = (page: Page, doc: SigmaDoc, id: string) => {
+    const node = page.nodes[id];
+    if (!node) return;
+    const now = Date.now();
+    for (const child of [...node.children]) removeSubtree(page, doc, child);
+    if (node.parentId && page.nodes[node.parentId]) {
+      const parent = page.nodes[node.parentId];
+      parent.children = parent.children.filter((c) => c !== id);
+      parent.ts = now;
+    } else {
+      page.rootIds = page.rootIds.filter((c) => c !== id);
+    }
+    delete page.nodes[id];
+    doc.tombstones = doc.tombstones ?? {};
+    doc.tombstones[id] = now;
   };
 
   const mutate = (fn: (page: Page, doc: SigmaDoc) => void, record = true) => {
@@ -761,6 +793,176 @@ export const useEditor = create<EditorState>((set, get) => {
         syncStatus: "saving",
       });
       return count;
+    },
+    pathfinder: (kind) => {
+      if (get().isReadOnly) return false;
+      const state = get();
+      const page = currentPage(state);
+      const roots = topLevelSelection(page, state.selection)
+        .map((id) => page.nodes[id])
+        .filter((n): n is SceneNode => !!n && (n.type === "vector" || n.type === "rect" || n.type === "ellipse" || n.type === "line"));
+      if (roots.length < 2) return false;
+      const result = pathfinder(page, roots, kind);
+      if (!result) return false;
+      const now = Date.now();
+      mutate((p, d) => {
+        for (const root of roots) removeSubtree(p, d, root.id);
+        result.ts = now;
+        p.nodes[result.id] = result;
+        if (result.parentId && p.nodes[result.parentId]) p.nodes[result.parentId].children.push(result.id);
+        else p.rootIds.push(result.id);
+        p.ts = now;
+      });
+      set({ selection: [result.id], selectedPoint: null });
+      return true;
+    },
+    combineSelectedVectors: () => {
+      if (get().isReadOnly) return false;
+      const state = get();
+      const page = currentPage(state);
+      const roots = topLevelSelection(page, state.selection)
+        .map((id) => page.nodes[id])
+        .filter((n): n is SceneNode => !!n && n.type === "vector");
+      if (roots.length < 1) return false;
+      const result = combineVectors(page, roots);
+      if (!result) return false;
+      mutate((p, d) => {
+        for (const root of roots) removeSubtree(p, d, root.id);
+        p.nodes[result.id] = result;
+        if (result.parentId && p.nodes[result.parentId]) p.nodes[result.parentId].children.push(result.id);
+        else p.rootIds.push(result.id);
+        p.ts = Date.now();
+      });
+      set({ selection: [result.id], selectedPoint: null });
+      return true;
+    },
+    splitCompound: () => {
+      if (get().isReadOnly) return false;
+      const state = get();
+      const page = currentPage(state);
+      if (state.selection.length !== 1) return false;
+      const source = page.nodes[state.selection[0]];
+      if (!source || source.type !== "vector" || (source.subpaths?.length ?? 0) <= 1) return false;
+      const parts = splitCompound(source);
+      if (!parts.length) return false;
+      mutate((p, d) => {
+        const parentId = source.parentId;
+        removeSubtree(p, d, source.id);
+        for (const part of parts) {
+          p.nodes[part.id] = part;
+          if (parentId && p.nodes[parentId]) p.nodes[parentId].children.push(part.id);
+          else p.rootIds.push(part.id);
+        }
+        p.ts = Date.now();
+      });
+      set({ selection: parts.map((p) => p.id), selectedPoint: null });
+      return true;
+    },
+    simplifySelectedVector: () => {
+      if (get().isReadOnly) return false;
+      const state = get();
+      const page = currentPage(state);
+      if (state.selection.length !== 1) return false;
+      const source = page.nodes[state.selection[0]];
+      if (!source || source.type !== "vector") return false;
+      const result = simplifyVector(source);
+      if (!result) return false;
+      mutate((p, d) => {
+        const parentId = source.parentId;
+        removeSubtree(p, d, source.id);
+        p.nodes[result.id] = result;
+        if (parentId && p.nodes[parentId]) p.nodes[parentId].children.push(result.id);
+        else p.rootIds.push(result.id);
+        p.ts = Date.now();
+      });
+      set({ selection: [result.id], selectedPoint: null });
+      return true;
+    },
+    offsetSelectedVector: (delta) => {
+      if (get().isReadOnly) return false;
+      const state = get();
+      const page = currentPage(state);
+      if (state.selection.length !== 1) return false;
+      const source = page.nodes[state.selection[0]];
+      if (!source || source.type !== "vector") return false;
+      const result = offsetVector(source, delta);
+      if (!result) return false;
+      mutate((p) => {
+        p.nodes[result.id] = result;
+        if (result.parentId && p.nodes[result.parentId]) p.nodes[result.parentId].children.push(result.id);
+        else p.rootIds.push(result.id);
+        p.ts = Date.now();
+      });
+      set({ selection: [result.id], selectedPoint: null });
+      return true;
+    },
+    outlineSelectedStroke: () => {
+      if (get().isReadOnly) return false;
+      const state = get();
+      const page = currentPage(state);
+      if (state.selection.length !== 1) return false;
+      const source = page.nodes[state.selection[0]];
+      if (!source || source.type !== "vector" || !source.stroke) return false;
+      const result = outlineStroke(source);
+      if (!result) return false;
+      mutate((p) => {
+        p.nodes[result.id] = result;
+        if (result.parentId && p.nodes[result.parentId]) p.nodes[result.parentId].children.push(result.id);
+        else p.rootIds.push(result.id);
+        p.ts = Date.now();
+      });
+      set({ selection: [result.id], selectedPoint: null });
+      return true;
+    },
+    importSVG: async (svg, name = "SVG") => {
+      if (get().isReadOnly) return 0;
+      const nodes = await svgToNodes(svg, name);
+      if (!nodes.length) return 0;
+      const state = get();
+      const el = typeof window !== "undefined" ? document.querySelector("main") : null;
+      const vp = state.viewport;
+      const viewportWorld = {
+        x: ((el?.clientWidth ?? 800) / 2 - vp.x) / vp.zoom,
+        y: ((el?.clientHeight ?? 600) / 2 - vp.y) / vp.zoom,
+      };
+      const minX = Math.min(...nodes.map((n) => n.x));
+      const minY = Math.min(...nodes.map((n) => n.y));
+      const maxX = Math.max(...nodes.map((n) => n.x + n.width));
+      const maxY = Math.max(...nodes.map((n) => n.y + n.height));
+      const dx = viewportWorld.x - (minX + maxX) / 2;
+      const dy = viewportWorld.y - (minY + maxY) / 2;
+      mutate((p) => {
+        for (const node of nodes) {
+          node.x += dx;
+          node.y += dy;
+          node.ts = Date.now();
+          p.nodes[node.id] = node;
+          p.rootIds.push(node.id);
+        }
+        p.ts = Date.now();
+      });
+      set({ selection: nodes.map((n) => n.id), selectedPoint: null });
+      return nodes.length;
+    },
+    traceSelectedImage: async () => {
+      if (get().isReadOnly) return false;
+      const state = get();
+      const page = currentPage(state);
+      if (state.selection.length !== 1) return false;
+      const source = page.nodes[state.selection[0]];
+      if (!source || source.type !== "image" || !source.src) return false;
+      const nodes = await traceImage(source.src, source, source.name);
+      if (!nodes.length) return false;
+      mutate((p) => {
+        for (const node of nodes) {
+          p.nodes[node.id] = node;
+          if (node.parentId && p.nodes[node.parentId]) p.nodes[node.parentId].children.push(node.id);
+          else p.rootIds.push(node.id);
+        }
+        p.ts = Date.now();
+      });
+      set({ selection: nodes.map((n) => n.id), selectedPoint: null });
+      return true;
     },
     reorderSelection: (mode) => {
       if (get().isReadOnly) return;

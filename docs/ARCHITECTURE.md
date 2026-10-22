@@ -119,6 +119,12 @@ presence（光标、选区）走独立 WebSocket 消息，约 45ms 节流，不�
 - 矩形 / 椭圆 / 直线可转换为矢量；椭圆使用 4 段三次贝塞尔近似。
 - 渲染用 `<svg viewBox="0 0 1000 1000" preserveAspectRatio="none">`，配合 `vector-effect="non-scaling-stroke"`，缩放时线宽保持稳定。
 - 后端 `design.Node` 保存同样字段，AI / MCP 可创建矢量，Figma 插件导出为 Figma Vector。
+- **Pathfinder**：Paper.js 负责布尔运算（unite / subtract / intersect / exclude），结果保留贝塞尔段；输出可包含多个子路径。
+- **复合路径**：`subpaths[] + fillRule` 支持孔洞和 evenodd；Components 页与路径查找器都可产生主组件。
+- **SVG 导入**：Paper.js 解析 SVG 形状、路径与 transform，再转换成 Sigma 节点。
+- **描边 / 偏移**：Paper.js 扁平化曲线后交给 ClipperOffset 生成外轮廓，结果转回复合矢量。
+- **图像描摹**：ImageTracer 在浏览器内把位图颜色分层转成 SVG 路径，再导入为矢量节点。
+- **Figma REST 矢量**：解析 `fillGeometry.path`（M/L/H/V/C/S/Q/T/Z），按 bbox 归一化，保留复合子路径与 winding rule。
 
 ## 组件实例
 

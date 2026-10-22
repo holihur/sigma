@@ -90,3 +90,36 @@ func TestConvertFigmaFile(t *testing.T) {
 		t.Fatalf("bad group child: %#v", field)
 	}
 }
+
+func TestPathDataParsing(t *testing.T) {
+	subs := parsePathData("M 10 10 L 90 10 C 98 18 98 82 90 90 Z M 30 30 L 70 30 L 70 70 Z")
+	if len(subs) != 2 || !subs[0].Closed || len(subs[0].Points) != 3 || subs[0].Points[1].Out == nil {
+		t.Fatalf("unexpected subpaths: %#v", subs)
+	}
+	if len(subs[1].Points) != 3 || !subs[1].Closed {
+		t.Fatalf("unexpected second path: %#v", subs[1])
+	}
+}
+
+func TestConvertFigmaVectorGeometry(t *testing.T) {
+	raw := `{"name":"Vector file","document":{"type":"DOCUMENT","children":[{"type":"CANVAS","name":"Page 1","children":[
+	  {"id":"1:2","name":"Icon","type":"VECTOR",
+	   "absoluteBoundingBox":{"x":100,"y":100,"width":80,"height":80},
+	   "fills":[{"type":"SOLID","color":{"r":0,"g":0.4,"b":1,"a":1}}],
+	   "fillGeometry":[{"path":"M 100 100 L 180 100 L 180 180 L 100 180 Z","windingRule":"NONZERO"}]}
+	]}]}}`
+	doc, _, err := ConvertFile([]byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	node := doc.Pages[0].Node(doc.Pages[0].RootIDs[0])
+	if node == nil || node.Type != "vector" || len(node.Subpaths) != 1 {
+		t.Fatalf("vector not converted: %#v", node)
+	}
+	if node.X != 100 || node.Y != 100 || node.Width != 80 || node.Height != 80 {
+		t.Fatalf("bad vector bounds: %#v", node)
+	}
+	if node.Subpaths[0].Points[0].X != 0 || node.Subpaths[0].Points[2].X != 1 {
+		t.Fatalf("bad normalized points: %#v", node.Subpaths[0].Points)
+	}
+}

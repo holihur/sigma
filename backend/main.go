@@ -98,7 +98,7 @@ func seedDemo(st *store.Store, am *auth.Manager) error {
 	if err != nil {
 		return err
 	}
-	u, err := st.CreateUser("u_demo", "Demo Designer", "demo@sigma.design", hash, "#7c5cff")
+	u, err := st.CreateUser("u_demo", "Sigma Demo", "demo@sigma.design", hash, "#0ea5e9")
 	if err != nil {
 		return err
 	}
@@ -107,9 +107,8 @@ func seedDemo(st *store.Store, am *auth.Manager) error {
 		tmpl    string
 		starred bool
 	}{
-		{"Mobile App · Onboarding", "mobile", true},
-		{"Northwind — Landing Page", "website", false},
-		{"Analytics Dashboard", "dashboard", true},
+		{"Ant Design — Console", "ant", true},
+		{"Material 3 — Home", "material", false},
 	}
 	for i, s := range seeds {
 		docJSON, ok := templates.Load(s.tmpl)
