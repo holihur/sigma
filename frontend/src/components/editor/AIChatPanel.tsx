@@ -84,6 +84,9 @@ export function AIChatPanel({
         selection,
       });
       setSessionId(res.sessionId);
+      // Let the user undo the whole AI turn locally; undo/redo replays through
+      // the same tombstone-aware sync used by manual edits.
+      useEditor.getState().pushHistory();
       useEditor.getState().applyRemoteDoc(res.doc, res.version);
       setMessages((prev) => [
         ...prev,
