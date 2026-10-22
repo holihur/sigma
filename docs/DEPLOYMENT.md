@@ -41,6 +41,8 @@ SIGMA_VERSION=v1.4.0 bash install.sh
 bash install.sh --port 8080 --home /srv/sigma
 # 不注册 systemd
 bash install.sh --no-service
+# 使用内网镜像（目录需包含 sigma-<os>-<arch> 与 checksums.txt）
+SIGMA_RELEASE_BASE=https://mirror.example/sigma bash install.sh
 ```
 
 脚本会校验 Release 的 `checksums.txt`，安装到：

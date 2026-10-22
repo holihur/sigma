@@ -9,6 +9,7 @@
 #   SIGMA_BIN_DIR           binary directory
 #   SIGMA_ADMIN_EMAILS      Comma-separated instance admins (update controls)
 #   SIGMA_REPO              GitHub repo (default holihur/sigma)
+#   SIGMA_RELEASE_BASE      Optional mirror base containing assets + checksums.txt
 set -euo pipefail
 
 REPO="${SIGMA_REPO:-holihur/sigma}"
@@ -52,9 +53,9 @@ if [ "$VERSION" = "latest" ]; then
   echo "→ Resolving latest Sigma release…"
   api="https://api.github.com/repos/${REPO}/releases/latest"
   if [ -n "${GITHUB_TOKEN:-}" ]; then
-    json="$(curl -fsSL --retry 3 -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' "$api")"
+    json="$(curl -fsSL --connect-timeout 10 --max-time 30 --retry 3 -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' "$api")"
   else
-    json="$(curl -fsSL --retry 3 -H 'Accept: application/vnd.github+json' "$api")"
+    json="$(curl -fsSL --connect-timeout 10 --max-time 30 --retry 3 -H 'Accept: application/vnd.github+json' "$api")"
   fi
   tag="$(printf '%s' "$json" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
   [ -n "$tag" ] || { echo "Could not determine latest release tag" >&2; exit 1; }
@@ -64,11 +65,11 @@ else
 fi
 
 echo "→ Installing Sigma ${tag} (${asset})"
-base="https://github.com/${REPO}/releases/download/${tag}"
+base="${SIGMA_RELEASE_BASE:-https://github.com/${REPO}/releases/download/${tag}}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-curl -fL --retry 3 --progress-bar "${base}/${asset}" -o "${tmp}/${asset}"
-curl -fL --retry 3 "${base}/checksums.txt" -o "${tmp}/checksums.txt"
+curl -fL --connect-timeout 10 --max-time 300 --retry 3 --retry-delay 2 --progress-bar "${base}/${asset}" -o "${tmp}/${asset}"
+curl -fL --connect-timeout 10 --max-time 60 --retry 3 --retry-delay 2 "${base}/checksums.txt" -o "${tmp}/checksums.txt"
 expected="$(awk -v a="$asset" '$NF==a || $NF=="*"a {print $1}' "${tmp}/checksums.txt" | head -1)"
 [ -n "$expected" ] || { echo "No checksum found for ${asset}" >&2; exit 1; }
 if command -v sha256sum >/dev/null 2>&1; then
