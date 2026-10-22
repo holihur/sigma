@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS comments (
 	file_id    TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
 	page_id    TEXT NOT NULL,
 	node_id    TEXT NOT NULL DEFAULT '',
+	parent_id  TEXT NOT NULL DEFAULT '',
 	x          REAL NOT NULL DEFAULT 0,
 	y          REAL NOT NULL DEFAULT 0,
 	text       TEXT NOT NULL,
@@ -169,6 +170,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_skills_user ON ai_skills(user_id, updated_at);
 	for _, stmt := range []string{
 		`ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE files ADD COLUMN folder TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE comments ADD COLUMN parent_id TEXT NOT NULL DEFAULT ''`,
 	} {
 		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
 			return err
@@ -375,7 +377,7 @@ func (s *Store) Members(fileID string) ([]model.Member, error) {
 // ---------- comments ----------
 
 func (s *Store) Comments(fileID string) ([]model.Comment, error) {
-	rows, err := s.db.Query(`SELECT c.id,c.file_id,c.page_id,c.node_id,c.x,c.y,c.text,c.author_id,u.name,u.color,u.avatar,c.resolved,c.created_at
+	rows, err := s.db.Query(`SELECT c.id,c.file_id,c.page_id,c.node_id,c.parent_id,c.x,c.y,c.text,c.author_id,u.name,u.color,u.avatar,c.resolved,c.created_at
 		FROM comments c JOIN users u ON u.id=c.author_id WHERE c.file_id=? ORDER BY c.created_at ASC`, fileID)
 	if err != nil {
 		return nil, err
@@ -384,7 +386,7 @@ func (s *Store) Comments(fileID string) ([]model.Comment, error) {
 	out := []model.Comment{}
 	for rows.Next() {
 		var c model.Comment
-		if err := rows.Scan(&c.ID, &c.FileID, &c.PageID, &c.NodeID, &c.X, &c.Y, &c.Text, &c.AuthorID,
+		if err := rows.Scan(&c.ID, &c.FileID, &c.PageID, &c.NodeID, &c.ParentID, &c.X, &c.Y, &c.Text, &c.AuthorID,
 			&c.Author, &c.Color, &c.Avatar, &c.Resolved, &c.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -394,8 +396,8 @@ func (s *Store) Comments(fileID string) ([]model.Comment, error) {
 }
 
 func (s *Store) AddComment(c model.Comment) error {
-	_, err := s.db.Exec(`INSERT INTO comments(id,file_id,page_id,node_id,x,y,text,author_id,resolved,created_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?)`, c.ID, c.FileID, c.PageID, c.NodeID, c.X, c.Y, c.Text, c.AuthorID, c.Resolved, c.CreatedAt)
+	_, err := s.db.Exec(`INSERT INTO comments(id,file_id,page_id,node_id,parent_id,x,y,text,author_id,resolved,created_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?)`, c.ID, c.FileID, c.PageID, c.NodeID, c.ParentID, c.X, c.Y, c.Text, c.AuthorID, c.Resolved, c.CreatedAt)
 	return err
 }
 
@@ -407,6 +409,17 @@ func (s *Store) UpdateComment(id string, resolved bool) error {
 func (s *Store) DeleteComment(id string) error {
 	_, err := s.db.Exec(`DELETE FROM comments WHERE id=?`, id)
 	return err
+}
+
+func (s *Store) DeleteCommentReplies(parentID string) error {
+	_, err := s.db.Exec(`DELETE FROM comments WHERE parent_id=?`, parentID)
+	return err
+}
+
+func (s *Store) CommentParent(id string) (string, error) {
+	var parent string
+	err := s.db.QueryRow(`SELECT parent_id FROM comments WHERE id=?`, id).Scan(&parent)
+	return parent, err
 }
 
 func (s *Store) CommentAuthor(id string) (string, error) {

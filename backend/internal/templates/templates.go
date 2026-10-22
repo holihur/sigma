@@ -67,7 +67,7 @@ func List() []Meta {
 			out = append(out, payload.Meta)
 		}
 	}
-	order := map[string]int{"blank": 0, "material": 1, "ios": 2, "fluent": 3, "carbon": 4, "ant": 5, "arco": 6, "element": 7}
+	order := map[string]int{"blank": 0, "material": 1, "ios": 2, "fluent": 3, "carbon": 4, "ant": 5, "arco": 6, "element": 7, "firefox": 8, "wechat": 9, "shadcn": 10}
 	sort.SliceStable(out, func(i, j int) bool {
 		oi, okI := order[out[i].ID]
 		oj, okJ := order[out[j].ID]

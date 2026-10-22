@@ -174,6 +174,7 @@ export interface Comment {
   fileId: string;
   pageId: string;
   nodeId?: string;
+  parentId?: string;
   x: number;
   y: number;
   text: string;

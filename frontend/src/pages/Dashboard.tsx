@@ -380,7 +380,7 @@ export default function DashboardPage() {
 
         <div className="space-y-1.5 px-3 pb-2">
           <Button className="w-full justify-start shadow-sm" onClick={() => openNew()}>
-            <Plus className="size-4" /> {t("New design")}
+            <SigmaMark className="size-4" /> {t("New design")}
             <span className="ml-auto rounded bg-white/15 px-1 text-[9px] font-medium">N</span>
           </Button>
           <Button variant="outline" className="w-full justify-start" onClick={() => { setFigmaOpen(true); setSidebarOpen(false); }}>
@@ -541,7 +541,7 @@ export default function DashboardPage() {
             <Figma className="size-4" />
           </button>
           <Button size="sm" className="h-8" onClick={() => openNew()}>
-            <Plus className="size-4" /> {t("New")}
+            <SigmaMark className="size-4" /> {t("New")}
           </Button>
         </div>
         <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-8 sm:py-5 lg:px-10">
@@ -983,6 +983,14 @@ function SummaryChip({ icon, label, value }: { icon: React.ReactNode; label: str
         <div className="mt-0.5 text-[9px] text-muted-foreground">{label}</div>
       </div>
     </div>
+  );
+}
+
+function SigmaMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M21.5 10.2c-1.3-.9-2.9-1.4-4.7-1.4-3 0-5 1.4-5 3.7 0 2 1.3 2.9 4.2 3.6 2.4.6 3.1 1 3.1 2 0 1-1 1.6-2.5 1.6-1.9 0-3.5-.7-4.8-1.8l-.9 2.2c1.5 1.3 3.5 2 5.7 2 3.4 0 5.4-1.5 5.4-4 0-2.2-1.4-3.2-4.4-3.9-2.3-.5-3-1-3-1.8 0-.9.9-1.4 2.3-1.4 1.6 0 3 .6 4.2 1.5l.4-2.3Z" />
+    </svg>
   );
 }
 

@@ -1,6 +1,6 @@
 # 设计系统模板
 
-Sigma 内置 8 套模板：7 套常见设计系统 + 空白画布。每套设计系统包含 Home / Foundations / Components 三页，Components 页中的控件是主组件，可直接插入实例。
+Sigma 内置 11 套模板：10 套设计语言 + 空白画布。每套设计系统包含 Home / Foundations / Components 三页，Components 页中的控件是主组件，可直接插入实例。
 
 ## Material Design 3
 
@@ -177,6 +177,55 @@ Design.md 建议：
 | Type | Helvetica Neue：28 / 16 / 13 / 12 |
 
 包含 Dashboard、Foundations、Components。
+
+## Firefox Photon
+
+模板 id：`firefox`
+
+| Token | 值 |
+| --- | --- |
+| Primary | `#0060DF` |
+| Accent | `#FF7139` |
+| Ink | `#20123A` |
+| Success | `#058B00` |
+| Border | `#E0E0E6` |
+| Radius | 8 |
+| Type | Inter：28 / 18 / 13 / 10 |
+
+包含 New tab、Foundations、Components。隐私面板、快捷入口、最近标签页和 Pocket 推荐都采用 Mozilla Photon 的浅色表面与蓝色主色。
+
+## WeChat
+
+模板 id：`wechat`
+
+| Token | 值 |
+| --- | --- |
+| WeChat Green | `#07C160` |
+| Link Blue | `#576B95` |
+| Alert Red | `#FA5151` |
+| Ink | `#191919` |
+| Muted | `#888888` |
+| Radius | 6 |
+| Type | PingFang SC：20 / 15 / 12 / 10 |
+
+包含 Chats、Foundations、Components。聊天列表使用 72px 行高、红点未读、浅灰底与微信绿选中态。
+
+## shadcn/ui
+
+模板 id：`shadcn`
+
+| Token | 值 |
+| --- | --- |
+| Primary | `#18181B` |
+| Muted | `#71717A` |
+| Border | `#E4E4E7` |
+| Surface | `#FFFFFF` |
+| Accent | `#F4F4F5` |
+| Danger | `#EF4444` |
+| Radius | 10 |
+| Type | Inter：30 / 14 / 12 / 10 |
+
+包含 Overview、Foundations、Components。中性 zinc 色、1px 边框、无渐变表面和紧凑数据表。
 
 ## 生成模板
 

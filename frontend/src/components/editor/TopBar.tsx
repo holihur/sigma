@@ -261,7 +261,7 @@ export function TopBar({
         <button
           title={t("AI assistant")}
           onClick={onOpenAI}
-          className="flex size-7 items-center justify-center rounded-md bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white shadow-sm transition-transform hover:scale-105 sm:size-8"
+          className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:size-8"
         >
           <Sparkles className="size-4" />
         </button>
@@ -287,7 +287,7 @@ export function TopBar({
           <span className="hidden sm:inline">{t("Share")}</span>
         </Button>
 
-        <Button size="sm" className="h-7 gap-1.5 bg-gradient-to-b from-[#38bdf8] to-[#0284c7] px-1.5 shadow sm:h-8 sm:px-4" onClick={() => openPreview(null)}>
+        <Button size="sm" className="h-7 gap-1.5 bg-primary px-1.5 text-primary-foreground shadow-sm hover:bg-primary/90 sm:h-8 sm:px-4" onClick={() => openPreview(null)}>
           <Play className="size-3.5 fill-current" />
           <span className="hidden sm:inline">{t("Present")}</span>
         </Button>

@@ -141,7 +141,7 @@ export const versionsApi = {
 
 export const commentsApi = {
   list: (fileId: string) => api<{ comments: Comment[] }>(`/files/${fileId}/comments`),
-  create: (fileId: string, body: { pageId: string; nodeId?: string; x: number; y: number; text: string }) =>
+  create: (fileId: string, body: { pageId: string; nodeId?: string; parentId?: string; x: number; y: number; text: string }) =>
     api<{ comment: Comment }>(`/files/${fileId}/comments`, { method: "POST", body }),
   resolve: (commentId: string, resolved: boolean) =>
     api<{ comments: Comment[] }>(`/comments/${commentId}`, { method: "PATCH", body: { resolved } }),

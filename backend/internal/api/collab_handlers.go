@@ -124,11 +124,12 @@ func (a *API) handleCreateComment(w http.ResponseWriter, r *http.Request, u mode
 		return
 	}
 	var body struct {
-		PageID string  `json:"pageId"`
-		NodeID string  `json:"nodeId"`
-		X      float64 `json:"x"`
-		Y      float64 `json:"y"`
-		Text   string  `json:"text"`
+		PageID   string  `json:"pageId"`
+		NodeID   string  `json:"nodeId"`
+		ParentID string  `json:"parentId"`
+		X        float64 `json:"x"`
+		Y        float64 `json:"y"`
+		Text     string  `json:"text"`
 	}
 	if err := readJSON(r, &body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid request")
@@ -146,8 +147,15 @@ func (a *API) handleCreateComment(w http.ResponseWriter, r *http.Request, u mode
 		writeError(w, http.StatusBadRequest, "Missing page")
 		return
 	}
+	if body.ParentID != "" {
+		parentFile, err := a.st.CommentFile(body.ParentID)
+		if err != nil || parentFile != id {
+			writeError(w, http.StatusBadRequest, "Parent comment not found")
+			return
+		}
+	}
 	c := model.Comment{
-		ID: newID("c"), FileID: id, PageID: body.PageID, NodeID: body.NodeID,
+		ID: newID("c"), FileID: id, PageID: body.PageID, NodeID: body.NodeID, ParentID: body.ParentID,
 		X: body.X, Y: body.Y, Text: body.Text, AuthorID: u.ID, Author: u.Name,
 		Color: u.Color, CreatedAt: model.Now(),
 	}
@@ -211,6 +219,10 @@ func (a *API) handleDeleteComment(w http.ResponseWriter, r *http.Request, u mode
 	if author != u.ID && role != "owner" {
 		writeError(w, http.StatusForbidden, "You can only delete your own comments")
 		return
+	}
+	parentID, _ := a.st.CommentParent(commentID)
+	if parentID == "" {
+		_ = a.st.DeleteCommentReplies(commentID)
 	}
 	if err := a.st.DeleteComment(commentID); err != nil {
 		writeError(w, http.StatusInternalServerError, "Could not delete comment")

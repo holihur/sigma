@@ -1,5 +1,5 @@
 import React from "react";
-import type { Bounds, Guide, Page, PresenceUser, SceneNode, Viewport } from "@/lib/types";
+import type { Bounds, Guide, Page, PresenceUser, SceneNode, Tool, Viewport } from "@/lib/types";
 import {
   applyMatrix,
   boundsOf,
@@ -20,6 +20,7 @@ interface Props {
   hoveredId: string | null;
   readOnly?: boolean;
   editing: boolean;
+  tool?: Tool;
   guides?: Guide[];
   marquee?: Bounds | null;
   collaborators?: PresenceUser[];
@@ -60,6 +61,7 @@ export function SelectionOverlay({
   hoveredId,
   readOnly,
   editing,
+  tool = "select",
   guides = [],
   marquee,
   collaborators = [],
@@ -101,11 +103,11 @@ export function SelectionOverlay({
       }
     : null;
 
-  const showHandles = !readOnly && !!target && !editing;
+  const showHandles = !readOnly && !!target && !editing && tool === "select";
   const vectorAnchors: Point[] = [];
   const vectorHandles: { point: Point; which: "in" | "out"; anchor: Point }[] = [];
   let flatPoints: { x: number; y: number; in?: { x: number; y: number }; out?: { x: number; y: number } }[] = [];
-  if (!readOnly && !editing && target?.type === "vector") {
+  if (!readOnly && !editing && tool === "select" && target?.type === "vector") {
     const m = nodeMatrix(page, target.id);
     flatPoints = vectorSubpaths(target).flatMap((sub) => sub.points);
     for (const p of flatPoints) {

@@ -624,7 +624,7 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-background">
       <TopBar
         onShare={() => setShareOpen(true)}
         onVersions={() => setVersionsOpen(true)}
@@ -844,7 +844,7 @@ function ZoomControl({ hostRef, onFit }: { hostRef: React.RefObject<HTMLDivEleme
     });
   };
   return (
-    <div className="absolute bottom-3 right-3 z-40 flex items-center gap-0.5 rounded-lg border border-panel-border bg-panel/95 p-0.5 shadow-lg backdrop-blur sm:bottom-4 sm:right-4">
+    <div className="absolute bottom-[calc(0.75rem+env(safe-area-inset-bottom))] right-3 z-40 flex items-center gap-0.5 rounded-lg border border-panel-border bg-panel/95 p-0.5 shadow-lg backdrop-blur sm:bottom-4 sm:right-4">
       <button
         className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
         onClick={() => {

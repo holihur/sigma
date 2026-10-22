@@ -75,6 +75,9 @@ const ellipse = (id, name, x, y, width, height, opts = {}) =>
 const frame = (id, name, x, y, width, height, opts = {}, children = []) =>
   node("frame", { id, name, x, y, width, height, fill: opts.fill ?? solid("#ffffff"), radius: opts.radius ?? 0, clip: opts.clip ?? true, shadow: opts.shadow, opacity: opts.opacity ?? 1, component: opts.component ?? false }, children);
 
+const image = (id, name, src, x, y, width, height, opts = {}) =>
+  node("image", { id, name, src, x, y, width, height, radius: opts.radius ?? 0, fill: opts.fill ?? null, opacity: opts.opacity ?? 1 });
+
 const page = (id, name, roots) => ({
   id,
   name,
@@ -1106,6 +1109,241 @@ const elementDoc = {
 
 
 /* ------------------------------------------------------------------ */
+/*  Firefox Photon                                                     */
+/* ------------------------------------------------------------------ */
+
+const ffxHome = frame("ffx_home", "Firefox · New Tab", 0, 0, 1440, 900, { fill: solid("#F9F9FB") }, [
+  rect("ffx_header", "Browser chrome", 0, 0, 1440, 64, { fill: solid("#FFFFFF"), stroke: solid("#E0E0E6") }),
+  image("ffx_logo", "Firefox logo", "/brand/firefox.svg", 24, 16, 32, 32, { radius: 8 }),
+  text("ffx_brand", "Brand", "Firefox", 66, 18, 140, 28, { size: 18, weight: 700, color: "#20123A" }),
+  ...["New tab", "Bookmarks", "History", "Sync"].map((label, i) =>
+    text(`ffx_nav_${i}`, "Browser nav", label, 280 + i * 104, 18, 96, 28, { size: 13, weight: i === 0 ? 600 : 400, color: i === 0 ? "#0060DF" : "#5B5B66", valign: "middle" }),
+  ),
+  ellipse("ffx_avatar", "Avatar", 1384, 16, 32, 32, { fill: solid("#FF7139") }),
+  text("ffx_avatar_t", "Avatar", "M", 1384, 16, 32, 32, { size: 12, weight: 700, color: "#FFFFFF", align: "center", valign: "middle" }),
+  text("ffx_hello", "Greeting", "Good evening, Maya", 280, 108, 500, 38, { size: 28, weight: 700, color: "#20123A", letterSpacing: -0.6 }),
+  text("ffx_sub", "Subtitle", "Pick up where you left off — or start somewhere new.", 280, 148, 620, 22, { size: 13, color: "#5B5B66" }),
+  rect("ffx_search", "Address bar", 280, 192, 880, 58, { radius: 29, fill: solid("#FFFFFF"), stroke: solid("#D7D7DB"), shadow: shadow(0, 10, 28, -18, "rgba(32,18,58,.28)") }),
+  text("ffx_search_icon", "Search icon", "⌕", 304, 192, 28, 58, { size: 23, color: "#0060DF", valign: "middle" }),
+  text("ffx_search_t", "Search placeholder", "Search the web or type a URL", 342, 192, 560, 58, { size: 14, color: "#77778A", valign: "middle" }),
+  rect("ffx_search_shortcut", "Search shortcut", 1098, 206, 44, 30, { radius: 6, fill: solid("#F0F0F3") }),
+  text("ffx_search_shortcut_t", "Shortcut", "⌘K", 1098, 206, 44, 30, { size: 10, weight: 600, color: "#5B5B66", align: "center", valign: "middle" }),
+
+  text("ffx_shortcuts", "Section", "Shortcuts", 280, 286, 220, 20, { size: 11, weight: 700, color: "#5B5B66", letterSpacing: 0.8 }),
+  text("ffx_shortcuts_more", "Link", "Manage", 1120, 286, 40, 18, { size: 10, color: "#0060DF", align: "right" }),
+  ...[
+    ["S", "Sigma", "figma.com", "#0060DF"],
+    ["N", "Notion", "notion.so", "#20123A"],
+    ["G", "GitHub", "github.com", "#5B5B66"],
+    ["C", "Calendar", "calendar.google.com", "#FF7139"],
+  ].map(([glyph, title, url, color], i) => [
+    rect(`ffx_sc_${i}`, "Shortcut card", 280 + i * 208, 318, 184, 132, { radius: 12, fill: solid("#FFFFFF"), stroke: solid("#E0E0E6") }),
+    rect(`ffx_sc_icon_${i}`, "Icon tile", 300 + i * 208, 338, 40, 40, { radius: 10, fill: solid(color, 0.12) }),
+    text(`ffx_sc_glyph_${i}`, "Icon", glyph, 300 + i * 208, 338, 40, 40, { size: 16, weight: 700, color, align: "center", valign: "middle" }),
+    text(`ffx_sc_t_${i}`, "Title", title, 300 + i * 208, 392, 144, 20, { size: 13, weight: 600, color: "#20123A" }),
+    text(`ffx_sc_u_${i}`, "URL", url, 300 + i * 208, 414, 144, 18, { size: 10, color: "#77778A" }),
+  ]).flat(),
+
+  rect("ffx_recent", "Recent tabs", 280, 486, 520, 326, { radius: 12, fill: solid("#FFFFFF"), stroke: solid("#E0E0E6") }),
+  text("ffx_recent_t", "Title", "Recent tabs", 304, 510, 240, 24, { size: 16, weight: 700, color: "#20123A" }),
+  text("ffx_recent_more", "Link", "View all", 728, 512, 48, 18, { size: 10, color: "#0060DF", align: "right" }),
+  ...[
+    ["Figma — Sigma product file", "figma.com", "2m ago", "#A259FF"],
+    ["Notion — Q4 roadmap", "notion.so", "18m ago", "#20123A"],
+    ["GitHub — Pull request #284", "github.com", "41m ago", "#5B5B66"],
+    ["Linear — Design system", "linear.app", "1h ago", "#5E6AD2"],
+  ].map(([title, domain, time, color], i) => [
+    ...(i > 0 ? [rect(`ffx_recent_sep_${i}`, "Separator", 304, 566 + i * 58, 472, 1, { fill: solid("#EDEDF0") })] : []),
+    rect(`ffx_recent_icon_${i}`, "Favicon", 304, 586 + i * 58, 30, 30, { radius: 7, fill: solid(color, 0.13) }),
+    text(`ffx_recent_g_${i}`, "Favicon glyph", title.charAt(0), 304, 586 + i * 58, 30, 30, { size: 10, weight: 700, color, align: "center", valign: "middle" }),
+    text(`ffx_recent_title_${i}`, "Tab title", title, 346, 582 + i * 58, 330, 22, { size: 12, weight: 500, color: "#20123A" }),
+    text(`ffx_recent_domain_${i}`, "Domain", domain, 346, 602 + i * 58, 280, 16, { size: 9, color: "#77778A" }),
+    text(`ffx_recent_time_${i}`, "Time", time, 706, 582 + i * 58, 70, 22, { size: 9, color: "#8A8A96", align: "right" }),
+  ]).flat(),
+
+  rect("ffx_privacy", "Privacy panel", 824, 486, 336, 152, { radius: 12, fill: solid("#20123A") }),
+  text("ffx_privacy_t", "Title", "Tracking protection", 848, 508, 240, 22, { size: 14, weight: 600, color: "#FFFFFF" }),
+  text("ffx_privacy_v", "Value", "1,248", 848, 540, 160, 38, { size: 30, weight: 700, color: "#FFFFFF", letterSpacing: -0.8 }),
+  text("ffx_privacy_b", "Body", "trackers blocked this week", 848, 578, 230, 18, { size: 10, color: "#C9C2D6" }),
+  rect("ffx_privacy_track", "Toggle track", 1064, 538, 56, 28, { radius: 14, fill: solid("#0060DF") }),
+  ellipse("ffx_privacy_knob", "Toggle knob", 1094, 542, 20, 20, { fill: solid("#FFFFFF") }),
+  text("ffx_privacy_status", "Status", "Enhanced", 1064, 574, 64, 16, { size: 9, weight: 600, color: "#8CB4FF", align: "right" }),
+
+  rect("ffx_pocket", "Recommended", 824, 654, 336, 158, { radius: 12, fill: solid("#FFFFFF"), stroke: solid("#E0E0E6") }),
+  text("ffx_pocket_t", "Title", "Recommended by Pocket", 848, 676, 260, 22, { size: 14, weight: 700, color: "#20123A" }),
+  text("ffx_pocket_b", "Article", "The quiet craft of designing for focus", 848, 706, 280, 34, { size: 12, weight: 500, color: "#20123A", lineHeight: 1.35 }),
+  text("ffx_pocket_m", "Meta", "8 min read · Pocket", 848, 748, 240, 16, { size: 9, color: "#77778A" }),
+  text("ffx_pocket_2", "Article", "Why local-first tools feel faster", 848, 772, 280, 18, { size: 10, color: "#0060DF" }),
+
+  text("ffx_footer", "Footer", "Firefox Photon · privacy by default", 280, 850, 500, 18, { size: 10, color: "#8A8A96" }),
+  text("ffx_footer_2", "Footer", "Mozilla design language", 1120, 850, 40, 18, { size: 10, color: "#8A8A96", align: "right" }),
+]);
+
+const ffxFound = foundations("ffx", "Firefox Photon", "Mozilla Photon colors, generous radii, calm surfaces and privacy-first accents.", [
+  ["Primary", "#0060DF"], ["Accent", "#FF7139"], ["Ink", "#20123A"], ["Success", "#058B00"], ["Surface", "#FFFFFF"], ["Border", "#E0E0E6"],
+], { bg: "#F9F9FB", surface: "#FFFFFF", text: "#20123A", muted: "#5B5B66", primary: "#0060DF", onPrimary: "#FFFFFF", border: "#E0E0E6", chip: "#E7F0FF", radius: 8, family: "Inter Variable" });
+
+const ffxComponents = componentBoard("ffxc", "Firefox Photon", {
+  bg: "#F9F9FB", surface: "#FFFFFF", text: "#20123A", muted: "#5B5B66", primary: "#0060DF", onPrimary: "#FFFFFF", border: "#E0E0E6", chip: "#E7F0FF", danger: "#D70022", radius: 8, family: "Inter Variable",
+});
+const firefoxDoc = {
+  pages: [page("ffx_page", "New tab", [ffxHome]), page("ffx_found_page", "Foundations", [ffxFound]), page("ffx_components_page", "Components", [ffxComponents])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
+/*  WeChat                                                             */
+/* ------------------------------------------------------------------ */
+
+const wxHome = frame("wx_home", "WeChat · Chats", 0, 0, 390, 844, { fill: solid("#EDEDED") }, [
+  ...statusBar("wx", false),
+  rect("wx_header", "Header", 0, 44, 390, 56, { fill: solid("#EDEDED") }),
+  text("wx_title", "Title", "微信", 16, 50, 100, 44, { size: 20, weight: 600, color: "#191919", valign: "middle", family: "PingFang SC" }),
+  text("wx_add", "Icon", "+", 316, 50, 28, 44, { size: 22, color: "#191919", align: "center", valign: "middle", family: "PingFang SC" }),
+  text("wx_search_icon", "Icon", "⌕", 352, 50, 28, 44, { size: 19, color: "#191919", align: "center", valign: "middle", family: "PingFang SC" }),
+  rect("wx_search", "Search", 12, 108, 366, 36, { radius: 6, fill: solid("#FFFFFF") }),
+  text("wx_search_t", "Search placeholder", "搜索", 58, 108, 280, 36, { size: 13, color: "#888888", valign: "middle", family: "PingFang SC" }),
+  text("wx_search_glyph", "Search glyph", "⌕", 28, 108, 24, 36, { size: 17, color: "#888888", align: "center", valign: "middle", family: "PingFang SC" }),
+  ...[
+    ["文件传输助手", "设计稿已更新", "10:24", "#07C160", 0],
+    ["设计团队", "Maya: 新版组件库已发布", "10:18", "#5B8FF9", 3],
+    ["林小满", "[图片]", "09:52", "#F6BD16", 0],
+    ["产品周会", "明天 14:00 · 会议室 A", "昨天", "#7262FD", 1],
+    ["微信团队", "欢迎使用微信", "周一", "#07C160", 0],
+  ].map(([name, preview, time, color, unread], i) =>
+    dataRow(`wx_chat_${i}`, 158 + i * 72, String(name), String(preview), String(time), String(color), Number(unread)),
+  ).flat(),
+  rect("wx_tabbar", "Tab bar", 0, 774, 390, 70, { fill: solid("#F7F7F7"), stroke: solid("#DADADA") }),
+  ...["微信", "通讯录", "发现", "我"].map((label, i) =>
+    text(`wx_tab_${i}`, "Tab", label, 20 + i * 96, 790, 40, 38, { size: 11, weight: i === 0 ? 600 : 400, color: i === 0 ? "#07C160" : "#7A7A7A", align: "center", valign: "middle", family: "PingFang SC" }),
+  ),
+  text("wx_tab_icon_0", "Tab icon", "●", 20, 776, 40, 16, { size: 9, color: "#07C160", align: "center", family: "PingFang SC" }),
+  text("wx_tab_icon_1", "Tab icon", "○", 116, 776, 40, 16, { size: 9, color: "#7A7A7A", align: "center", family: "PingFang SC" }),
+  text("wx_tab_icon_2", "Tab icon", "◈", 212, 776, 40, 16, { size: 9, color: "#7A7A7A", align: "center", family: "PingFang SC" }),
+  text("wx_tab_icon_3", "Tab icon", "◎", 308, 776, 40, 16, { size: 9, color: "#7A7A7A", align: "center", family: "PingFang SC" }),
+]);
+
+function dataRow(id, y, name, preview, time, color, unread) {
+  return [
+    rect(`${id}_bg`, "Chat row", 0, y, 390, 72, { fill: solid("#FFFFFF") }),
+    rect(`${id}_avatar`, "Avatar", 16, y + 12, 48, 48, { radius: 6, fill: solid(color) }),
+    text(`${id}_glyph`, "Avatar glyph", name.slice(0, 1), 16, y + 12, 48, 48, { size: 17, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "PingFang SC" }),
+    text(`${id}_name`, "Chat name", name, 76, y + 13, 210, 20, { size: 15, weight: 500, color: "#191919", family: "PingFang SC" }),
+    text(`${id}_preview`, "Preview", preview, 76, y + 37, 240, 18, { size: 12, color: "#888888", family: "PingFang SC" }),
+    text(`${id}_time`, "Time", time, 310, y + 14, 62, 16, { size: 10, color: "#9A9A9A", align: "right", family: "PingFang SC" }),
+    ...(unread > 0 ? [
+      rect(`${id}_badge`, "Unread", 350, y + 37, 18, 18, { radius: 9, fill: solid("#FA5151") }),
+      text(`${id}_badge_t`, "Unread count", String(unread), 350, y + 37, 18, 18, { size: 9, weight: 600, color: "#FFFFFF", align: "center", valign: "middle", family: "PingFang SC" }),
+    ] : []),
+  ];
+}
+
+const wxFound = foundations("wx", "WeChat", "WeChat green, chat-list density, red notification badges and a calm mobile surface.", [
+  ["WeChat green", "#07C160"], ["Link blue", "#576B95"], ["Alert red", "#FA5151"], ["Warning", "#FA9D3B"], ["Ink", "#191919"], ["Muted", "#888888"],
+], { bg: "#EDEDED", surface: "#FFFFFF", text: "#191919", muted: "#888888", primary: "#07C160", onPrimary: "#FFFFFF", border: "#DADADA", chip: "#E8F8EF", radius: 6, family: "PingFang SC" });
+
+const wxComponents = componentBoard("wxc", "WeChat", {
+  bg: "#EDEDED", surface: "#FFFFFF", text: "#191919", muted: "#888888", primary: "#07C160", onPrimary: "#FFFFFF", border: "#DADADA", chip: "#E8F8EF", danger: "#FA5151", radius: 6, family: "PingFang SC",
+});
+const wechatDoc = {
+  pages: [page("wx_page", "Chats", [wxHome]), page("wx_found_page", "Foundations", [wxFound]), page("wx_components_page", "Components", [wxComponents])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
+/*  shadcn/ui                                                          */
+/* ------------------------------------------------------------------ */
+
+const scHome = frame("sc_home", "shadcn/ui · Dashboard", 0, 0, 1440, 900, { fill: solid("#FAFAFA") }, [
+  rect("sc_sidebar", "Sidebar", 0, 0, 240, 900, { fill: solid("#FFFFFF"), stroke: solid("#E4E4E7") }),
+  image("sc_logo", "shadcn logo", "/brand/shadcn.svg", 24, 22, 28, 28, { radius: 7 }),
+  text("sc_brand", "Brand", "shadcn/ui", 62, 24, 140, 24, { size: 14, weight: 700, color: "#18181B", letterSpacing: -0.3 }),
+  text("sc_workspace", "Workspace", "Acme workspace", 16, 82, 190, 30, { size: 11, color: "#71717A", valign: "middle" }),
+  ...["Overview", "Projects", "Components", "Settings"].map((label, i) => [
+    ...(i === 0 ? [rect(`sc_nav_active_${i}`, "Active nav", 12, 122 + i * 40, 216, 34, { radius: 8, fill: solid("#F4F4F5") })] : []),
+    text(`sc_nav_${i}`, "Nav", label, 28, 122 + i * 40, 180, 34, { size: 12, weight: i === 0 ? 600 : 400, color: i === 0 ? "#18181B" : "#71717A", valign: "middle" }),
+  ]).flat(),
+  text("sc_side_footer", "Footer", "v0.1.0", 24, 850, 120, 18, { size: 10, color: "#A1A1AA" }),
+
+  rect("sc_header", "Header", 240, 0, 1200, 64, { fill: solid("#FFFFFF"), stroke: solid("#E4E4E7") }),
+  text("sc_page", "Page", "Overview", 272, 18, 240, 28, { size: 16, weight: 600, color: "#18181B", valign: "middle" }),
+  rect("sc_header_search", "Search", 848, 16, 280, 32, { radius: 7, fill: solid("#FAFAFA"), stroke: solid("#E4E4E7") }),
+  text("sc_header_search_t", "Search", "Search…", 864, 16, 240, 32, { size: 12, color: "#A1A1AA", valign: "middle" }),
+  ellipse("sc_avatar", "Avatar", 1384, 16, 32, 32, { fill: solid("#18181B") }),
+  text("sc_avatar_t", "Avatar", "M", 1384, 16, 32, 32, { size: 11, weight: 600, color: "#FFFFFF", align: "center", valign: "middle" }),
+
+  text("sc_title", "Title", "Dashboard", 272, 96, 400, 40, { size: 30, weight: 700, color: "#18181B", letterSpacing: -0.8 }),
+  text("sc_sub", "Subtitle", "A minimal, accessible system for product interfaces.", 272, 140, 620, 22, { size: 13, color: "#71717A" }),
+  rect("sc_primary", "Primary button", 1244, 100, 164, 36, { radius: 8, fill: solid("#18181B") }),
+  text("sc_primary_t", "Label", "New project", 1244, 100, 164, 36, { size: 12, weight: 600, color: "#FFFFFF", align: "center", valign: "middle" }),
+  ...[
+    ["Active projects", "24", "+3 this week"],
+    ["Components", "128", "12 new"],
+    ["Contributors", "32", "+4 this month"],
+    ["Open issues", "7", "2 critical"],
+  ].map(([label, value, meta], i) => [
+    rect(`sc_stat_${i}`, "Stat card", 272 + i * 284, 194, 264, 116, { radius: 10, fill: solid("#FFFFFF"), stroke: solid("#E4E4E7") }),
+    text(`sc_stat_l_${i}`, "Label", label, 292 + i * 284, 212, 220, 18, { size: 11, color: "#71717A" }),
+    text(`sc_stat_v_${i}`, "Value", value, 292 + i * 284, 236, 220, 38, { size: 28, weight: 700, color: "#18181B", letterSpacing: -0.5 }),
+    text(`sc_stat_m_${i}`, "Meta", meta, 292 + i * 284, 278, 220, 18, { size: 10, color: i === 3 ? "#EF4444" : "#71717A" }),
+  ]).flat(),
+
+  rect("sc_chart", "Chart card", 272, 340, 700, 250, { radius: 10, fill: solid("#FFFFFF"), stroke: solid("#E4E4E7") }),
+  text("sc_chart_t", "Title", "Weekly activity", 292, 360, 300, 22, { size: 14, weight: 600, color: "#18181B" }),
+  text("sc_chart_s", "Subtitle", "Design sessions across the workspace", 292, 384, 420, 18, { size: 10, color: "#71717A" }),
+  ...[42, 68, 54, 86, 72, 96, 64].map((h, i) => [
+    rect(`sc_bar_track_${i}`, "Bar track", 316 + i * 88, 428, 42, 120, { radius: 5, fill: solid("#F4F4F5") }),
+    rect(`sc_bar_${i}`, "Bar", 316 + i * 88, 548 - h, 42, h, { radius: 5, fill: solid(i === 5 ? "#18181B" : "#A1A1AA") }),
+    text(`sc_day_${i}`, "Day", ["M", "T", "W", "T", "F", "S", "S"][i], 316 + i * 88, 552, 42, 16, { size: 9, color: "#A1A1AA", align: "center" }),
+  ]).flat(),
+
+  rect("sc_activity", "Activity card", 996, 340, 412, 460, { radius: 10, fill: solid("#FFFFFF"), stroke: solid("#E4E4E7") }),
+  text("sc_activity_t", "Title", "Recent activity", 1016, 360, 260, 22, { size: 14, weight: 600, color: "#18181B" }),
+  ...[
+    ["Maya Chen", "Published a component", "2m"],
+    ["Noah Patel", "Updated tokens", "18m"],
+    ["Lena Park", "Opened an issue", "1h"],
+    ["Owen Diaz", "Joined the project", "3h"],
+    ["Iris Kim", "Merged a branch", "5h"],
+  ].map(([name, action, time], i) => [
+    ellipse(`sc_act_avatar_${i}`, "Avatar", 1016, 402 + i * 62, 28, 28, { fill: solid(i % 2 ? "#E4E4E7" : "#18181B") }),
+    text(`sc_act_n_${i}`, "Name", name, 1054, 400 + i * 62, 180, 18, { size: 11, weight: 600, color: "#18181B" }),
+    text(`sc_act_a_${i}`, "Action", action, 1054, 418 + i * 62, 220, 16, { size: 10, color: "#71717A" }),
+    text(`sc_act_t_${i}`, "Time", time, 1328, 400 + i * 62, 56, 16, { size: 9, color: "#A1A1AA", align: "right" }),
+    ...(i > 0 ? [rect(`sc_act_sep_${i}`, "Separator", 1016, 452 + i * 62, 372, 1, { fill: solid("#F4F4F5") })] : []),
+  ]).flat(),
+
+  rect("sc_table", "Table card", 272, 614, 1136, 238, { radius: 10, fill: solid("#FFFFFF"), stroke: solid("#E4E4E7") }),
+  text("sc_table_t", "Title", "Projects", 292, 634, 240, 22, { size: 14, weight: 600, color: "#18181B" }),
+  rect("sc_table_head", "Table head", 272, 672, 1136, 34, { fill: solid("#FAFAFA"), stroke: solid("#F4F4F5") }),
+  ...["Project", "Owner", "Status", "Updated"].map((h, i) => text(`sc_th_${i}`, "Header", h, 292 + [0, 560, 820, 1060][i], 680, 160, 20, { size: 10, weight: 600, color: "#71717A" })),
+  ...[
+    ["Aurora design system", "Maya Chen", "Active", "2m ago"],
+    ["Mobile checkout", "Noah Patel", "Review", "18m ago"],
+    ["Billing migration", "Lena Park", "Active", "1h ago"],
+  ].map(([name, owner, status, updated], i) => [
+    ...(i > 0 ? [rect(`sc_tr_sep_${i}`, "Separator", 292, 706 + i * 42, 1096, 1, { fill: solid("#F4F4F5") })] : []),
+    text(`sc_tr_name_${i}`, "Project", name, 292, 714 + i * 42, 300, 28, { size: 11, weight: 500, color: "#18181B", valign: "middle" }),
+    text(`sc_tr_owner_${i}`, "Owner", owner, 852, 714 + i * 42, 180, 28, { size: 10, color: "#71717A", valign: "middle" }),
+    rect(`sc_tr_badge_${i}`, "Badge", 1112, 722 + i * 42, 58, 20, { radius: 999, fill: solid(status === "Active" ? "#F4F4F5" : "#FEF3C7") }),
+    text(`sc_tr_status_${i}`, "Status", status, 1112, 722 + i * 42, 58, 20, { size: 8, weight: 600, color: status === "Active" ? "#18181B" : "#92400E", align: "center", valign: "middle" }),
+    text(`sc_tr_upd_${i}`, "Updated", updated, 1192, 714 + i * 42, 80, 28, { size: 9, color: "#A1A1AA", align: "right", valign: "middle" }),
+  ]).flat(),
+]);
+
+const scFound = foundations("sc", "shadcn/ui", "Neutral zinc palette, border-first surfaces, 10px radii and accessible type.", [
+  ["Primary", "#18181B"], ["Muted", "#71717A"], ["Border", "#E4E4E7"], ["Surface", "#FFFFFF"], ["Accent", "#F4F4F5"], ["Danger", "#EF4444"],
+], { bg: "#FAFAFA", surface: "#FFFFFF", text: "#18181B", muted: "#71717A", primary: "#18181B", onPrimary: "#FFFFFF", border: "#E4E4E7", chip: "#F4F4F5", radius: 10, family: "Inter Variable" });
+
+const scComponents = componentBoard("scc", "shadcn/ui", {
+  bg: "#FAFAFA", surface: "#FFFFFF", text: "#18181B", muted: "#71717A", primary: "#18181B", onPrimary: "#FFFFFF", border: "#E4E4E7", chip: "#F4F4F5", danger: "#EF4444", radius: 10, family: "Inter Variable",
+});
+const shadcnDoc = {
+  pages: [page("sc_page", "Overview", [scHome]), page("sc_found_page", "Foundations", [scFound]), page("sc_components_page", "Components", [scComponents])],
+  tombstones: {},
+};
+
+/* ------------------------------------------------------------------ */
 /*  Sigma Originals — own visual language                             */
 /*  Paper / Ink / Cobalt / Acid / Coral, hard borders, offset shadows */
 /* ------------------------------------------------------------------ */
@@ -1393,6 +1631,39 @@ const templates = [
       logo: "/brand/element.svg",
     },
     doc: elementDoc,
+  },
+  {
+    meta: {
+      id: "firefox",
+      name: "Firefox Photon",
+      description: "Mozilla Photon color, calm surfaces, privacy-first panels and Firefox new-tab patterns.",
+      accent: "#0060DF",
+      icon: "layout-dashboard",
+      logo: "/brand/firefox.svg",
+    },
+    doc: firefoxDoc,
+  },
+  {
+    meta: {
+      id: "wechat",
+      name: "WeChat",
+      description: "WeChat mobile chat density, #07C160 green, notification badges and PingFang typography.",
+      accent: "#07C160",
+      icon: "smartphone",
+      logo: "/brand/wechat.svg",
+    },
+    doc: wechatDoc,
+  },
+  {
+    meta: {
+      id: "shadcn",
+      name: "shadcn/ui",
+      description: "Neutral zinc palette, border-first surfaces, 10px radii and accessible Radix-style controls.",
+      accent: "#18181B",
+      icon: "component",
+      logo: "/brand/shadcn.svg",
+    },
+    doc: shadcnDoc,
   },
 ];
 

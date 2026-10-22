@@ -52,6 +52,7 @@ type Comment struct {
 	FileID    string  `json:"fileId"`
 	PageID    string  `json:"pageId"`
 	NodeID    string  `json:"nodeId,omitempty"`
+	ParentID  string  `json:"parentId,omitempty"`
 	X         float64 `json:"x"`
 	Y         float64 `json:"y"`
 	Text      string  `json:"text"`

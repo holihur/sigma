@@ -1129,7 +1129,7 @@ export function Canvas({
   };
 
   // ---------- comments ----------
-  const unresolved = comments.filter((c) => c.pageId === pageId && !c.resolved);
+  const unresolved = comments.filter((c) => c.pageId === pageId && !c.resolved && !c.parentId);
   const submitDraft = () => {
     if (!draft) return;
     const text = draft.text.trim();
@@ -1232,6 +1232,7 @@ export function Canvas({
         hoveredId={hoveredId}
         readOnly={readOnly}
         editing={!!editingId}
+        tool={tool}
         guides={guides}
         marquee={marquee}
         collaborators={collaborators}

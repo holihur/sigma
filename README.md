@@ -73,7 +73,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 
 ### 5. 设计系统模板
 
-内置 8 套模板：7 套常见设计系统 + 空白画布。每套设计系统都包含 **Home / Foundations / Components** 三页。
+内置 11 套模板：10 套设计语言 + 空白画布。每套设计语言都包含 **Home / Foundations / Components** 三页。
 
 | 模板 | 设计系统 | 内容 |
 | --- | --- | --- |
@@ -84,6 +84,9 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 | Ant Design | 阿里 Ant Group 企业级模式、`#1677FF` | Dashboard + Foundations + Components |
 | ByteDance Arco | 字节 Arco、`#165DFF`、紧凑 4px | Console + Foundations + Components |
 | Element Plus | 饿了么 Element、`#409EFF`、经典后台 | Dashboard + Foundations + Components |
+| Firefox Photon | Mozilla Photon、`#0060DF`、隐私面板、新标签页 | New tab + Foundations + Components |
+| WeChat | 微信绿 `#07C160`、聊天列表、红点、PingFang | Chats + Foundations + Components |
+| shadcn/ui | Zinc 中性色、边框优先、10px 圆角、Radix 风格 | Overview + Foundations + Components |
 | Blank canvas | 从零开始 | 空画布 |
 
 ![Design systems](docs/screenshots/30-design-systems.png)
