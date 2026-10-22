@@ -93,6 +93,18 @@ export interface SceneNode {
   component: boolean;
   componentId: string | null;
 
+  /** Auto layout v1. Children are arranged inside the frame. */
+  layout?: "none" | "horizontal" | "vertical";
+  gap?: number;
+  padding?: number;
+  layoutAlign?: "start" | "center" | "end" | "stretch";
+  layoutHugWidth?: boolean;
+  layoutHugHeight?: boolean;
+
+  /** Constraints applied when the parent frame resizes. */
+  constraintH?: "left" | "right" | "left-right" | "center" | "scale";
+  constraintV?: "top" | "bottom" | "top-bottom" | "center" | "scale";
+
   ts: number;
 }
 
@@ -104,10 +116,32 @@ export interface Page {
   ts: number;
 }
 
+export interface ColorStyle {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface TextStyle {
+  id: string;
+  name: string;
+  fontSize: number;
+  fontFamily: string;
+  fontWeight: number;
+  lineHeight: number;
+  letterSpacing: number;
+}
+
+export interface StyleLibrary {
+  colors: ColorStyle[];
+  texts: TextStyle[];
+}
+
 export interface SigmaDoc {
   pages: Page[];
   tombstones?: Record<string, number>;
   deletedPages?: Record<string, number>;
+  styles?: StyleLibrary;
 }
 
 export interface User {
@@ -128,6 +162,7 @@ export interface FileMeta {
   thumbnail: string;
   template: string;
   starred: boolean;
+  folder?: string;
   role: "owner" | "edit" | "view";
   updatedAt: string;
   createdAt: string;

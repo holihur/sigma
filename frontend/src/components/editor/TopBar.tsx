@@ -27,6 +27,9 @@ import {
   Languages,
   Terminal,
   UserRound,
+  Search,
+  Command,
+  Palette,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/store/auth";
@@ -62,6 +65,9 @@ export function TopBar({
   onExportFigma,
   onOpenComponents,
   onOpenAgentContext,
+  onOpenStyles,
+  onOpenFind,
+  onOpenCommand,
 }: {
   onShare: () => void;
   onVersions: () => void;
@@ -75,6 +81,9 @@ export function TopBar({
   onExportFigma: () => void;
   onOpenComponents: () => void;
   onOpenAgentContext: () => void;
+  onOpenStyles: () => void;
+  onOpenFind: () => void;
+  onOpenCommand: () => void;
 }) {
   const file = useEditor((s) => s.file);
   const syncStatus = useEditor((s) => s.syncStatus);
@@ -300,6 +309,23 @@ export function TopBar({
               <div className="text-[12px] font-medium text-foreground">{user?.name}</div>
               <div className="truncate text-[10px] text-muted-foreground">{user?.email}</div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={past === 0} onClick={undo}>
+              <Undo2 className="size-4" /> {t("Undo")} <DropdownMenuShortcut>⌘Z</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={future === 0} onClick={redo}>
+              <Redo2 className="size-4" /> {t("Redo")} <DropdownMenuShortcut>⇧⌘Z</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onOpenCommand}>
+              <Command className="size-4" /> {t("Command palette")} <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenFind}>
+              <Search className="size-4" /> {t("Find in file")} <DropdownMenuShortcut>⌘F</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenStyles}>
+              <Palette className="size-4" /> {t("Local styles")}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onOpenLayers}>
               <PanelLeft className="size-4" /> {t("Pages & layers")}

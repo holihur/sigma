@@ -10,6 +10,7 @@ import type {
   SigmaDoc,
   Tool,
   Viewport,
+  TextStyle,
 } from "@/lib/types";
 import { collectSubtree, instantiateSubtree, mergeDocs } from "@/lib/merge";
 import {
@@ -22,6 +23,7 @@ import {
   applyMatrix,
   descendantsOf,
   boundsOf,
+  createNode,
   frameAt,
   getPage,
   isAncestorOf,
@@ -32,7 +34,7 @@ import {
 } from "@/lib/nodes";
 import { clamp, uid } from "@/lib/utils";
 
-type Clipboard = { roots: string[]; nodes: Record<string, SceneNode>; pageId: string };
+type Clipboard = { roots: string[]; nodes: Record<string, SceneNode>; pageId: string; origins: Record<string, Point> };
 
 export type AlignKind = "left" | "hcenter" | "right" | "top" | "vcenter" | "bottom";
 export type ReorderMode = "front" | "back" | "forward" | "backward";
@@ -52,6 +54,8 @@ interface EditorState {
   future: SigmaDoc[];
   editingId: string | null;
   clipboard: Clipboard | null;
+  styleClipboard: Partial<SceneNode> | null;
+  renameRequestId: string | null;
   comments: Comment[];
   showComments: boolean;
   collaborators: PresenceUser[];
@@ -87,9 +91,21 @@ interface EditorState {
   updateNode: (id: string, patch: Partial<SceneNode> | ((node: SceneNode) => Partial<SceneNode>), record?: boolean) => void;
   addNode: (node: SceneNode, parentId?: string | null, index?: number, record?: boolean) => void;
   deleteSelection: () => void;
-  duplicateSelection: () => void;
+  duplicateSelection: (offset?: number) => void;
   copySelection: () => void;
-  paste: () => void;
+  cutSelection: () => void;
+  paste: (inPlace?: boolean) => void;
+  copyStyle: () => void;
+  pasteStyle: () => void;
+  frameSelection: () => string | null;
+  requestRename: (id: string) => void;
+  clearRenameRequest: () => void;
+  addColorStyle: (name: string, color: string) => string;
+  removeColorStyle: (id: string) => void;
+  applyColorStyle: (id: string) => void;
+  addTextStyle: (name: string, style: Omit<TextStyle, "id" | "name">) => string;
+  removeTextStyle: (id: string) => void;
+  applyTextStyle: (id: string) => void;
   groupSelection: () => boolean;
   ungroupSelection: () => void;
   createComponent: (ids?: string[]) => string | null;
@@ -156,9 +172,111 @@ function normalizeDoc(doc: SigmaDoc): SigmaDoc {
       node.fillRule = node.fillRule ?? "nonzero";
       node.component = node.component ?? false;
       node.componentId = node.componentId ?? null;
+      node.layout = node.layout ?? "none";
+      node.gap = node.gap ?? 0;
+      node.padding = node.padding ?? 0;
+      node.layoutAlign = node.layoutAlign ?? "start";
+      node.layoutHugWidth = node.layoutHugWidth ?? false;
+      node.layoutHugHeight = node.layoutHugHeight ?? false;
+      node.constraintH = node.constraintH ?? "left";
+      node.constraintV = node.constraintV ?? "top";
     }
   }
+  out.styles = out.styles ?? { colors: [], texts: [] };
+  out.styles.colors = out.styles.colors ?? [];
+  out.styles.texts = out.styles.texts ?? [];
+  for (const page of out.pages) reflowPage(page);
   return out;
+}
+
+function alignOffset(space: number, size: number, align: string): number {
+  if (align === "center") return (space - size) / 2;
+  if (align === "end") return space - size;
+  return 0;
+}
+
+/** Reflows every auto-layout frame in the page, children before parents. */
+function reflowNode(page: Page, id: string, seen: Set<string>) {
+  if (seen.has(id)) return;
+  seen.add(id);
+  const node = page.nodes[id];
+  if (!node) return;
+  for (const child of node.children) reflowNode(page, child, seen);
+  if (node.type !== "frame" || (node.layout !== "horizontal" && node.layout !== "vertical")) return;
+  const kids = node.children
+    .map((cid) => page.nodes[cid])
+    .filter((n): n is SceneNode => !!n && n.visible && n.type !== "group");
+  if (kids.length === 0) return;
+  const row = node.layout === "horizontal";
+  const gap = Math.max(0, node.gap ?? 0);
+  const pad = Math.max(0, node.padding ?? 0);
+  const align = node.layoutAlign ?? "start";
+  let cursor = pad;
+  let maxCross = 0;
+  for (const child of kids) {
+    let w = Math.max(1, child.width);
+    let h = Math.max(0, child.height);
+    if (row && align === "stretch") h = Math.max(1, node.height - pad * 2);
+    if (!row && align === "stretch") w = Math.max(1, node.width - pad * 2);
+    const innerW = Math.max(1, node.width - pad * 2);
+    const innerH = Math.max(1, node.height - pad * 2);
+    const x = row ? cursor : pad + alignOffset(innerW, w, align);
+    const y = row ? pad + alignOffset(innerH, h, align) : cursor;
+    if (child.x !== x || child.y !== y || child.width !== w || child.height !== h) {
+      child.x = x;
+      child.y = y;
+      child.width = w;
+      child.height = h;
+      child.ts = Date.now();
+    }
+    cursor += (row ? w : h) + gap;
+    maxCross = Math.max(maxCross, row ? h : w);
+  }
+  cursor -= gap;
+  if (row && node.layoutHugWidth) node.width = Math.max(1, cursor + pad);
+  if (row && node.layoutHugHeight) node.height = Math.max(1, maxCross + pad * 2);
+  if (!row && node.layoutHugWidth) node.width = Math.max(1, maxCross + pad * 2);
+  if (!row && node.layoutHugHeight) node.height = Math.max(1, cursor + pad);
+}
+
+function reflowPage(page: Page) {
+  const seen = new Set<string>();
+  for (const id of [...page.rootIds]) reflowNode(page, id, seen);
+  for (const id of Object.keys(page.nodes)) reflowNode(page, id, seen);
+}
+
+function applyConstraints(page: Page, frameId: string, oldW: number, oldH: number) {
+  const frame = page.nodes[frameId];
+  if (!frame) return;
+  const dw = frame.width - oldW;
+  const dh = frame.height - oldH;
+  if (dw === 0 && dh === 0) return;
+  for (const childId of frame.children) {
+    const child = page.nodes[childId];
+    if (!child) continue;
+    const beforeW = child.width;
+    const beforeH = child.height;
+    const ch = child.constraintH ?? "left";
+    const cv = child.constraintV ?? "top";
+    if (ch === "right") child.x += dw;
+    else if (ch === "center") child.x += dw / 2;
+    else if (ch === "left-right") child.width = Math.max(1, child.width + dw);
+    else if (ch === "scale" && oldW > 0) {
+      child.x *= frame.width / oldW;
+      child.width *= frame.width / oldW;
+    }
+    if (cv === "bottom") child.y += dh;
+    else if (cv === "center") child.y += dh / 2;
+    else if (cv === "top-bottom") child.height = Math.max(0, child.height + dh);
+    else if (cv === "scale" && oldH > 0) {
+      child.y *= frame.height / oldH;
+      child.height *= frame.height / oldH;
+    }
+    if (child.children.length && (child.width !== beforeW || child.height !== beforeH)) {
+      applyConstraints(page, child.id, beforeW, beforeH);
+    }
+    child.ts = Date.now();
+  }
 }
 
 function currentPage(state: Pick<EditorState, "doc" | "pageId">): Page {
@@ -210,9 +328,11 @@ function collectShift(
 export const useEditor = create<EditorState>((set, get) => {
   const commitPage = (page: Page, record = true) => {
     const state = get();
+    const committed = structuredClone(page);
+    reflowPage(committed);
     const nextDoc: SigmaDoc = {
       ...state.doc,
-      pages: state.doc.pages.map((p) => (p.id === page.id ? page : p)),
+      pages: state.doc.pages.map((p) => (p.id === committed.id ? committed : p)),
     };
     const past = record ? [...state.past, state.doc].slice(-60) : state.past;
     set({
@@ -247,6 +367,7 @@ export const useEditor = create<EditorState>((set, get) => {
     const next = structuredClone(state.doc);
     const page = getPage(next, state.pageId);
     fn(page, next);
+    reflowPage(page);
     const past = record ? [...state.past, state.doc].slice(-60) : state.past;
     set({
       doc: next,
@@ -272,6 +393,8 @@ export const useEditor = create<EditorState>((set, get) => {
     future: [],
     editingId: null,
     clipboard: null,
+    styleClipboard: null,
+    renameRequestId: null,
     comments: [],
     showComments: false,
     collaborators: [],
@@ -300,6 +423,8 @@ export const useEditor = create<EditorState>((set, get) => {
         past: [],
         future: [],
         clipboard: null,
+        styleClipboard: null,
+        renameRequestId: null,
         comments: [],
         collaborators: [],
         dirty: false,
@@ -323,6 +448,8 @@ export const useEditor = create<EditorState>((set, get) => {
         selection: [],
         past: [],
         future: [],
+        styleClipboard: null,
+        renameRequestId: null,
         dirty: false,
         saving: false,
         loading: true,
@@ -441,15 +568,22 @@ export const useEditor = create<EditorState>((set, get) => {
       const now = Date.now();
       let changed = false;
       const nodes = { ...source.nodes };
+      const resized: { id: string; oldW: number; oldH: number }[] = [];
       for (const id of ids) {
         const node = source.nodes[id];
         if (!node) continue;
         const next = typeof patch === "function" ? patch(node) : patch;
-        nodes[id] = { ...node, ...next, ts: now };
+        const updated = { ...node, ...next, ts: now };
+        if (updated.type === "frame" && (updated.width !== node.width || updated.height !== node.height)) {
+          resized.push({ id, oldW: node.width, oldH: node.height });
+        }
+        nodes[id] = updated;
         changed = true;
       }
       if (!changed) return;
-      commitPage({ ...source, nodes }, record);
+      const page = { ...source, nodes };
+      for (const resize of resized) applyConstraints(page, resize.id, resize.oldW, resize.oldH);
+      commitPage(page, record);
 
       // Keep instances in sync when a layer inside a main component changes.
       const components = new Set<string>();
@@ -520,7 +654,7 @@ export const useEditor = create<EditorState>((set, get) => {
       });
       set({ selection: [], selectedPoint: null, editingId: null });
     },
-    duplicateSelection: () => {
+    duplicateSelection: (offset = 16) => {
       if (get().isReadOnly) return;
       const state = get();
       const page = currentPage(state);
@@ -539,7 +673,7 @@ export const useEditor = create<EditorState>((set, get) => {
             p.nodes[node.id] = node;
           }
           for (const newRoot of inst.roots) {
-            shiftTree(p, newRoot, 16, 16);
+            shiftTree(p, newRoot, offset, offset);
             if (original.parentId && p.nodes[original.parentId]) {
               const parent = p.nodes[original.parentId];
               const idx = parent.children.indexOf(rootId);
@@ -561,9 +695,16 @@ export const useEditor = create<EditorState>((set, get) => {
       const page = currentPage(state);
       const roots = topLevelSelection(page, state.selection);
       if (roots.length === 0) return;
-      set({ clipboard: { ...collectSubtree(page, roots), pageId: page.id } });
+      const origins: Record<string, Point> = {};
+      for (const id of roots) origins[id] = applyMatrix(nodeMatrix(page, id), { x: 0, y: 0 });
+      set({ clipboard: { ...collectSubtree(page, roots), pageId: page.id, origins } });
     },
-    paste: () => {
+    cutSelection: () => {
+      if (get().isReadOnly) return;
+      get().copySelection();
+      get().deleteSelection();
+    },
+    paste: (inPlace = false) => {
       if (get().isReadOnly) return;
       const state = get();
       const clip = state.clipboard;
@@ -571,7 +712,7 @@ export const useEditor = create<EditorState>((set, get) => {
       const page = currentPage(state);
       let targetParent: string | null = null;
       const selectedNode = state.selection.length === 1 ? page.nodes[state.selection[0]] : null;
-      if (selectedNode && (selectedNode.type === "frame" || selectedNode.type === "group")) targetParent = selectedNode.id;
+      if (!inPlace && selectedNode && (selectedNode.type === "frame" || selectedNode.type === "group")) targetParent = selectedNode.id;
       const newRoots: string[] = [];
       mutate((p) => {
         const now = Date.now();
@@ -579,19 +720,155 @@ export const useEditor = create<EditorState>((set, get) => {
         for (const node of Object.values(inst.nodes)) p.nodes[node.id] = node;
         for (const root of inst.roots) {
           const node = p.nodes[root];
-          node.parentId = targetParent;
-          if (targetParent && p.nodes[targetParent]) {
-            p.nodes[targetParent].children.push(root);
-            p.nodes[targetParent].ts = now;
+          const sourceParent = clip.nodes[root]?.parentId ?? null;
+          const parent = inPlace
+            ? (sourceParent && p.nodes[sourceParent] ? sourceParent : null)
+            : (targetParent ?? (sourceParent && p.nodes[sourceParent] ? sourceParent : null));
+          node.parentId = parent;
+          if (parent && p.nodes[parent]) {
+            p.nodes[parent].children.push(root);
+            p.nodes[parent].ts = now;
           } else {
             p.rootIds.push(root);
           }
-          shiftTree(p, root, 20, 20);
+          if (inPlace && !parent && clip.origins[root]) {
+            const origin = clip.origins[root];
+            if (node.type === "group") {
+              const box = nodeAABB(p, node);
+              for (const kid of node.children) shiftTree(p, kid, origin.x - box.x, origin.y - box.y);
+            } else {
+              node.x = origin.x;
+              node.y = origin.y;
+            }
+          } else if (!inPlace) {
+            shiftTree(p, root, 20, 20);
+          }
           newRoots.push(root);
         }
         p.ts = now;
       });
       set({ selection: newRoots });
+    },
+    copyStyle: () => {
+      const state = get();
+      const page = currentPage(state);
+      const node = state.selection.length === 1 ? page.nodes[state.selection[0]] : null;
+      if (!node) return;
+      const style: Partial<SceneNode> = {
+        fill: node.fill ? structuredClone(node.fill) : null,
+        stroke: node.stroke ? structuredClone(node.stroke) : null,
+        strokeWidth: node.strokeWidth,
+        radius: node.radius,
+        shadow: node.shadow ? structuredClone(node.shadow) : null,
+        blur: node.blur,
+        fontSize: node.fontSize,
+        fontFamily: node.fontFamily,
+        fontWeight: node.fontWeight,
+        lineHeight: node.lineHeight,
+        letterSpacing: node.letterSpacing,
+        textAlign: node.textAlign,
+        verticalAlign: node.verticalAlign,
+      };
+      set({ styleClipboard: style });
+    },
+    pasteStyle: () => {
+      if (get().isReadOnly) return;
+      const style = get().styleClipboard;
+      if (!style) return;
+      get().updateNodes(get().selection, structuredClone(style), true);
+    },
+    frameSelection: () => {
+      if (get().isReadOnly) return null;
+      const state = get();
+      const page = currentPage(state);
+      const roots = topLevelSelection(page, state.selection);
+      if (roots.length === 0) return null;
+      const bounds = boundsOf(page, roots);
+      const origins = new Map<string, Point>();
+      for (const id of roots) origins.set(id, applyMatrix(nodeMatrix(page, id), { x: 0, y: 0 }));
+      const frameId = uid("fr");
+      mutate((p) => {
+        const now = Date.now();
+        const frame = createNode("frame", {
+          id: frameId,
+          x: bounds.x,
+          y: bounds.y,
+          width: Math.max(bounds.width, 1),
+          height: Math.max(bounds.height, 1),
+          name: "Frame",
+        });
+        frame.clip = true;
+        frame.fill = { type: "solid", color: "#ffffff" };
+        frame.ts = now;
+        p.nodes[frameId] = frame;
+        p.rootIds.push(frameId);
+        for (const id of roots) {
+          const node = p.nodes[id];
+          if (!node) continue;
+          const oldSiblings = node.parentId && p.nodes[node.parentId] ? p.nodes[node.parentId].children : p.rootIds;
+          const at = oldSiblings.indexOf(id);
+          if (at >= 0) oldSiblings.splice(at, 1);
+          node.parentId = frameId;
+          frame.children.push(id);
+          if (node.type === "group") {
+            shiftTree(p, id, -bounds.x, -bounds.y);
+          } else {
+            const origin = origins.get(id)!;
+            node.x = origin.x - bounds.x;
+            node.y = origin.y - bounds.y;
+          }
+          node.ts = now;
+        }
+        p.ts = now;
+      });
+      set({ selection: [frameId], selectedPoint: null });
+      return frameId;
+    },
+    requestRename: (id) => set({ renameRequestId: id }),
+    clearRenameRequest: () => set({ renameRequestId: null }),
+    addColorStyle: (name, color) => {
+      const id = uid("style");
+      mutate((_p, d) => {
+        d.styles = d.styles ?? { colors: [], texts: [] };
+        d.styles.colors.push({ id, name: name.trim() || "Color", color });
+      });
+      return id;
+    },
+    removeColorStyle: (id) => {
+      mutate((_p, d) => {
+        if (!d.styles) return;
+        d.styles.colors = d.styles.colors.filter((s) => s.id !== id);
+      });
+    },
+    applyColorStyle: (id) => {
+      const style = get().doc.styles?.colors.find((s) => s.id === id);
+      if (!style) return;
+      get().updateNodes(get().selection, { fill: { type: "solid", color: style.color } }, true);
+    },
+    addTextStyle: (name, style) => {
+      const id = uid("style");
+      mutate((_p, d) => {
+        d.styles = d.styles ?? { colors: [], texts: [] };
+        d.styles.texts.push({ id, name: name.trim() || "Text", ...style });
+      });
+      return id;
+    },
+    removeTextStyle: (id) => {
+      mutate((_p, d) => {
+        if (!d.styles) return;
+        d.styles.texts = d.styles.texts.filter((s) => s.id !== id);
+      });
+    },
+    applyTextStyle: (id) => {
+      const style = get().doc.styles?.texts.find((s) => s.id === id);
+      if (!style) return;
+      get().updateNodes(get().selection, {
+        fontSize: style.fontSize,
+        fontFamily: style.fontFamily,
+        fontWeight: style.fontWeight,
+        lineHeight: style.lineHeight,
+        letterSpacing: style.letterSpacing,
+      }, true);
     },
     groupSelection: () => {
       if (get().isReadOnly) return false;
@@ -1249,7 +1526,7 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     applyRemoteDelta: (delta, version) => {
       const state = get();
-      const merged = mergeDocs(state.doc, delta);
+      const merged = normalizeDoc(mergeDocs(state.doc, delta));
       const pageIds = new Set(merged.pages.map((p) => p.id));
       const pageId = pageIds.has(state.pageId) ? state.pageId : merged.pages[0].id;
       const page = getPage(merged, pageId);

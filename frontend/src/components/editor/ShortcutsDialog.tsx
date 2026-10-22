@@ -30,8 +30,14 @@ const GROUPS: { title: string; rows: { keys: string[]; label: string }[] }[] = [
       { keys: ["⌘", "Z"], label: "Undo" },
       { keys: ["⇧", "⌘", "Z"], label: "Redo" },
       { keys: ["⌘", "C"], label: "Copy" },
+      { keys: ["⌘", "X"], label: "Cut" },
       { keys: ["⌘", "V"], label: "Paste" },
+      { keys: ["⇧", "⌘", "V"], label: "Paste in place" },
+      { keys: ["⌥", "drag"], label: "Duplicate while dragging" },
       { keys: ["⌘", "D"], label: "Duplicate" },
+      { keys: ["⌘", "⌥", "C"], label: "Copy style" },
+      { keys: ["⌘", "⌥", "V"], label: "Paste style" },
+      { keys: ["F2"], label: "Rename layer" },
       { keys: ["⌘", "G"], label: "Group" },
       { keys: ["⇧", "⌘", "G"], label: "Ungroup" },
       { keys: ["⌫"], label: "Delete selection" },
@@ -43,8 +49,11 @@ const GROUPS: { title: string; rows: { keys: string[]; label: string }[] }[] = [
       { keys: ["Space"], label: "Pan canvas" },
       { keys: ["⌘", "scroll"], label: "Zoom" },
       { keys: ["⇧", "1"], label: "Zoom to fit" },
+      { keys: ["⇧", "2"], label: "Zoom to selection" },
       { keys: ["⇧", "0"], label: "Zoom to 100%" },
       { keys: ["⌘", "0"], label: "Fit page" },
+      { keys: ["⌘", "K"], label: "Command palette" },
+      { keys: ["⌘", "F"], label: "Find text" },
     ],
   },
   {
@@ -56,6 +65,10 @@ const GROUPS: { title: string; rows: { keys: string[]; label: string }[] }[] = [
       { keys: ["⌘", "["], label: "Send backward" },
       { keys: ["⇧", "⌘", "]"], label: "Bring to front" },
       { keys: ["⇧", "⌘", "["], label: "Send to back" },
+      { keys: ["⌘", "⌥", "G"], label: "Frame selection" },
+      { keys: ["⇧", "⌘", "H"], label: "Hide / show" },
+      { keys: ["⇧", "⌘", "L"], label: "Lock / unlock" },
+      { keys: ["Esc"], label: "Clear selection / step out" },
     ],
   },
 ];
@@ -64,7 +77,7 @@ export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const t = useT();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-h-[82dvh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Keyboard className="size-4 text-primary" /> {t("Keyboard shortcuts")}

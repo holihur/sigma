@@ -36,8 +36,8 @@ OIDC 使用 Authorization Code + PKCE + nonce。回调成功后前端用一次�
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `GET` | `/files` | 当前用户可见文件 |
-| `POST` | `/files` | `{name,template}` 新建；模板 id 见 `/templates` |
-| `GET/PATCH/DELETE` | `/files/{id}` | 详情 / 重命名、缩略图、收藏 / 删除 |
+| `POST` | `/files` | `{name,template,folder?}` 新建；模板 id 见 `/templates` |
+| `GET/PATCH/DELETE` | `/files/{id}` | 详情 / 重命名、缩略图、收藏、文件夹 / 删除 |
 | `POST` | `/files/{id}/duplicate` | 复制文件 |
 | `GET/PUT` | `/files/{id}/doc` | 读取 / 合并保存文档 |
 | `GET/POST` | `/files/{id}/versions` | 版本列表 / 创建快照 |

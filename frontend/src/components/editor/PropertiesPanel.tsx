@@ -30,6 +30,10 @@ import {
   ArrowUpFromLine,
   Loader2,
   Trash2,
+  Rows3,
+  Columns3,
+  MoveHorizontal,
+  MoveVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { toPng, toSvg } from "html-to-image";
@@ -212,6 +216,8 @@ function DesignTab({
       </Section>
 
       {selected.length >= 2 && <PathfinderSection readOnly={readOnly} />}
+      {isFrame && <AutoLayoutSection node={node} onChange={(patch) => apply(patch)} readOnly={readOnly} />}
+      {!isFrame && <ConstraintsSection page={page} node={node} onChange={(patch) => apply(patch)} />}
       <VectorSection node={node} readOnly={readOnly} />
       <ImageTraceSection node={node} readOnly={readOnly} />
 
@@ -236,6 +242,115 @@ function DesignTab({
 
       <ExportSection page={page} selected={selected} />
     </div>
+  );
+}
+
+function AutoLayoutSection({
+  node,
+  onChange,
+  readOnly,
+}: {
+  node: SceneNode;
+  onChange: (patch: Partial<SceneNode>) => void;
+  readOnly: boolean;
+}) {
+  const t = useT();
+  const direction = node.layout ?? "none";
+  return (
+    <Section title={t("Auto layout")}>
+      <div className="space-y-2">
+        <Segmented
+          value={direction}
+          options={[
+            { value: "none", label: t("Free"), title: t("Free position") },
+            { value: "horizontal", label: <Rows3 className="mx-auto size-3.5" />, title: t("Horizontal") },
+            { value: "vertical", label: <Columns3 className="mx-auto size-3.5" />, title: t("Vertical") },
+          ]}
+          onChange={(layout) => onChange({
+            layout,
+            ...(layout === "none" ? {} : { layoutHugHeight: direction === "none" ? layout === "vertical" : node.layoutHugHeight }),
+          })}
+        />
+        {direction !== "none" ? (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <NumberField icon="↔" value={node.gap ?? 0} min={0} max={400} onFocus={() => undefined} onChange={(gap) => onChange({ gap })} />
+              <NumberField icon="▣" value={node.padding ?? 0} min={0} max={400} onFocus={() => undefined} onChange={(padding) => onChange({ padding })} />
+            </div>
+            <Segmented
+              value={node.layoutAlign ?? "start"}
+              options={[
+                { value: "start", label: t("Start") },
+                { value: "center", label: t("Center") },
+                { value: "end", label: t("End") },
+                { value: "stretch", label: t("Stretch") },
+              ]}
+              onChange={(layoutAlign) => onChange({ layoutAlign })}
+            />
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <label className="flex items-center gap-1.5">
+                <Switch checked={!!node.layoutHugWidth} onCheckedChange={(layoutHugWidth) => onChange({ layoutHugWidth })} />
+                {t("Hug width")}
+              </label>
+              <label className="flex items-center gap-1.5">
+                <Switch checked={!!node.layoutHugHeight} onCheckedChange={(layoutHugHeight) => onChange({ layoutHugHeight })} />
+                {t("Hug height")}
+              </label>
+            </div>
+            {!readOnly && (
+              <Button variant="ghost" size="sm" className="h-7 w-full text-[11px]" onClick={() => onChange({ layout: "none", layoutHugWidth: false, layoutHugHeight: false })}>
+                {t("Remove auto layout")}
+              </Button>
+            )}
+          </>
+        ) : (
+          <p className="text-[10px] leading-relaxed text-muted-foreground">
+            {t("Arrange children automatically with padding, gap and alignment.")}
+          </p>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function ConstraintsSection({
+  page,
+  node,
+  onChange,
+}: {
+  page: Page;
+  node: SceneNode;
+  onChange: (patch: Partial<SceneNode>) => void;
+}) {
+  const t = useT();
+  const parent = node.parentId ? page.nodes[node.parentId] : null;
+  if (!parent || parent.type !== "frame" || (parent.layout && parent.layout !== "none")) return null;
+  return (
+    <Section title={t("Constraints")}>
+      <div className="grid grid-cols-2 gap-2">
+        <Select value={node.constraintH ?? "left"} onValueChange={(v) => onChange({ constraintH: v as SceneNode["constraintH"] })}>
+          <SelectTrigger className="h-8"><MoveHorizontal className="size-3.5 text-muted-foreground" /><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="left">{t("Left")}</SelectItem>
+            <SelectItem value="right">{t("Right")}</SelectItem>
+            <SelectItem value="left-right">{t("Left & right")}</SelectItem>
+            <SelectItem value="center">{t("Center")}</SelectItem>
+            <SelectItem value="scale">{t("Scale")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={node.constraintV ?? "top"} onValueChange={(v) => onChange({ constraintV: v as SceneNode["constraintV"] })}>
+          <SelectTrigger className="h-8"><MoveVertical className="size-3.5 text-muted-foreground" /><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="top">{t("Top")}</SelectItem>
+            <SelectItem value="bottom">{t("Bottom")}</SelectItem>
+            <SelectItem value="top-bottom">{t("Top & bottom")}</SelectItem>
+            <SelectItem value="center">{t("Center")}</SelectItem>
+            <SelectItem value="scale">{t("Scale")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <p className="mt-2 text-[10px] text-muted-foreground">{t("How this layer responds when its frame is resized.")}</p>
+    </Section>
   );
 }
 

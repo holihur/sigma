@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { toPng, toSvg } from "html-to-image";
 import {
   ArrowUpRight,
   BringToFront,
@@ -16,6 +17,14 @@ import {
   SendToBack,
   Trash2,
   Ungroup,
+  Frame,
+  Paintbrush,
+  ClipboardPaste,
+  Eye,
+  EyeOff,
+  Lock,
+  LockOpen,
+  Download,
 } from "lucide-react";
 import type {
   Bounds,
@@ -49,7 +58,7 @@ import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
 import { allVectorPoints, insertPointOnVector, mirrorHandle, movePoint, subpathPatch, vectorSubpaths } from "@/lib/vector";
-import { clamp, cn, isEditableTarget, uid } from "@/lib/utils";
+import { clamp, cn, downloadDataUrl, isEditableTarget, uid } from "@/lib/utils";
 import { NodeView } from "./NodeView";
 import { SelectionOverlay, type ResizeHandle } from "./SelectionOverlay";
 
@@ -677,7 +686,7 @@ export function Canvas({
     if (!node || node.locked) return;
 
     const groupAnc = ancestorsOf(page, id).find((n) => n.type === "group");
-    const deep = e.metaKey || e.ctrlKey || e.altKey;
+    const deep = e.metaKey || e.ctrlKey;
     const targetId = groupAnc && !deep ? groupAnc.id : id;
     let nextSelection = state.selection;
     if (e.shiftKey) {
@@ -689,8 +698,15 @@ export function Canvas({
     }
     if (readOnly) return;
 
+    // Option/Alt-drag duplicates the current selection in place, then moves
+    // the new copy. Cmd/Ctrl still performs deep selection.
+    if (e.altKey && !e.shiftKey) {
+      if (!store.getState().selection.includes(targetId)) store.getState().select([targetId]);
+      store.getState().duplicateSelection(0);
+    }
+
     const selectedPage = getPage(store.getState().doc, pageId);
-    const ids = topLevelSelection(selectedPage, nextSelection);
+    const ids = topLevelSelection(selectedPage, store.getState().selection);
     if (ids.length === 0) return;
     const initialBounds = boundsOf(selectedPage, ids);
     const exclude = new Set<string>();
@@ -1237,6 +1253,124 @@ export function Canvas({
             onClick={() => {
               store.getState().select([ctxNode.id]);
               store.getState().copySelection();
+              setContextMenu(null);
+            }}
+          />
+          <MenuRow
+            icon={<Paintbrush className="size-3.5" />}
+            label={t("Copy style")}
+            shortcut="⌘⌥C"
+            onClick={() => {
+              store.getState().select([ctxNode.id]);
+              store.getState().copyStyle();
+              setContextMenu(null);
+            }}
+          />
+          <MenuRow
+            icon={<ClipboardPaste className="size-3.5" />}
+            label={t("Paste style")}
+            shortcut="⌘⌥V"
+            onClick={() => {
+              store.getState().select([ctxNode.id]);
+              store.getState().pasteStyle();
+              setContextMenu(null);
+            }}
+          />
+          <MenuRow
+            icon={<Download className="size-3.5" />}
+            label={t("Export PNG")}
+            onClick={() => {
+              void (async () => {
+                const el = document.querySelector(`[data-node-id="${ctxNode.id}"]`) as HTMLElement | null;
+                if (!el) return;
+                try {
+                  const dataUrl = await toPng(el, {
+                    pixelRatio: 2,
+                    width: Math.max(ctxNode.width, 1),
+                    height: Math.max(Math.abs(ctxNode.height), 1),
+                    style: { position: "relative", left: "0", top: "0", margin: "0", transform: "none" },
+                  });
+                  downloadDataUrl(dataUrl, `${ctxNode.name || "layer"}.png`);
+                  toast.success(t("Exported PNG"));
+                } catch {
+                  toast.error(t("Export failed"));
+                }
+              })();
+              setContextMenu(null);
+            }}
+          />
+          <MenuRow
+            icon={<Download className="size-3.5" />}
+            label={t("Export SVG")}
+            onClick={() => {
+              void (async () => {
+                const el = document.querySelector(`[data-node-id="${ctxNode.id}"]`) as HTMLElement | null;
+                if (!el) return;
+                try {
+                  const dataUrl = await toSvg(el, {
+                    width: Math.max(ctxNode.width, 1),
+                    height: Math.max(Math.abs(ctxNode.height), 1),
+                    style: { position: "relative", left: "0", top: "0", margin: "0", transform: "none" },
+                  });
+                  downloadDataUrl(dataUrl, `${ctxNode.name || "layer"}.svg`);
+                  toast.success(t("Exported SVG"));
+                } catch {
+                  toast.error(t("Export failed"));
+                }
+              })();
+              setContextMenu(null);
+            }}
+          />
+          <MenuRow
+            icon={<ImageIcon className="size-3.5" />}
+            label={t("Copy as PNG")}
+            onClick={() => {
+              void (async () => {
+                const el = document.querySelector(`[data-node-id="${ctxNode.id}"]`) as HTMLElement | null;
+                if (!el) return;
+                try {
+                  const dataUrl = await toPng(el, {
+                    pixelRatio: 2,
+                    width: Math.max(ctxNode.width, 1),
+                    height: Math.max(Math.abs(ctxNode.height), 1),
+                    style: { position: "relative", left: "0", top: "0", margin: "0", transform: "none" },
+                  });
+                  const blob = await (await fetch(dataUrl)).blob();
+                  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                  toast.success(t("Copied as PNG"));
+                } catch {
+                  toast.error(t("Clipboard image is not supported in this browser"));
+                }
+              })();
+              setContextMenu(null);
+            }}
+          />
+          <div className="my-1 h-px bg-border" />
+          <MenuRow
+            icon={<Frame className="size-3.5" />}
+            label={t("Frame selection")}
+            shortcut="⌘⌥G"
+            onClick={() => {
+              store.getState().select([ctxNode.id]);
+              store.getState().frameSelection();
+              setContextMenu(null);
+            }}
+          />
+          <MenuRow
+            icon={ctxNode.visible ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+            label={ctxNode.visible ? t("Hide") : t("Show")}
+            shortcut="⇧⌘H"
+            onClick={() => {
+              store.getState().toggleVisible(ctxNode.id);
+              setContextMenu(null);
+            }}
+          />
+          <MenuRow
+            icon={ctxNode.locked ? <LockOpen className="size-3.5" /> : <Lock className="size-3.5" />}
+            label={ctxNode.locked ? t("Unlock") : t("Lock")}
+            shortcut="⇧⌘L"
+            onClick={() => {
+              store.getState().toggleLock(ctxNode.id);
               setContextMenu(null);
             }}
           />

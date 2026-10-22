@@ -165,3 +165,30 @@ func TestDeltaPageRemovalResult(t *testing.T) {
 		t.Fatalf("expected deleted page in delta result, got %#v", applied.DeletedPages)
 	}
 }
+
+func TestStylesFollowDocumentMergeAndDelta(t *testing.T) {
+	base := parseDoc(t, `{"pages":[{"id":"p1","name":"Page 1","ts":1,"rootIds":[],"nodes":{}}],
+		"styles":{"colors":[{"id":"c1","name":"Brand","color":"#0ea5e9"}],"texts":[]}}`)
+	incoming := parseDoc(t, `{"pages":[],"styles":{"colors":[{"id":"c1","name":"Brand","color":"#0284c7"}],"texts":[]}}`)
+	merged := Merge(base, incoming)
+	if string(merged.Styles) == "" || !contains(string(merged.Styles), "#0284c7") {
+		t.Fatalf("styles not merged: %s", merged.Styles)
+	}
+	applied := DeltaResult(merged, incoming)
+	if !contains(string(applied.Styles), "#0284c7") {
+		t.Fatalf("styles missing from delta result: %s", applied.Styles)
+	}
+}
+
+func contains(haystack, needle string) bool {
+	return len(needle) == 0 || (len(haystack) >= len(needle) && index(haystack, needle) >= 0)
+}
+
+func index(haystack, needle string) int {
+	for i := 0; i+len(needle) <= len(haystack); i++ {
+		if haystack[i:i+len(needle)] == needle {
+			return i
+		}
+	}
+	return -1
+}

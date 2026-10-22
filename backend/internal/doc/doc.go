@@ -9,6 +9,7 @@ type Doc struct {
 	Pages        []Page           `json:"pages"`
 	Tombstones   map[string]int64 `json:"tombstones,omitempty"`
 	DeletedPages map[string]int64 `json:"deletedPages,omitempty"`
+	Styles       json.RawMessage  `json:"styles,omitempty"`
 }
 
 type Page struct {
@@ -27,6 +28,9 @@ type nodeMeta struct {
 
 func cloneDoc(in *Doc) *Doc {
 	out := &Doc{Pages: make([]Page, 0, len(in.Pages))}
+	if len(in.Styles) > 0 {
+		out.Styles = append(json.RawMessage{}, in.Styles...)
+	}
 	if in.Tombstones != nil {
 		out.Tombstones = make(map[string]int64, len(in.Tombstones))
 		for k, v := range in.Tombstones {
@@ -64,6 +68,9 @@ func Merge(base, incoming *Doc) *Doc {
 		return cloneDoc(base)
 	}
 	out := cloneDoc(base)
+	if len(incoming.Styles) > 0 {
+		out.Styles = append(json.RawMessage{}, incoming.Styles...)
+	}
 	if out.Tombstones == nil {
 		out.Tombstones = map[string]int64{}
 	}
@@ -270,6 +277,9 @@ func DeltaResult(merged, delta *Doc) *Doc {
 		Tombstones:   map[string]int64{},
 		DeletedPages: map[string]int64{},
 	}
+	if len(delta.Styles) > 0 {
+		out.Styles = append(json.RawMessage{}, delta.Styles...)
+	}
 	mergedPages := map[string]*Page{}
 	for i := range merged.Pages {
 		mergedPages[merged.Pages[i].ID] = &merged.Pages[i]
@@ -307,5 +317,5 @@ func DeltaResult(merged, delta *Doc) *Doc {
 }
 
 func IsEmptyDelta(d *Doc) bool {
-	return len(d.Pages) == 0 && len(d.Tombstones) == 0 && len(d.DeletedPages) == 0
+	return len(d.Pages) == 0 && len(d.Tombstones) == 0 && len(d.DeletedPages) == 0 && len(d.Styles) == 0
 }

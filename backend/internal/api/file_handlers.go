@@ -23,6 +23,7 @@ func (a *API) handleCreateFile(w http.ResponseWriter, r *http.Request, u model.U
 	var body struct {
 		Name     string `json:"name"`
 		Template string `json:"template"`
+		Folder   string `json:"folder"`
 	}
 	_ = readJSON(r, &body)
 	name := strings.TrimSpace(body.Name)
@@ -44,6 +45,14 @@ func (a *API) handleCreateFile(w http.ResponseWriter, r *http.Request, u model.U
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Could not create design")
 		return
+	}
+	if folder := strings.TrimSpace(body.Folder); folder != "" {
+		if len(folder) > 80 {
+			folder = folder[:80]
+		}
+		if err := a.st.SetFolder(f.ID, folder); err == nil {
+			f.Folder = folder
+		}
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"file": f, "doc": json.RawMessage(docJSON)})
 }
@@ -82,6 +91,7 @@ func (a *API) handlePatchFile(w http.ResponseWriter, r *http.Request, u model.Us
 		Name      *string `json:"name"`
 		Thumbnail *string `json:"thumbnail"`
 		Starred   *bool   `json:"starred"`
+		Folder    *string `json:"folder"`
 	}
 	if err := readJSON(r, &body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid request")
@@ -118,6 +128,20 @@ func (a *API) handlePatchFile(w http.ResponseWriter, r *http.Request, u model.Us
 	if body.Starred != nil {
 		if err := a.st.SetStar(id, u.ID, *body.Starred); err != nil {
 			writeError(w, http.StatusInternalServerError, "Could not update star")
+			return
+		}
+	}
+	if body.Folder != nil {
+		if role == "view" {
+			writeError(w, http.StatusForbidden, "View-only access")
+			return
+		}
+		folder := strings.TrimSpace(*body.Folder)
+		if len(folder) > 80 {
+			folder = folder[:80]
+		}
+		if err := a.st.SetFolder(id, folder); err != nil {
+			writeError(w, http.StatusInternalServerError, "Could not move design")
 			return
 		}
 	}
@@ -163,6 +187,10 @@ func (a *API) handleDuplicateFile(w http.ResponseWriter, r *http.Request, u mode
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Could not duplicate design")
 		return
+	}
+	if f.Folder != "" {
+		_ = a.st.SetFolder(meta.ID, f.Folder)
+		meta.Folder = f.Folder
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"file": meta})
 }

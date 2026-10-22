@@ -1,5 +1,5 @@
-import React from "react";
-import { Box, Component as ComponentIcon, Plus, RefreshCw, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { Box, Component as ComponentIcon, Plus, RefreshCw, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 export function ComponentsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -21,6 +22,7 @@ export function ComponentsDialog({ open, onOpenChange }: { open: boolean; onOpen
   const createComponent = useEditor((s) => s.createComponent);
   const insertInstance = useEditor((s) => s.insertInstance);
   const syncInstances = useEditor((s) => s.syncInstances);
+  const [query, setQuery] = useState("");
 
   const components = doc.pages.flatMap((page) =>
     Object.values(page.nodes)
@@ -39,6 +41,12 @@ export function ComponentsDialog({ open, onOpenChange }: { open: boolean; onOpen
     }
     toast.success(t("Component created"));
   };
+
+  const filteredComponents = components.filter(({ node, page }) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return `${node.name} ${page.name}`.toLowerCase().includes(q);
+  });
 
   const insert = (componentId: string) => {
     const id = insertInstance(componentId);
@@ -89,6 +97,16 @@ export function ComponentsDialog({ open, onOpenChange }: { open: boolean; onOpen
           {t("{components} components · {instances} instances", { components: components.length, instances: instances.length })}
         </div>
 
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("Search components…")}
+            className="h-8 pl-8 text-[12px]"
+          />
+        </div>
+
         <div className="max-h-[48dvh] overflow-y-auto pr-1">
           <div className="space-y-2 pr-1">
             {components.length === 0 && (
@@ -96,7 +114,7 @@ export function ComponentsDialog({ open, onOpenChange }: { open: boolean; onOpen
                 {t("No components yet. Select a frame and create your first component.")}
               </div>
             )}
-            {components.map(({ node, page }) => {
+            {filteredComponents.map(({ node, page }) => {
               const count = instances.filter((n) => n.componentId === node.id).length;
               const current = page.id === pageId;
               return (

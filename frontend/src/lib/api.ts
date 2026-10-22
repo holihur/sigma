@@ -99,9 +99,9 @@ export const filesApi = {
   list: () => api<{ files: FileMeta[] }>("/files"),
   templates: () => api<{ templates: TemplateMeta[] }>("/templates"),
   get: (id: string) => api<{ file: FileMeta; doc: SigmaDoc }>(`/files/${id}`),
-  create: (name: string, template: string) =>
-    api<{ file: FileMeta; doc: SigmaDoc }>("/files", { method: "POST", body: { name, template } }),
-  patch: (id: string, patch: { name?: string; thumbnail?: string; starred?: boolean }) =>
+  create: (name: string, template: string, folder = "") =>
+    api<{ file: FileMeta; doc: SigmaDoc }>("/files", { method: "POST", body: { name, template, folder } }),
+  patch: (id: string, patch: { name?: string; thumbnail?: string; starred?: boolean; folder?: string }) =>
     api<{ file: FileMeta }>(`/files/${id}`, { method: "PATCH", body: patch }),
   remove: (id: string) => api<{ ok: true }>(`/files/${id}`, { method: "DELETE" }),
   duplicate: (id: string) =>

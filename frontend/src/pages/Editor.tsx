@@ -17,6 +17,10 @@ import { AISettingsDialog } from "@/components/editor/AISettingsDialog";
 import { DeveloperDialog } from "@/components/editor/DeveloperDialog";
 import { ComponentsDialog } from "@/components/editor/ComponentsDialog";
 import { AgentContextDialog } from "@/components/editor/AgentContextDialog";
+import { CommandPalette } from "@/components/editor/CommandPalette";
+import { FindTextDialog } from "@/components/editor/FindTextDialog";
+import { StylesDialog } from "@/components/editor/StylesDialog";
+import { SelectionToolbar } from "@/components/editor/SelectionToolbar";
 import { figmaApi } from "@/lib/api";
 import { Toolbar } from "@/components/editor/Toolbar";
 import { TopBar } from "@/components/editor/TopBar";
@@ -69,10 +73,24 @@ export default function EditorPage() {
   const [developerOpen, setDeveloperOpen] = useState(false);
   const [componentsOpen, setComponentsOpen] = useState(false);
   const [agentContextOpen, setAgentContextOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const [stylesOpen, setStylesOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const { sendDoc, sendPresence } = useCollaboration(file?.id ?? null, !!file);
 
   const page = useMemo(() => getPage(doc, pageId), [doc, pageId]);
+
+  useEffect(() => {
+    const openLayers = () => setLayersOpen(true);
+    const openProperties = () => setPropertiesOpen(true);
+    window.addEventListener("sigma:open-layers", openLayers);
+    window.addEventListener("sigma:open-properties", openProperties);
+    return () => {
+      window.removeEventListener("sigma:open-layers", openLayers);
+      window.removeEventListener("sigma:open-properties", openProperties);
+    };
+  }, []);
 
   useEffect(() => {
     const onResize = () => {
@@ -244,6 +262,18 @@ export default function EditorPage() {
       if (e.defaultPrevented) return;
       if (st.previewOpen) return;
       if (document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+      const earlyMeta = e.metaKey || e.ctrlKey;
+      const earlyKey = e.key.toLowerCase();
+      if (earlyMeta && (earlyKey === "k" || earlyKey === "/")) {
+        e.preventDefault();
+        setCommandOpen(true);
+        return;
+      }
+      if (earlyMeta && earlyKey === "f") {
+        e.preventDefault();
+        setFindOpen(true);
+        return;
+      }
       if (isEditableTarget(e.target)) {
         if (e.key === "Escape") (e.target as HTMLElement).blur();
         return;
@@ -255,6 +285,57 @@ export default function EditorPage() {
       const size = { width: el?.clientWidth ?? 800, height: el?.clientHeight ?? 600 };
 
       if (meta) {
+        if (e.altKey && key === "c") {
+          e.preventDefault();
+          st.copyStyle();
+          return;
+        }
+        if (e.altKey && key === "v") {
+          e.preventDefault();
+          st.pasteStyle();
+          return;
+        }
+        if (e.altKey && key === "g") {
+          e.preventDefault();
+          const id = st.frameSelection();
+          if (id) toast.success(t("Selection framed"));
+          return;
+        }
+        if (key === "k" || key === "/") {
+          e.preventDefault();
+          setCommandOpen(true);
+          return;
+        }
+        if (key === "f") {
+          e.preventDefault();
+          setFindOpen(true);
+          return;
+        }
+        if (key === "r" || key === "f2") {
+          e.preventDefault();
+          if (st.selection.length === 1) st.requestRename(st.selection[0]);
+          return;
+        }
+        if (e.shiftKey && key === "h") {
+          e.preventDefault();
+          for (const id of st.selection) st.toggleVisible(id);
+          return;
+        }
+        if (e.shiftKey && key === "l") {
+          e.preventDefault();
+          for (const id of [...st.selection]) st.toggleLock(id);
+          return;
+        }
+        if (key === "x") {
+          e.preventDefault();
+          st.cutSelection();
+          return;
+        }
+        if (key === "v" && e.shiftKey) {
+          e.preventDefault();
+          st.paste(true);
+          return;
+        }
         if (key === "z") {
           e.preventDefault();
           if (e.shiftKey) st.redo();
@@ -266,12 +347,12 @@ export default function EditorPage() {
           st.redo();
           return;
         }
-        if (key === "c") {
+        if (key === "c" && !e.altKey) {
           st.copySelection();
           return;
         }
-        if (key === "v") {
-          st.paste();
+        if (key === "v" && !e.altKey && !e.shiftKey) {
+          st.paste(false);
           return;
         }
         if (key === "d") {
@@ -333,6 +414,20 @@ export default function EditorPage() {
           st.setViewport({ zoom: 1, x: size.width / 2, y: size.height / 2 });
           return;
         }
+        if (e.shiftKey && (key === "2" || key === "@")) {
+          e.preventDefault();
+          const page = getPage(st.doc, st.pageId);
+          if (st.selection.length > 0) {
+            const b = boundsOf(page, st.selection);
+            const zoom = clamp(Math.min((size.width - 160) / Math.max(b.width, 1), (size.height - 160) / Math.max(b.height, 1)), 0.02, 4);
+            st.setViewport({
+              zoom,
+              x: size.width / 2 - (b.x + b.width / 2) * zoom,
+              y: size.height / 2 - (b.y + b.height / 2) * zoom,
+            });
+          }
+          return;
+        }
         if (key === "=" || key === "+") {
           e.preventDefault();
           st.zoomAt(1.2, center, size);
@@ -360,8 +455,14 @@ export default function EditorPage() {
           return;
         }
         if (key === "escape") {
-          st.setEditingId(null);
-          st.setTool("select");
+          if (st.selectedPoint != null) {
+            st.setSelectedPoint(null);
+          } else if (st.selection.length > 0) {
+            st.select([]);
+          } else {
+            st.setEditingId(null);
+            st.setTool("select");
+          }
           return;
         }
         if (key.startsWith("arrow")) {
@@ -371,6 +472,11 @@ export default function EditorPage() {
           if (key === "arrowright") st.nudge(amount, 0);
           if (key === "arrowup") st.nudge(0, -amount);
           if (key === "arrowdown") st.nudge(0, amount);
+          return;
+        }
+        if (key === "f2" && st.selection.length === 1) {
+          e.preventDefault();
+          st.requestRename(st.selection[0]);
           return;
         }
         if (key === "enter" && st.selection.length === 1) {
@@ -526,6 +632,9 @@ export default function EditorPage() {
         onExportFigma={handleExportFigma}
         onOpenComponents={() => setComponentsOpen(true)}
         onOpenAgentContext={() => setAgentContextOpen(true)}
+        onOpenStyles={() => setStylesOpen(true)}
+        onOpenFind={() => setFindOpen(true)}
+        onOpenCommand={() => setCommandOpen(true)}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -558,7 +667,8 @@ export default function EditorPage() {
             }}
             onCreateComment={handleCreateComment}
           />
-          <Toolbar readOnly={readOnly} />
+          <Toolbar readOnly={readOnly} onOpenComponents={() => setComponentsOpen(true)} />
+          <SelectionToolbar hostRef={hostRef} />
           <ZoomControl hostRef={hostRef} onFit={fit} />
           <CanvasStatus />
         </main>
@@ -588,6 +698,7 @@ export default function EditorPage() {
         <DeveloperDialog open={developerOpen} onOpenChange={setDeveloperOpen} />
         <ComponentsDialog open={componentsOpen} onOpenChange={setComponentsOpen} />
         <AgentContextDialog open={agentContextOpen} onOpenChange={setAgentContextOpen} />
+        <StylesDialog open={stylesOpen} onOpenChange={setStylesOpen} />
 
         {showComments && (
           <>
@@ -604,6 +715,24 @@ export default function EditorPage() {
       </div>
 
       <PreviewMode />
+      <CommandPalette
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+        hostRef={hostRef}
+        onShare={() => setShareOpen(true)}
+        onVersions={() => setVersionsOpen(true)}
+        onAI={() => setAiOpen(true)}
+        onComponents={() => setComponentsOpen(true)}
+        onStyles={() => setStylesOpen(true)}
+        onFind={() => setFindOpen(true)}
+        onExportFigma={() => void handleExportFigma()}
+        onImportSVG={() => {
+          const input = document.querySelector('input[accept=".svg,image/svg+xml"]') as HTMLInputElement | null;
+          input?.click();
+        }}
+        onDeveloper={() => setDeveloperOpen(true)}
+      />
+      <FindTextDialog open={findOpen} onOpenChange={setFindOpen} hostRef={hostRef} />
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
       <VersionHistoryDialog open={versionsOpen} onOpenChange={setVersionsOpen} />
     </div>

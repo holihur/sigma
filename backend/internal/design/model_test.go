@@ -47,3 +47,23 @@ func TestFindFrame(t *testing.T) {
 		t.Fatalf("frame lookup failed: %#v %#v", p, n)
 	}
 }
+
+func TestLayoutAndConstraintPatch(t *testing.T) {
+	d, _ := Parse(`{"pages":[{"id":"p1","name":"Page 1","nodes":{},"rootIds":[]}]}`)
+	p := d.Page("p1")
+	frame := NewNode("frame", "Auto", 0, 0, 320, 240)
+	p.Add(frame, "", -1)
+	layout, gap, padding := "vertical", 12.0, 16.0
+	align := "center"
+	hug := true
+	ch, cv := "left-right", "top-bottom"
+	updated, ok := p.Update(frame.ID, Patch{
+		Layout: &layout, Gap: &gap, Padding: &padding, LayoutAlign: &align,
+		LayoutHugHeight: &hug, ConstraintH: &ch, ConstraintV: &cv,
+	})
+	if !ok || updated.Layout != "vertical" || updated.Gap != 12 || updated.Padding != 16 ||
+		updated.LayoutAlign != "center" || !updated.LayoutHugHeight ||
+		updated.ConstraintH != "left-right" || updated.ConstraintV != "top-bottom" {
+		t.Fatalf("layout patch not applied: %#v", updated)
+	}
+}

@@ -135,6 +135,14 @@ presence（光标、选区）走独立 WebSocket 消息，约 45ms 节流，不�
 - 手动操作（新增 / 删除图层）后可在组件库点击 **Update instances**。
 - 分离实例只清除 `componentId`，保留当前子树。
 
+## 布局、约束与样式
+
+- **Auto layout v1**：Frame 保存 `layout / gap / padding / layoutAlign / layoutHug*`，每次文档提交后自底向上重排；图层顺序就是布局顺序。
+- **Constraints v1**：Frame 缩放时按 `constraintH / constraintV` 调整直接子层，并递归处理被拉伸的子 Frame。
+- **本地样式**：`doc.styles.colors/texts` 随文档增量同步；颜色样式写入 Fill，文字样式写入排版字段。
+- **文件夹**：`files.folder` 轻量字段，不引入额外目录树；仪表盘按文件夹过滤和批量移动。
+- **LWW + 样式**：`doc.Merge` / `diffDocs` 保留 `styles`，避免样式在增量同步中丢失。
+
 ## 个人资料
 
 - `users.avatar` 保存 `/api/uploads/...` URL；用户通过现有上传接口上传头像。

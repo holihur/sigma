@@ -52,8 +52,9 @@ export function diffDocs(base: SigmaDoc | null, next: SigmaDoc): SigmaDoc | null
     deletedPages[page.id] = Math.max(next.deletedPages?.[page.id] ?? 0, now);
   }
 
-  if (pages.length === 0 && Object.keys(tombstones).length === 0 && Object.keys(deletedPages).length === 0) {
+  const stylesChanged = JSON.stringify(base.styles ?? { colors: [], texts: [] }) !== JSON.stringify(next.styles ?? { colors: [], texts: [] });
+  if (pages.length === 0 && Object.keys(tombstones).length === 0 && Object.keys(deletedPages).length === 0 && !stylesChanged) {
     return null;
   }
-  return { pages, tombstones, deletedPages };
+  return { pages, tombstones, deletedPages, styles: stylesChanged ? next.styles : undefined };
 }

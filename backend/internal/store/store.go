@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS files (
 	version    INTEGER NOT NULL DEFAULT 1,
 	thumbnail  TEXT NOT NULL DEFAULT '',
 	template   TEXT NOT NULL DEFAULT 'blank',
+	folder     TEXT NOT NULL DEFAULT '',
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL
 );
@@ -164,9 +165,14 @@ CREATE INDEX IF NOT EXISTS idx_ai_skills_user ON ai_skills(user_id, updated_at);
 	if _, err := s.db.Exec(schema); err != nil {
 		return err
 	}
-	// Existing installations predate profile avatars.
-	if _, err := s.db.Exec(`ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''`); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
-		return err
+	// Existing installations predate profile avatars and dashboard folders.
+	for _, stmt := range []string{
+		`ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE files ADD COLUMN folder TEXT NOT NULL DEFAULT ''`,
+	} {
+		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+			return err
+		}
 	}
 	return nil
 }
@@ -229,8 +235,8 @@ func (s *Store) LinkIdentity(issuer, subject, userID, email string) error {
 
 func (s *Store) CreateFile(id, name, ownerID, doc, template string) (model.FileMeta, error) {
 	now := model.Now()
-	_, err := s.db.Exec(`INSERT INTO files(id,name,owner_id,doc,version,thumbnail,template,created_at,updated_at)
-		VALUES(?,?,?,?,1,'',?,?,?)`, id, name, ownerID, doc, template, now, now)
+	_, err := s.db.Exec(`INSERT INTO files(id,name,owner_id,doc,version,thumbnail,template,folder,created_at,updated_at)
+		VALUES(?,?,?,?,1,'',?,'',?,?)`, id, name, ownerID, doc, template, now, now)
 	if err != nil {
 		return model.FileMeta{}, err
 	}
@@ -239,26 +245,26 @@ func (s *Store) CreateFile(id, name, ownerID, doc, template string) (model.FileM
 
 func (s *Store) File(id string) (model.File, error) {
 	var f model.File
-	err := s.db.QueryRow(`SELECT id,name,owner_id,doc,version,thumbnail,template,created_at,updated_at FROM files WHERE id=?`, id).
-		Scan(&f.ID, &f.Name, &f.OwnerID, &f.Doc, &f.Version, &f.Thumbnail, &f.Template, &f.CreatedAt, &f.UpdatedAt)
+	err := s.db.QueryRow(`SELECT id,name,owner_id,doc,version,thumbnail,template,folder,created_at,updated_at FROM files WHERE id=?`, id).
+		Scan(&f.ID, &f.Name, &f.OwnerID, &f.Doc, &f.Version, &f.Thumbnail, &f.Template, &f.Folder, &f.CreatedAt, &f.UpdatedAt)
 	return f, err
 }
 
 func (s *Store) FileMeta(id, userID string) (model.FileMeta, error) {
 	var m model.FileMeta
-	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,u.name,f.version,f.thumbnail,f.template,f.created_at,f.updated_at,
+	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,u.name,f.version,f.thumbnail,f.template,f.folder,f.created_at,f.updated_at,
 		CASE WHEN f.owner_id=? THEN 'owner' ELSE COALESCE(m.role,'') END,
 		EXISTS(SELECT 1 FROM file_stars st WHERE st.file_id=f.id AND st.user_id=?)
 		FROM files f JOIN users u ON u.id=f.owner_id
 		LEFT JOIN file_members m ON m.file_id=f.id AND m.user_id=?
 		WHERE f.id=?`, userID, userID, userID, id).
-		Scan(&m.ID, &m.Name, &m.OwnerID, &m.OwnerName, &m.Version, &m.Thumbnail, &m.Template,
+		Scan(&m.ID, &m.Name, &m.OwnerID, &m.OwnerName, &m.Version, &m.Thumbnail, &m.Template, &m.Folder,
 			&m.CreatedAt, &m.UpdatedAt, &m.Role, &m.Starred)
 	return m, err
 }
 
 func (s *Store) ListFiles(userID string) ([]model.FileMeta, error) {
-	rows, err := s.db.Query(`SELECT f.id,f.name,f.owner_id,u.name,f.version,f.thumbnail,f.template,f.created_at,f.updated_at,
+	rows, err := s.db.Query(`SELECT f.id,f.name,f.owner_id,u.name,f.version,f.thumbnail,f.template,f.folder,f.created_at,f.updated_at,
 		CASE WHEN f.owner_id=? THEN 'owner' ELSE COALESCE(m.role,'') END,
 		EXISTS(SELECT 1 FROM file_stars st WHERE st.file_id=f.id AND st.user_id=?)
 		FROM files f JOIN users u ON u.id=f.owner_id
@@ -272,13 +278,18 @@ func (s *Store) ListFiles(userID string) ([]model.FileMeta, error) {
 	out := []model.FileMeta{}
 	for rows.Next() {
 		var m model.FileMeta
-		if err := rows.Scan(&m.ID, &m.Name, &m.OwnerID, &m.OwnerName, &m.Version, &m.Thumbnail, &m.Template,
+		if err := rows.Scan(&m.ID, &m.Name, &m.OwnerID, &m.OwnerName, &m.Version, &m.Thumbnail, &m.Template, &m.Folder,
 			&m.CreatedAt, &m.UpdatedAt, &m.Role, &m.Starred); err != nil {
 			return nil, err
 		}
 		out = append(out, m)
 	}
 	return out, rows.Err()
+}
+
+func (s *Store) SetFolder(id, folder string) error {
+	_, err := s.db.Exec(`UPDATE files SET folder=?, updated_at=? WHERE id=?`, folder, model.Now(), id)
+	return err
 }
 
 func (s *Store) RenameFile(id, name string) error {

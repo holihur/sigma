@@ -23,6 +23,11 @@ import {
   ClipboardPaste,
   BringToFront,
   SendToBack,
+  Search,
+  X,
+  Component as ComponentIcon,
+  Paintbrush,
+  ClipboardCopy,
 } from "lucide-react";
 import type { Page, SceneNode } from "@/lib/types";
 import { toast } from "sonner";
@@ -59,9 +64,13 @@ export function LayersPanel() {
   const renameNode = useEditor((s) => s.renameNode);
   const reparentNode = useEditor((s) => s.reparentNode);
   const readOnly = useEditor((s) => s.isReadOnly);
+  const renameRequestId = useEditor((s) => s.renameRequestId);
+  const clearRenameRequest = useEditor((s) => s.clearRenameRequest);
 
   const page = getPage(doc, pageId);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [layerQuery, setLayerQuery] = useState("");
+  const lastClickedRef = useRef<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [pageRenaming, setPageRenaming] = useState<string | null>(null);
@@ -83,6 +92,7 @@ export function LayersPanel() {
   }, [selection, page]);
 
   const isExpanded = (id: string) => expanded[id] !== false;
+  const query = layerQuery.trim().toLowerCase();
 
   const rows: { node: SceneNode; depth: number; parentId: string | null }[] = [];
   const walk = (ids: string[], depth: number) => {
@@ -90,10 +100,20 @@ export function LayersPanel() {
       const node = page.nodes[ids[i]];
       if (!node) continue;
       rows.push({ node, depth, parentId: node.parentId });
-      if (node.children.length && isExpanded(node.id)) walk(node.children, depth + 1);
+      if (node.children.length && (query || isExpanded(node.id))) walk(node.children, depth + 1);
     }
   };
   walk(page.rootIds, 0);
+
+  const searchVisible = new Set<string>();
+  if (query) {
+    for (const node of Object.values(page.nodes) as SceneNode[]) {
+      if (!node.name.toLowerCase().includes(query) && !node.type.toLowerCase().includes(query)) continue;
+      searchVisible.add(node.id);
+      for (const ancestor of ancestorsOf(page, node.id)) searchVisible.add(ancestor.id);
+    }
+  }
+  const visibleRows = query ? rows.filter(({ node }) => searchVisible.has(node.id)) : rows;
 
   const startRename = (node: SceneNode) => {
     setRenaming(node.id);
@@ -103,6 +123,13 @@ export function LayersPanel() {
     if (renaming && renameDraft.trim()) renameNode(renaming, renameDraft.trim());
     setRenaming(null);
   };
+  useEffect(() => {
+    if (!renameRequestId) return;
+    const node = page.nodes[renameRequestId];
+    if (node && !readOnly) startRename(node);
+    clearRenameRequest();
+  }, [renameRequestId, page, readOnly, clearRenameRequest]);
+
   const startPageRename = (p: Page) => {
     setPageRenaming(p.id);
     setPageDraft(p.name);
@@ -228,7 +255,27 @@ export function LayersPanel() {
 
         <div className="flex items-center justify-between border-t border-panel-border px-3 pb-1.5 pt-2.5">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Layers")}</span>
-          <span className="text-[10px] text-muted-foreground">{rows.length}</span>
+          <span className="text-[10px] text-muted-foreground">{visibleRows.length}</span>
+        </div>
+        <div className="px-2 pb-1.5">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={layerQuery}
+              onChange={(e) => setLayerQuery(e.target.value)}
+              placeholder={t("Search layers")}
+              className="h-7 bg-secondary/40 pl-7 pr-6 text-[11px]"
+            />
+            {layerQuery && (
+              <button
+                className="absolute right-1 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+                onClick={() => setLayerQuery("")}
+                title={t("Clear")}
+              >
+                <X className="size-3" />
+              </button>
+            )}
+          </div>
         </div>
         <div
           className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-3"
@@ -244,7 +291,12 @@ export function LayersPanel() {
               </p>
             </div>
           )}
-          {rows.map(({ node, depth }) => {
+          {query && visibleRows.length === 0 && (
+            <div className="mx-2 mt-3 rounded-lg border border-dashed border-border px-3 py-5 text-center text-[11px] text-muted-foreground">
+              {t("No layers match “{name}”", { name: layerQuery })}
+            </div>
+          )}
+          {visibleRows.map(({ node, depth }) => {
             const selected = selection.includes(node.id);
             const container = node.children.length > 0 || node.type === "frame" || node.type === "group";
             return (
@@ -272,8 +324,9 @@ export function LayersPanel() {
                     onDrop={(e) => handleDrop(e, node)}
                     onMouseEnter={() => setHovered(node.id)}
                     onClick={(e) => {
-                      if (e.shiftKey) toggleSelect(node.id);
+                      if (e.shiftKey || e.metaKey || e.ctrlKey) toggleSelect(node.id);
                       else select([node.id]);
+                      lastClickedRef.current = node.id;
                     }}
                     onDoubleClick={() => startRename(node)}
                     className={cn(
@@ -369,6 +422,46 @@ export function LayersPanel() {
                   onCloseAutoFocus={(e) => e.preventDefault()}
                 >
                   <ContextMenuItem onClick={() => startRename(node)}> {t("Rename")}</ContextMenuItem>
+                  <ContextMenuItem onClick={() => toggleVisible(node.id)}>
+                    <Eye className="size-3.5" /> {node.visible ? t("Hide") : t("Show")}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => toggleLock(node.id)}>
+                    <Lock className="size-3.5" /> {node.locked ? t("Unlock") : t("Lock")}
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    onClick={() => {
+                      select([node.id]);
+                      useEditor.getState().copyStyle();
+                    }}
+                  >
+                    <Paintbrush className="size-3.5" /> {t("Copy style")}
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    disabled={!useEditor.getState().styleClipboard}
+                    onClick={() => {
+                      select([node.id]);
+                      useEditor.getState().pasteStyle();
+                    }}
+                  >
+                    <ClipboardCopy className="size-3.5" /> {t("Paste style")}
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onClick={() => {
+                      select([node.id]);
+                      useEditor.getState().frameSelection();
+                    }}
+                  >
+                    <Frame className="size-3.5" /> {t("Frame selection")}
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onClick={() => {
+                      select([node.id]);
+                      useEditor.getState().createComponent([node.id]);
+                    }}
+                  >
+                    <ComponentIcon className="size-3.5" /> {t("Create component")}
+                  </ContextMenuItem>
                   <ContextMenuItem
                     onClick={() => {
                       select([node.id]);

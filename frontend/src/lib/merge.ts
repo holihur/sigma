@@ -17,6 +17,7 @@ export function mergeDocs(base: SigmaDoc | null, incoming: SigmaDoc | null): Sig
   if (!incoming) return cloneDoc(base);
 
   const out = cloneDoc(base);
+  if (incoming.styles) out.styles = structuredClone(incoming.styles);
   out.tombstones = { ...(out.tombstones ?? {}) };
   out.deletedPages = { ...(out.deletedPages ?? {}) };
   for (const [id, ts] of Object.entries(incoming.tombstones ?? {})) {

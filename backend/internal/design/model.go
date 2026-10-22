@@ -55,44 +55,52 @@ type Link struct {
 }
 
 type Node struct {
-	ID            string          `json:"id"`
-	Type          string          `json:"type"`
-	Name          string          `json:"name"`
-	X             float64         `json:"x"`
-	Y             float64         `json:"y"`
-	Width         float64         `json:"width"`
-	Height        float64         `json:"height"`
-	Rotation      float64         `json:"rotation"`
-	Opacity       float64         `json:"opacity"`
-	Visible       bool            `json:"visible"`
-	Locked        bool            `json:"locked"`
-	Fill          *Paint          `json:"fill"`
-	Stroke        *Paint          `json:"stroke"`
-	StrokeWidth   float64         `json:"strokeWidth"`
-	Radius        float64         `json:"radius"`
-	Shadow        *Shadow         `json:"shadow"`
-	Blur          float64         `json:"blur"`
-	Children      []string        `json:"children"`
-	ParentID      *string         `json:"parentId"`
-	Clip          bool            `json:"clip"`
-	Text          string          `json:"text"`
-	FontSize      float64         `json:"fontSize"`
-	FontFamily    string          `json:"fontFamily"`
-	FontWeight    int             `json:"fontWeight"`
-	LineHeight    float64         `json:"lineHeight"`
-	LetterSpacing float64         `json:"letterSpacing"`
-	TextAlign     string          `json:"textAlign"`
-	VerticalAlign string          `json:"verticalAlign"`
-	Src           string          `json:"src"`
-	ObjectFit     string          `json:"objectFit"`
-	Link          *Link           `json:"link"`
-	Points        []VectorPoint   `json:"points,omitempty"`
-	Closed        bool            `json:"closed,omitempty"`
-	Subpaths      []VectorSubpath `json:"subpaths,omitempty"`
-	FillRule      string          `json:"fillRule,omitempty"`
-	Component     bool            `json:"component,omitempty"`
-	ComponentID   string          `json:"componentId,omitempty"`
-	TS            int64           `json:"ts"`
+	ID              string          `json:"id"`
+	Type            string          `json:"type"`
+	Name            string          `json:"name"`
+	X               float64         `json:"x"`
+	Y               float64         `json:"y"`
+	Width           float64         `json:"width"`
+	Height          float64         `json:"height"`
+	Rotation        float64         `json:"rotation"`
+	Opacity         float64         `json:"opacity"`
+	Visible         bool            `json:"visible"`
+	Locked          bool            `json:"locked"`
+	Fill            *Paint          `json:"fill"`
+	Stroke          *Paint          `json:"stroke"`
+	StrokeWidth     float64         `json:"strokeWidth"`
+	Radius          float64         `json:"radius"`
+	Shadow          *Shadow         `json:"shadow"`
+	Blur            float64         `json:"blur"`
+	Children        []string        `json:"children"`
+	ParentID        *string         `json:"parentId"`
+	Clip            bool            `json:"clip"`
+	Text            string          `json:"text"`
+	FontSize        float64         `json:"fontSize"`
+	FontFamily      string          `json:"fontFamily"`
+	FontWeight      int             `json:"fontWeight"`
+	LineHeight      float64         `json:"lineHeight"`
+	LetterSpacing   float64         `json:"letterSpacing"`
+	TextAlign       string          `json:"textAlign"`
+	VerticalAlign   string          `json:"verticalAlign"`
+	Src             string          `json:"src"`
+	ObjectFit       string          `json:"objectFit"`
+	Link            *Link           `json:"link"`
+	Points          []VectorPoint   `json:"points,omitempty"`
+	Closed          bool            `json:"closed,omitempty"`
+	Subpaths        []VectorSubpath `json:"subpaths,omitempty"`
+	FillRule        string          `json:"fillRule,omitempty"`
+	Component       bool            `json:"component,omitempty"`
+	ComponentID     string          `json:"componentId,omitempty"`
+	Layout          string          `json:"layout,omitempty"`
+	Gap             float64         `json:"gap,omitempty"`
+	Padding         float64         `json:"padding,omitempty"`
+	LayoutAlign     string          `json:"layoutAlign,omitempty"`
+	LayoutHugWidth  bool            `json:"layoutHugWidth,omitempty"`
+	LayoutHugHeight bool            `json:"layoutHugHeight,omitempty"`
+	ConstraintH     string          `json:"constraintH,omitempty"`
+	ConstraintV     string          `json:"constraintV,omitempty"`
+	TS              int64           `json:"ts"`
 }
 
 type Page struct {
@@ -107,6 +115,7 @@ type Doc struct {
 	Pages        []*Page          `json:"pages"`
 	Tombstones   map[string]int64 `json:"tombstones,omitempty"`
 	DeletedPages map[string]int64 `json:"deletedPages,omitempty"`
+	Styles       json.RawMessage  `json:"styles,omitempty"`
 }
 
 func Parse(raw string) (*Doc, error) {
@@ -291,28 +300,36 @@ func (p *Page) Remove(ids []string, tombstones map[string]int64, now int64) {
 }
 
 type Patch struct {
-	Name          *string
-	X             *float64
-	Y             *float64
-	Width         *float64
-	Height        *float64
-	Rotation      *float64
-	Opacity       *float64
-	Radius        *float64
-	Fill          *string
-	Stroke        *string
-	StrokeWidth   *float64
-	Text          *string
-	FontSize      *float64
-	FontWeight    *int
-	LineHeight    *float64
-	LetterSpacing *float64
-	TextAlign     *string
-	Visible       *bool
-	Points        *[]VectorPoint
-	Closed        *bool
-	Component     *bool
-	ComponentID   *string
+	Name            *string
+	X               *float64
+	Y               *float64
+	Width           *float64
+	Height          *float64
+	Rotation        *float64
+	Opacity         *float64
+	Radius          *float64
+	Fill            *string
+	Stroke          *string
+	StrokeWidth     *float64
+	Text            *string
+	FontSize        *float64
+	FontWeight      *int
+	LineHeight      *float64
+	LetterSpacing   *float64
+	TextAlign       *string
+	Visible         *bool
+	Points          *[]VectorPoint
+	Closed          *bool
+	Component       *bool
+	ComponentID     *string
+	Layout          *string
+	Gap             *float64
+	Padding         *float64
+	LayoutAlign     *string
+	LayoutHugWidth  *bool
+	LayoutHugHeight *bool
+	ConstraintH     *string
+	ConstraintV     *string
 }
 
 func (p *Page) Update(id string, patch Patch) (*Node, bool) {
@@ -386,6 +403,30 @@ func (p *Page) Update(id string, patch Patch) (*Node, bool) {
 	}
 	if patch.ComponentID != nil {
 		n.ComponentID = *patch.ComponentID
+	}
+	if patch.Layout != nil && (*patch.Layout == "none" || *patch.Layout == "horizontal" || *patch.Layout == "vertical") {
+		n.Layout = *patch.Layout
+	}
+	if patch.Gap != nil {
+		n.Gap = max(0, *patch.Gap)
+	}
+	if patch.Padding != nil {
+		n.Padding = max(0, *patch.Padding)
+	}
+	if patch.LayoutAlign != nil && (*patch.LayoutAlign == "start" || *patch.LayoutAlign == "center" || *patch.LayoutAlign == "end" || *patch.LayoutAlign == "stretch") {
+		n.LayoutAlign = *patch.LayoutAlign
+	}
+	if patch.LayoutHugWidth != nil {
+		n.LayoutHugWidth = *patch.LayoutHugWidth
+	}
+	if patch.LayoutHugHeight != nil {
+		n.LayoutHugHeight = *patch.LayoutHugHeight
+	}
+	if patch.ConstraintH != nil {
+		n.ConstraintH = *patch.ConstraintH
+	}
+	if patch.ConstraintV != nil {
+		n.ConstraintV = *patch.ConstraintV
 	}
 	n.TS = now
 	p.TS = now

@@ -21,6 +21,7 @@ type File struct {
 	Version   int
 	Thumbnail string
 	Template  string
+	Folder    string
 	CreatedAt string
 	UpdatedAt string
 }
@@ -35,6 +36,7 @@ type FileMeta struct {
 	Thumbnail string `json:"thumbnail"`
 	Template  string `json:"template"`
 	Starred   bool   `json:"starred"`
+	Folder    string `json:"folder,omitempty"`
 	Role      string `json:"role"`
 	UpdatedAt string `json:"updatedAt"`
 	CreatedAt string `json:"createdAt"`

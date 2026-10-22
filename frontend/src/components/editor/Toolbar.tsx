@@ -9,6 +9,9 @@ import {
   PenTool,
   Square,
   Type,
+  Undo2,
+  Redo2,
+  Component as ComponentIcon,
 } from "lucide-react";
 import type { Tool } from "@/lib/types";
 import { useEditor } from "@/store/editor";
@@ -29,8 +32,12 @@ const TOOLS: { tool: Tool; icon: React.ReactNode; label: string; shortcut: strin
   { tool: "comment", icon: <MessageCircle className="size-[16px]" />, label: "Comment", shortcut: "C" },
 ];
 
-export function Toolbar({ readOnly }: { readOnly: boolean }) {
+export function Toolbar({ readOnly, onOpenComponents }: { readOnly: boolean; onOpenComponents?: () => void }) {
   const t = useT();
+  const past = useEditor((s) => s.past.length);
+  const future = useEditor((s) => s.future.length);
+  const undo = useEditor((s) => s.undo);
+  const redo = useEditor((s) => s.redo);
   const tool = useEditor((s) => s.tool);
   const setTool = useEditor((s) => s.setTool);
   const showComments = useEditor((s) => s.showComments);
@@ -40,6 +47,25 @@ export function Toolbar({ readOnly }: { readOnly: boolean }) {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="no-scrollbar absolute bottom-16 left-1/2 z-40 flex max-w-[calc(100%-0.75rem)] -translate-x-1/2 flex-row items-center gap-0.5 overflow-x-auto rounded-xl border border-panel-border bg-panel/95 p-1 shadow-xl backdrop-blur md:bottom-auto md:left-3 md:top-3 md:max-w-none md:translate-x-0 md:flex-col md:overflow-visible">
+        <button
+          type="button"
+          title={t("Undo")}
+          disabled={past === 0}
+          onClick={undo}
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30"
+        >
+          <Undo2 className="size-[17px]" />
+        </button>
+        <button
+          type="button"
+          title={t("Redo")}
+          disabled={future === 0}
+          onClick={redo}
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30"
+        >
+          <Redo2 className="size-[17px]" />
+        </button>
+        <span className="mx-0.5 h-5 w-px shrink-0 bg-border md:mx-0 md:my-0.5 md:h-px md:w-5" />
         {TOOLS.map((item, index) => {
           const disabled = readOnly && !["select", "hand", "comment"].includes(item.tool);
           return (
@@ -89,6 +115,21 @@ export function Toolbar({ readOnly }: { readOnly: boolean }) {
           </TooltipTrigger>
           <TooltipContent side="right">{t("Comments")}</TooltipContent>
         </Tooltip>
+        {onOpenComponents && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                title={t("Components")}
+                onClick={onOpenComponents}
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <ComponentIcon className="size-[16px]" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">{t("Components")}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </TooltipProvider>
   );

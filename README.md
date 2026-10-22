@@ -30,12 +30,26 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - Frame、矩形、椭圆、直线、文本、图片、**可编辑矢量路径**。
 - 钢笔工具逐点绘制路径，拖拽生成贝塞尔控制柄；平滑 / 尖角切换、双击加锚点、拖拽控制柄、`Alt` + 点击删锚点，闭合路径自动填充，矩形 / 椭圆 / 直线可一键转为矢量。
 - **路径处理**：Pathfinder（合并 / 减去 / 相交 / 排除）、复合子路径与 `nonzero/evenodd` 填充规则、SVG 文件导入、描边转轮廓、外扩 / 内缩、路径简化、拆分、位图描摹为矢量。
-- 图层树、显示 / 隐藏、锁定、拖拽排序、跨 Frame 拖拽、分组 / 取消分组。
+- 图层树、图层搜索、显示 / 隐藏、锁定、拖拽排序、跨 Frame 拖拽、分组 / 取消分组。
 - 位置尺寸、透明度、圆角、纯色 / 渐变、描边、阴影、模糊、字体排版、图片填充、对齐 / 分布。
+- **Auto layout**：水平 / 垂直排列、gap、padding、交叉轴对齐、Hug 宽高；图层排序即布局顺序。
+- **Constraints**：左 / 右 / 左右拉伸 / 居中 / 等比，父 Frame 缩放时自动响应。
+- **本地样式**：颜色样式和文字样式随文件保存，一键套用到选中图层。
 - **组件实例**：把任意图层转换为主组件，在组件库中一键插入实例；组件内部属性变化自动同步，也可手动更新实例或分离实例。
 - 响应式手机 / 平板编辑器：抽屉、底部触控工具栏、双指缩放、触控缩放手柄。
 
-### 2. 原型与协作
+### 2. 高频操作效率
+
+- `⌘K` 命令面板：搜索工具、图层、页面、导出、分享、AI、样式和所有命令。
+- 图层搜索：输入名称即可在数百层中定位，父级自动展开。
+- `Esc` 取消选择，`F2` / `⌘R` 重命名，`⇧⌘H` 隐藏，`⇧⌘L` 锁定，`⇧2` 缩放到选中。
+- `⌘X` 剪切、`⇧⌘V` 原位粘贴、`Alt` + 拖拽复制、`⌘⌥C/V` 复制 / 粘贴样式。
+- `⌘⌥G` 用 Frame 包裹选中内容；选中浮条可快速复制、成组、包裹、创建组件、删除。
+- 移动端工具栏提供 Undo / Redo，触控用户不再依赖键盘。
+- 仪表盘支持文件夹、批量星标 / 移动 / 删除、网格 / 列表视图。
+- `⌘F` 在当前页或整个文件中查找和替换文本。
+
+### 3. 原型与协作
 
 - 任意图层可设置点击交互：跳转 Frame、返回、打开 URL、过渡动画、热区。
 - 一键全屏演示，支持手机、平板、桌面预览。
@@ -45,7 +59,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - 评论、定位图层、解决 / 重新打开、站内通知、版本快照与恢复。
 - 个人中心：自定义用户名、头像与个人颜色，头像同步到评论、协作者和通知。
 
-### 3. AI 设计助手（BYOK）
+### 4. AI 设计助手（BYOK）
 
 - 用户自带任意 OpenAI-compatible 服务商 Key，AES-GCM 加密存储，只返回尾号。
 - 内置 DeepSeek、OpenAI、Google Gemini、OpenRouter、Groq、Mistral、xAI、Together、Ollama 和自定义端点预设；默认仍为 `deepseek-v4.1-flash`。
@@ -56,7 +70,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - **AGENTS.md**：Agent 工作约定、约束、审查清单。
 - **自定义 Skills**：上传 Agent Skills 格式的 `SKILL.md`，ADK 通过 `list_skills` / `load_skill` 自动发现和加载。示例见 `examples/`。
 
-### 4. 设计系统模板
+### 5. 设计系统模板
 
 内置 8 套模板：7 套常见设计系统 + 空白画布。每套设计系统都包含 **Home / Foundations / Components** 三页。
 
@@ -73,7 +87,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 
 ![Design systems](docs/screenshots/30-design-systems.png)
 
-### 5. 互操作与平台能力
+### 6. 互操作与平台能力
 
 - **Figma 导入**：通过 Figma REST API 导入文件（URL + Personal Access Token），自动转换为 Sigma 页面、Frame、文本、矢量路径、颜色、渐变、圆角、阴影。
 - **Figma 导出**：导出 Sigma JSON，配套 Figma 开发插件一键还原到 Figma，保留 Frame、文本、颜色、渐变、阴影和图片。
@@ -112,6 +126,14 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 | 分享与权限 | 公开原型 |
 | --- | --- |
 | ![Share](docs/screenshots/10-share.png) | ![Public prototype](docs/screenshots/18-public-prototype.png) |
+
+| 命令面板 | Auto layout |
+| --- | --- |
+| ![Command palette](docs/screenshots/41-command-palette.png) | ![Auto layout](docs/screenshots/42-auto-layout.png) |
+
+| 文件夹与批量操作 | 本地样式 |
+| --- | --- |
+| ![Folders](docs/screenshots/43-folders-bulk.png) | ![Styles](docs/screenshots/44-local-styles.png) |
 
 ## 一键安装
 
