@@ -1,8 +1,15 @@
 export type NodeType = "frame" | "group" | "rect" | "ellipse" | "text" | "image" | "line" | "vector";
 
+export interface VectorHandle {
+  x: number;
+  y: number;
+}
+
 export interface VectorPoint {
   x: number;
   y: number;
+  in?: VectorHandle;
+  out?: VectorHandle;
 }
 
 export type Paint =
@@ -99,6 +106,7 @@ export interface User {
   name: string;
   email: string;
   color: string;
+  avatar?: string;
   createdAt?: string;
 }
 
@@ -127,6 +135,7 @@ export interface Comment {
   authorId: string;
   author: string;
   color: string;
+  avatar?: string;
   resolved: boolean;
   createdAt: string;
 }
@@ -146,6 +155,7 @@ export interface Member {
   name: string;
   email: string;
   color: string;
+  avatar?: string;
   role: "edit" | "view";
   createdAt: string;
 }
@@ -215,6 +225,7 @@ export interface Notification {
   actorId: string;
   actor: string;
   color: string;
+  avatar?: string;
   text: string;
   read: boolean;
   createdAt: string;

@@ -84,3 +84,48 @@ func (a *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 func (a *API) handleMe(w http.ResponseWriter, r *http.Request, u model.User) {
 	writeJSON(w, http.StatusOK, map[string]any{"user": u})
 }
+
+func (a *API) handleUpdateMe(w http.ResponseWriter, r *http.Request, u model.User) {
+	var body struct {
+		Name   string  `json:"name"`
+		Color  string  `json:"color"`
+		Avatar *string `json:"avatar"`
+	}
+	if err := readJSON(r, &body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request")
+		return
+	}
+	name := strings.TrimSpace(body.Name)
+	if len([]rune(name)) < 2 || len([]rune(name)) > 60 {
+		writeError(w, http.StatusBadRequest, "Name must be between 2 and 60 characters")
+		return
+	}
+	color := u.Color
+	if strings.TrimSpace(body.Color) != "" {
+		color = strings.ToLower(strings.TrimSpace(body.Color))
+		if len(color) != 7 || color[0] != '#' {
+			writeError(w, http.StatusBadRequest, "Choose a valid profile color")
+			return
+		}
+		for _, r := range color[1:] {
+			if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')) {
+				writeError(w, http.StatusBadRequest, "Choose a valid profile color")
+				return
+			}
+		}
+	}
+	avatar := u.Avatar
+	if body.Avatar != nil {
+		avatar = strings.TrimSpace(*body.Avatar)
+		if avatar != "" && !strings.HasPrefix(avatar, "/api/uploads/") {
+			writeError(w, http.StatusBadRequest, "Avatar must be an uploaded Sigma image")
+			return
+		}
+	}
+	updated, err := a.st.UpdateUserProfile(u.ID, name, color, avatar)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Could not update profile")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"user": updated})
+}

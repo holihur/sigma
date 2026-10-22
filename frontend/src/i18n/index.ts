@@ -293,10 +293,22 @@ const zh: Record<string, string> = {
   "Design": "设计",
   "AI assistant": "AI 助手",
   "AI settings": "AI 设置",
+  "Personal settings": "个人中心",
+  "Update how you appear to collaborators across Sigma.": "更新你在 Sigma 协作界面中的显示方式。",
+  "Profile picture": "头像",
+  "PNG, JPG, GIF or WebP. Uploaded to this Sigma instance.": "支持 PNG、JPG、GIF、WebP，上传到当前 Sigma 实例。",
+  "Upload avatar": "上传头像",
+  "Remove": "移除",
+  "Display name": "用户名",
+  "Shown on comments, cursors and collaborator lists.": "显示在评论、光标和协作者列表中。",
+  "Profile color": "个人颜色",
+  "Save profile": "保存个人资料",
+  "Profile updated": "个人资料已更新",
+  "Name must be between 2 and 60 characters": "用户名长度需在 2–60 个字符之间",
   "Design with Sigma AI": "用 Sigma AI 设计",
   "Describe a screen or a change in natural language. Sigma edits the canvas through real design tools.":
     "用自然语言描述一个页面或修改需求，Sigma 会通过真实设计工具直接修改画布。",
-  "Configure your DeepSeek API key": "配置你的 DeepSeek API Key",
+  "Configure your AI provider key": "配置你的 AI 服务商 Key",
   "Try": "试试",
   "Generate a clean login screen with email, password and a primary button":
     "生成一个简洁的登录页，包含邮箱、密码和主按钮",
@@ -310,8 +322,12 @@ const zh: Record<string, string> = {
   "Configure a key to start…": "配置 Key 后开始…",
   "Enter to send · Shift+Enter for a new line": "Enter 发送 · Shift+Enter 换行",
   "AI edits are applied to the shared canvas and can be undone.": "AI 修改会应用到共享画布，也可以撤销。",
-  "Bring your own DeepSeek key. It is encrypted at rest and never leaves this server.":
-    "使用你自己的 DeepSeek Key，加密存储，不会离开服务器。",
+  "Bring your own AI provider key. Any OpenAI-compatible endpoint works; the key is encrypted at rest and never leaves this server.":
+    "使用你自己的 AI 服务商 Key。支持任意 OpenAI-compatible 端点；Key 加密存储，不会离开服务器。",
+  "Base URL must point at an OpenAI-compatible /v1 endpoint.": "Base URL 需要指向 OpenAI-compatible 的 /v1 端点。",
+  "Custom / self-hosted": "自定义 / 自托管",
+  "Any OpenAI-compatible /chat/completions endpoint": "任意 OpenAI-compatible /chat/completions 端点",
+  "Local OpenAI-compatible endpoint": "本地 OpenAI-compatible 端点",
   "AI settings saved": "AI 设置已保存",
 
   // Developer / PAT / MCP
@@ -411,6 +427,18 @@ const zh: Record<string, string> = {
   "Pen / vector": "钢笔 / 矢量",
   "A vector needs at least two points": "矢量至少需要两个点",
   "Vector": "矢量",
+  "Convert this shape into an editable vector path.": "将此图形转换为可编辑的矢量路径。",
+  "Convert to vector": "转换为矢量",
+  "{count} points": "{count} 个锚点",
+  "Closed path": "闭合路径",
+  "Open path": "开放路径",
+  "Close path": "闭合路径",
+  "Make corner": "转为尖角",
+  "Smooth point": "平滑锚点",
+  "Delete point": "删除锚点",
+  "Deselect point": "取消选择锚点",
+  "Double-click the path to add a point. Drag anchors or handles; Alt-click deletes an anchor.":
+    "双击路径添加锚点；拖拽锚点或控制柄；Alt + 点击删除锚点。",
 
   // Agent context & skills
   "Agent context & skills": "Agent 上下文与技能",

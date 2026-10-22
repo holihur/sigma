@@ -31,6 +31,7 @@ import {
   Loader2,
   AlertTriangle,
   Terminal,
+  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { filesApi, notificationsApi } from "@/lib/api";
@@ -41,7 +42,8 @@ import { useI18n, useT } from "@/i18n";
 import { cn, formatRelative, initials, isEditableTarget } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileDialog } from "@/components/ProfileDialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -93,6 +95,7 @@ export default function DashboardPage() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [developerOpen, setDeveloperOpen] = useState(false);
   const [figmaOpen, setFigmaOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -334,6 +337,7 @@ export default function DashboardPage() {
         <div className="m-2 rounded-xl border border-panel-border bg-background/60 p-2">
           <div className="flex items-center gap-2 px-1 py-1">
             <Avatar className="size-8">
+              {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
               <AvatarFallback className="text-[10px] font-semibold text-white" style={{ background: user?.color }}>
                 {initials(user?.name ?? "?")}
               </AvatarFallback>
@@ -355,6 +359,9 @@ export default function DashboardPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={toggleLocale}>
                   <Languages className="size-4" /> {locale === "en" ? "中文" : "English"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setProfileOpen(true)}>
+                  <UserRound className="size-4" /> {t("Personal settings")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setDeveloperOpen(true)}>
                   <Terminal className="size-4" /> {t("Developer & MCP")}
@@ -557,6 +564,7 @@ export default function DashboardPage() {
                   )}
                 >
                   <Avatar className="mt-0.5 size-7 shrink-0">
+                    {n.avatar && <AvatarImage src={n.avatar} alt={n.actor} />}
                     <AvatarFallback className="text-[9px] font-semibold text-white" style={{ background: n.color }}>
                       {initials(n.actor)}
                     </AvatarFallback>
@@ -694,6 +702,7 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
       <FigmaImportDialog open={figmaOpen} onOpenChange={setFigmaOpen} onImported={(file) => { void load(); navigate(`/file/${file.id}`); }} />
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
       <DeveloperDialog open={developerOpen} onOpenChange={setDeveloperOpen} />
     </div>
   );

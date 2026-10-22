@@ -7,7 +7,7 @@ import { useEditor } from "@/store/editor";
 import { useAuth } from "@/store/auth";
 import { useT } from "@/i18n";
 import { cn, formatRelative, initials } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -143,6 +143,7 @@ export function CommentsPanel({
             >
               <div className="flex items-center gap-2">
                 <Avatar className="size-6">
+                  {comment.avatar && <AvatarImage src={comment.avatar} alt={comment.author} />}
                   <AvatarFallback className="text-[8px] font-semibold text-white" style={{ background: comment.color }}>
                     {initials(comment.author)}
                   </AvatarFallback>

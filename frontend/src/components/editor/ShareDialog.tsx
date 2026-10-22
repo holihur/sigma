@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -159,6 +159,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           <div className="max-h-64 overflow-y-auto p-1.5">
             <div className="flex items-center gap-2.5 rounded-md px-2 py-2">
               <Avatar className="size-8">
+                {user?.name === (owner || file.ownerName) && user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
                 <AvatarFallback className="text-[10px] font-semibold text-white" style={{ background: user?.color }}>
                   {initials(owner || file.ownerName)}
                 </AvatarFallback>
@@ -180,6 +181,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             {members.map((m) => (
               <div key={m.userId} className="group flex items-center gap-2.5 rounded-md px-2 py-2 hover:bg-secondary/50">
                 <Avatar className="size-8">
+                  {m.avatar && <AvatarImage src={m.avatar} alt={m.name} />}
                   <AvatarFallback className="text-[10px] font-semibold text-white" style={{ background: m.color }}>
                     {initials(m.name)}
                   </AvatarFallback>

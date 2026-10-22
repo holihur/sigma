@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS users (
 	email      TEXT NOT NULL UNIQUE,
 	password   TEXT NOT NULL,
 	color      TEXT NOT NULL,
+	avatar     TEXT NOT NULL DEFAULT '',
 	created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS files (
@@ -160,8 +161,14 @@ CREATE INDEX IF NOT EXISTS idx_pat_user ON personal_access_tokens(user_id, creat
 CREATE INDEX IF NOT EXISTS idx_identity_user ON user_identities(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_skills_user ON ai_skills(user_id, updated_at);
 `
-	_, err := s.db.Exec(schema)
-	return err
+	if _, err := s.db.Exec(schema); err != nil {
+		return err
+	}
+	// Existing installations predate profile avatars.
+	if _, err := s.db.Exec(`ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''`); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+		return err
+	}
+	return nil
 }
 
 // ---------- users ----------
@@ -180,26 +187,34 @@ func (s *Store) CreateUser(id, name, email, passwordHash, color string) (model.U
 func (s *Store) UserByEmail(email string) (model.User, string, error) {
 	var u model.User
 	var hash string
-	err := s.db.QueryRow(`SELECT id,name,email,color,created_at,password FROM users WHERE email=?`,
-		strings.ToLower(strings.TrimSpace(email))).Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.CreatedAt, &hash)
+	err := s.db.QueryRow(`SELECT id,name,email,color,avatar,created_at,password FROM users WHERE email=?`,
+		strings.ToLower(strings.TrimSpace(email))).Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.Avatar, &u.CreatedAt, &hash)
 	return u, hash, err
 }
 
 func (s *Store) UserByID(id string) (model.User, error) {
 	var u model.User
-	err := s.db.QueryRow(`SELECT id,name,email,color,created_at FROM users WHERE id=?`, id).
-		Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.CreatedAt)
+	err := s.db.QueryRow(`SELECT id,name,email,color,avatar,created_at FROM users WHERE id=?`, id).
+		Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.Avatar, &u.CreatedAt)
 	return u, err
+}
+
+func (s *Store) UpdateUserProfile(id, name, color, avatar string) (model.User, error) {
+	_, err := s.db.Exec(`UPDATE users SET name=?, color=?, avatar=? WHERE id=?`, name, color, avatar, id)
+	if err != nil {
+		return model.User{}, err
+	}
+	return s.UserByID(id)
 }
 
 // ---------- SSO identities ----------
 
 func (s *Store) UserByIdentity(issuer, subject string) (model.User, error) {
 	var u model.User
-	err := s.db.QueryRow(`SELECT u.id,u.name,u.email,u.color,u.created_at
+	err := s.db.QueryRow(`SELECT u.id,u.name,u.email,u.color,u.avatar,u.created_at
 		FROM user_identities i JOIN users u ON u.id=i.user_id
 		WHERE i.issuer=? AND i.subject=?`, issuer, subject).
-		Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.CreatedAt)
+		Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.Avatar, &u.CreatedAt)
 	return u, err
 }
 
@@ -329,7 +344,7 @@ func (s *Store) RemoveMember(fileID, userID string) error {
 }
 
 func (s *Store) Members(fileID string) ([]model.Member, error) {
-	rows, err := s.db.Query(`SELECT m.user_id,u.name,u.email,u.color,m.role,m.created_at
+	rows, err := s.db.Query(`SELECT m.user_id,u.name,u.email,u.color,u.avatar,m.role,m.created_at
 		FROM file_members m JOIN users u ON u.id=m.user_id WHERE m.file_id=? ORDER BY m.created_at ASC`, fileID)
 	if err != nil {
 		return nil, err
@@ -338,7 +353,7 @@ func (s *Store) Members(fileID string) ([]model.Member, error) {
 	out := []model.Member{}
 	for rows.Next() {
 		var m model.Member
-		if err := rows.Scan(&m.UserID, &m.Name, &m.Email, &m.Color, &m.Role, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.UserID, &m.Name, &m.Email, &m.Color, &m.Avatar, &m.Role, &m.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, m)
@@ -349,7 +364,7 @@ func (s *Store) Members(fileID string) ([]model.Member, error) {
 // ---------- comments ----------
 
 func (s *Store) Comments(fileID string) ([]model.Comment, error) {
-	rows, err := s.db.Query(`SELECT c.id,c.file_id,c.page_id,c.node_id,c.x,c.y,c.text,c.author_id,u.name,u.color,c.resolved,c.created_at
+	rows, err := s.db.Query(`SELECT c.id,c.file_id,c.page_id,c.node_id,c.x,c.y,c.text,c.author_id,u.name,u.color,u.avatar,c.resolved,c.created_at
 		FROM comments c JOIN users u ON u.id=c.author_id WHERE c.file_id=? ORDER BY c.created_at ASC`, fileID)
 	if err != nil {
 		return nil, err
@@ -359,7 +374,7 @@ func (s *Store) Comments(fileID string) ([]model.Comment, error) {
 	for rows.Next() {
 		var c model.Comment
 		if err := rows.Scan(&c.ID, &c.FileID, &c.PageID, &c.NodeID, &c.X, &c.Y, &c.Text, &c.AuthorID,
-			&c.Author, &c.Color, &c.Resolved, &c.CreatedAt); err != nil {
+			&c.Author, &c.Color, &c.Avatar, &c.Resolved, &c.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -648,7 +663,7 @@ func (s *Store) AddNotificationFor(id, userID, fileID, commentID, actorID, kind,
 }
 
 func (s *Store) Notifications(userID string) ([]model.Notification, error) {
-	rows, err := s.db.Query(`SELECT n.id,n.kind,n.file_id,f.name,n.comment_id,n.actor_id,u.name,u.color,n.text,n.read,n.created_at
+	rows, err := s.db.Query(`SELECT n.id,n.kind,n.file_id,f.name,n.comment_id,n.actor_id,u.name,u.color,u.avatar,n.text,n.read,n.created_at
 		FROM notifications n JOIN files f ON f.id=n.file_id JOIN users u ON u.id=n.actor_id
 		WHERE n.user_id=? ORDER BY n.created_at DESC LIMIT 50`, userID)
 	if err != nil {
@@ -659,7 +674,7 @@ func (s *Store) Notifications(userID string) ([]model.Notification, error) {
 	for rows.Next() {
 		var n model.Notification
 		var read int
-		if err := rows.Scan(&n.ID, &n.Type, &n.FileID, &n.FileName, &n.CommentID, &n.ActorID, &n.Actor, &n.Color, &n.Text, &read, &n.CreatedAt); err != nil {
+		if err := rows.Scan(&n.ID, &n.Type, &n.FileID, &n.FileName, &n.CommentID, &n.ActorID, &n.Actor, &n.Color, &n.Avatar, &n.Text, &read, &n.CreatedAt); err != nil {
 			return nil, err
 		}
 		n.Read = read != 0

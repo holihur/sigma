@@ -362,7 +362,20 @@ func (a *API) mcpMutate(fileID, pageID, tool string, args map[string]any) (map[s
 				if m, ok := rp.(map[string]any); ok {
 					px, _ := mcpNum(m, "x")
 					py, _ := mcpNum(m, "y")
-					node.Points = append(node.Points, design.VectorPoint{X: px, Y: py})
+					point := design.VectorPoint{X: px, Y: py}
+					for _, key := range []string{"in", "out"} {
+						if h, ok := m[key].(map[string]any); ok {
+							hx, _ := mcpNum(h, "x")
+							hy, _ := mcpNum(h, "y")
+							handle := &design.VectorHandle{X: hx, Y: hy}
+							if key == "in" {
+								point.In = handle
+							} else {
+								point.Out = handle
+							}
+						}
+					}
+					node.Points = append(node.Points, point)
 				}
 			}
 		}

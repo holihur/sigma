@@ -146,7 +146,7 @@ export function AIChatPanel({
                 onClick={onOpenSettings}
                 className="mx-auto mt-4 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-[11px] text-primary hover:bg-primary/10"
               >
-                {t("Configure your DeepSeek API key")}
+                {t("Configure your AI provider key")}
               </button>
             )}
             <div className="mt-6 space-y-1.5">

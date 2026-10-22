@@ -113,10 +113,12 @@ presence（光标、选区）走独立 WebSocket 消息，约 45ms 节流，不�
 
 ## 矢量路径
 
-- 类型 `vector`，`points: {x,y}[]` 为单位坐标，`closed` 控制闭合。
-- 钢笔工具创建节点；双击路径插入锚点；拖动锚点更新坐标；`Alt` + 点击删除。
+- 类型 `vector`，`points: {x,y,in?,out?}[]` 为单位坐标，`closed` 控制闭合。
+- 每个锚点可选 `in` / `out` 贝塞尔控制柄；段渲染为 `C`，无控制柄时为 `L`。
+- 钢笔拖拽生成对称控制柄，拖动锚点会带动控制柄；平滑 / 尖角、双击插点、`Alt` 删除锚点。
+- 矩形 / 椭圆 / 直线可转换为矢量；椭圆使用 4 段三次贝塞尔近似。
 - 渲染用 `<svg viewBox="0 0 1000 1000" preserveAspectRatio="none">`，配合 `vector-effect="non-scaling-stroke"`，缩放时线宽保持稳定。
-- 后端 `design.Node` 保存同样字段，AI / MCP 可创建矢量，Figma 导出 JSON 保留路径。
+- 后端 `design.Node` 保存同样字段，AI / MCP 可创建矢量，Figma 插件导出为 Figma Vector。
 
 ## 组件实例
 
@@ -126,6 +128,12 @@ presence（光标、选区）走独立 WebSocket 消息，约 45ms 节流，不�
 - 修改主组件内部属性时，`updateNodes` 向上查找 `component=true` 祖先并调用 `syncInstances`，重建所有实例子树；删除的旧节点写墓碑。
 - 手动操作（新增 / 删除图层）后可在组件库点击 **Update instances**。
 - 分离实例只清除 `componentId`，保留当前子树。
+
+## 个人资料
+
+- `users.avatar` 保存 `/api/uploads/...` URL；用户通过现有上传接口上传头像。
+- `PATCH /api/users/me` 更新 `name`、`color`、`avatar`；头像只接受本实例上传路径。
+- 评论、协作者、通知查询 JOIN `users`，所以改名 / 换头像后历史内容也会显示新资料。
 
 ## 上传与图片
 

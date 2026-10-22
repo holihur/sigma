@@ -345,6 +345,17 @@ export default function EditorPage() {
         }
         if (key === "delete" || key === "backspace") {
           e.preventDefault();
+          const vector = st.selection.length === 1 ? getPage(st.doc, st.pageId).nodes[st.selection[0]] : null;
+          if (vector?.type === "vector" && st.selectedPoint != null) {
+            const points = vector.points ?? [];
+            if (points.length <= 2) {
+              toast.error(t("A vector needs at least two points"));
+            } else {
+              st.updateNode(vector.id, { points: points.filter((_, i) => i !== st.selectedPoint) }, true);
+              st.setSelectedPoint(null);
+            }
+            return;
+          }
           st.deleteSelection();
           return;
         }

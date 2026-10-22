@@ -27,21 +27,22 @@ import (
 type AuthedHandler func(http.ResponseWriter, *http.Request, model.User)
 
 type API struct {
-	st         *store.Store
-	auth       *auth.Manager
-	hub        *ws.Hub
-	staticDir  string
-	staticFS   fs.FS
-	uploadDir  string
-	secret     string
-	locks      sync.Map
-	aiSessions session.Service
-	oidc       *auth.OIDCManager
-	updater    *update.Manager
+	st          *store.Store
+	auth        *auth.Manager
+	hub         *ws.Hub
+	staticDir   string
+	staticFS    fs.FS
+	uploadDir   string
+	secret      string
+	locks       sync.Map
+	aiSessions  session.Service
+	oidc        *auth.OIDCManager
+	updater     *update.Manager
+	adminEmails map[string]bool
 }
 
 func New(st *store.Store, am *auth.Manager, staticDir, uploadDir, secret string) *API {
-	a := &API{st: st, auth: am, staticDir: staticDir, staticFS: static.FS(), uploadDir: uploadDir, secret: secret, aiSessions: session.InMemoryService(), oidc: auth.NewOIDCFromEnv()}
+	a := &API{st: st, auth: am, staticDir: staticDir, staticFS: static.FS(), uploadDir: uploadDir, secret: secret, aiSessions: session.InMemoryService(), oidc: auth.NewOIDCFromEnv(), adminEmails: parseAdminEmails(os.Getenv("SIGMA_ADMIN_EMAILS"))}
 	_ = os.MkdirAll(uploadDir, 0o755)
 	a.hub = ws.NewHub(
 		a.wsAccess,
@@ -77,9 +78,9 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/tokens", a.requireAuth(a.handleListPATs))
 	mux.HandleFunc("POST /api/tokens", a.requireAuth(a.handleCreatePAT))
 	mux.HandleFunc("DELETE /api/tokens/{id}", a.requireAuth(a.handleDeletePAT))
-	mux.HandleFunc("GET /api/system/update", a.requireAuth(a.handleUpdateStatus))
-	mux.HandleFunc("POST /api/system/update/check", a.requireAuth(a.handleUpdateCheck))
-	mux.HandleFunc("POST /api/system/update/apply", a.requireAuth(a.handleUpdateApply))
+	mux.HandleFunc("GET /api/system/update", a.requireAdmin(a.handleUpdateStatus))
+	mux.HandleFunc("POST /api/system/update/check", a.requireAdmin(a.handleUpdateCheck))
+	mux.HandleFunc("POST /api/system/update/apply", a.requireAdmin(a.handleUpdateApply))
 
 	mux.HandleFunc("POST /api/auth/register", a.handleRegister)
 	mux.HandleFunc("POST /api/auth/login", a.handleLogin)
@@ -88,6 +89,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/auth/oidc/callback", a.handleOIDCCallback)
 	mux.HandleFunc("POST /api/auth/oidc/exchange", a.handleOIDCExchange)
 	mux.HandleFunc("GET /api/auth/me", a.requireAuth(a.handleMe))
+	mux.HandleFunc("PATCH /api/users/me", a.requireAuth(a.handleUpdateMe))
 
 	mux.HandleFunc("GET /api/files", a.requireAuth(a.handleListFiles))
 	mux.HandleFunc("POST /api/files", a.requireAuth(a.handleCreateFile))
@@ -129,6 +131,34 @@ func (a *API) Handler() http.Handler {
 }
 
 // ---------- middleware & helpers ----------
+
+func parseAdminEmails(raw string) map[string]bool {
+	out := map[string]bool{}
+	for _, email := range strings.Split(raw, ",") {
+		email = strings.ToLower(strings.TrimSpace(email))
+		if email != "" {
+			out[email] = true
+		}
+	}
+	return out
+}
+
+func (a *API) isAdmin(u model.User) bool {
+	return a.adminEmails[strings.ToLower(strings.TrimSpace(u.Email))]
+}
+
+// requireAdmin wraps requireAuth with the instance administrator allowlist.
+// Update checks and binary replacement are deliberately not available to
+// every signed-in user.
+func (a *API) requireAdmin(next AuthedHandler) http.HandlerFunc {
+	return a.requireAuth(func(w http.ResponseWriter, r *http.Request, u model.User) {
+		if !a.isAdmin(u) {
+			writeError(w, http.StatusForbidden, "Administrator access required")
+			return
+		}
+		next(w, r, u)
+	})
+}
 
 func (a *API) requireAuth(next AuthedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

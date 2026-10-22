@@ -7,6 +7,7 @@
 #   SIGMA_SERVICE=auto      auto | yes | no
 #   SIGMA_HOME              data directory
 #   SIGMA_BIN_DIR           binary directory
+#   SIGMA_ADMIN_EMAILS      Comma-separated instance admins (update controls)
 #   SIGMA_REPO              GitHub repo (default holihur/sigma)
 set -euo pipefail
 
@@ -99,8 +100,12 @@ fi
 mkdir -p "$SIGMA_HOME/uploads" "$BIN_DIR" "$CONF_DIR"
 
 secret=""
+admin_emails="${SIGMA_ADMIN_EMAILS:-}"
 if [ -f "$ENV_FILE" ]; then
   secret="$(sed -n 's/^SIGMA_SECRET=//p' "$ENV_FILE" | head -1)"
+  if [ -z "$admin_emails" ]; then
+    admin_emails="$(sed -n 's/^SIGMA_ADMIN_EMAILS=//p' "$ENV_FILE" | head -1)"
+  fi
 fi
 if [ -z "$secret" ]; then
   if command -v openssl >/dev/null 2>&1; then
@@ -117,6 +122,7 @@ UPLOAD_DIR=${SIGMA_HOME}/uploads
 SIGMA_SECRET=${secret}
 AUTO_UPDATE=true
 AUTO_UPDATE_INTERVAL=10m
+SIGMA_ADMIN_EMAILS=${admin_emails}
 ENV
 if [ "$ROOT" -eq 1 ]; then
   chown -R "$RUN_USER:$RUN_USER" "$SIGMA_HOME"

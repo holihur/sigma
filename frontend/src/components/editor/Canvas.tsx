@@ -26,10 +26,12 @@ import type {
   PresenceUser,
   SceneNode,
   Tool,
+  VectorPoint,
   Viewport,
 } from "@/lib/types";
 import {
   ancestorsOf,
+  applyMatrix,
   boundsOf,
   createNode,
   descendantsOf,
@@ -46,6 +48,7 @@ import {
 import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
+import { insertPointOnVector, mirrorHandle, movePoint } from "@/lib/vector";
 import { clamp, cn, isEditableTarget, uid } from "@/lib/utils";
 import { NodeView } from "./NodeView";
 import { SelectionOverlay, type ResizeHandle } from "./SelectionOverlay";
@@ -102,6 +105,14 @@ type DragState =
       index: number;
       start: SceneNode;
       moved: boolean;
+    }
+  | {
+      kind: "vector-handle";
+      nodeId: string;
+      index: number;
+      which: "in" | "out";
+      start: SceneNode;
+      moved: boolean;
     };
 
 interface CanvasProps {
@@ -150,9 +161,10 @@ export function Canvas({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [imagePending, setImagePending] = useState<{ point: Point; replaceId?: string } | null>(null);
   const hoveredId = useEditor((s) => s.hoveredId);
+  const selectedPoint = useEditor((s) => s.selectedPoint);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const draftRef = useRef<HTMLTextAreaElement>(null);
-  const penRef = useRef<{ nodeId: string; points: Point[]; parentId: string | null; history: boolean } | null>(null);
+  const penRef = useRef<{ nodeId: string; points: VectorPoint[]; parentId: string | null; history: boolean } | null>(null);
   const lastPenClick = useRef<{ time: number; screen: Point } | null>(null);
   const lastCursorSent = useRef(0);
   const hoverFrame = useRef<number | null>(null);
@@ -329,17 +341,31 @@ export function Canvas({
   };
 
   // ---------- vector pen ----------
-  const updatePenPoints = (points: Point[], parentId: string | null) => {
+  const updatePenPoints = (points: VectorPoint[], parentId: string | null) => {
     const pen = penRef.current;
     if (!pen) return;
-    const local = points.map((p) => parentLocalPoint(page, parentId, p));
-    const minX = Math.min(...local.map((p) => p.x));
-    const minY = Math.min(...local.map((p) => p.y));
-    const maxX = Math.max(...local.map((p) => p.x));
-    const maxY = Math.max(...local.map((p) => p.y));
+    void parentId;
+    const xs: number[] = [];
+    const ys: number[] = [];
+    for (const p of points) {
+      xs.push(p.x);
+      ys.push(p.y);
+      if (p.in) { xs.push(p.in.x); ys.push(p.in.y); }
+      if (p.out) { xs.push(p.out.x); ys.push(p.out.y); }
+    }
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const maxX = Math.max(...xs);
+    const maxY = Math.max(...ys);
     const width = Math.max(maxX - minX, 1);
     const height = Math.max(maxY - minY, 1);
-    const normalized = local.map((p) => ({ x: (p.x - minX) / width, y: (p.y - minY) / height }));
+    const normPoint = (p: { x: number; y: number }) => ({ x: (p.x - minX) / width, y: (p.y - minY) / height });
+    const normalized = points.map((p) => {
+      const n: VectorPoint = normPoint(p);
+      if (p.in) n.in = normPoint(p.in);
+      if (p.out) n.out = normPoint(p.out);
+      return n;
+    });
     store.getState().updateNode(pen.nodeId, { x: minX, y: minY, width, height, points: normalized }, false);
   };
 
@@ -363,7 +389,37 @@ export function Canvas({
       name: node.name === "Vector" ? "Vector" : node.name,
     }, false);
     st.select([pen.nodeId]);
+    st.setSelectedPoint(null);
     st.setTool("select");
+  };
+
+  const beginPenHandle = (pen: NonNullable<typeof penRef.current>, index: number, origin: VectorPoint) => {
+    let moved = false;
+    beginGesture(
+      (ev) => {
+        if (suppressRef.current) return;
+        const local = parentLocalPoint(page, pen.parentId, worldPoint(ev));
+        if (Math.hypot(local.x - origin.x, local.y - origin.y) < 2) return;
+        moved = true;
+        const out = { x: local.x, y: local.y };
+        const inHandle = { x: origin.x * 2 - local.x, y: origin.y * 2 - local.y };
+        pen.points[index] = { ...pen.points[index], in: inHandle, out };
+        updatePenPoints(pen.points, pen.parentId);
+      },
+      (ev) => {
+        if (!moved) {
+          pen.points[index] = { x: origin.x, y: origin.y };
+          updatePenPoints(pen.points, pen.parentId);
+          return;
+        }
+        if (ev.altKey) {
+          // Alt-drag creates a cusp: keep only the outgoing handle.
+          pen.points[index] = { ...pen.points[index], in: undefined };
+          updatePenPoints(pen.points, pen.parentId);
+        }
+        lastPenClick.current = null;
+      },
+    );
   };
 
   const onPenClick = (e: React.PointerEvent) => {
@@ -392,17 +448,25 @@ export function Canvas({
         name: "Vector",
       });
       store.getState().addNode(node, parent?.id ?? null, undefined, false);
-      penRef.current = { nodeId: node.id, points: [world], parentId: parent?.id ?? null, history: true };
+      const created = { nodeId: node.id, points: [{ x: local.x, y: local.y }], parentId: parent?.id ?? null, history: true };
+      penRef.current = created;
+      beginPenHandle(created, 0, local);
       return;
     }
-    const first = toScreen(pen.points[0]);
-    if (pen.points.length >= 2 && Math.hypot(screen.x - first.x, screen.y - first.y) < 12) {
-      finishPen(true);
-      return;
+    const node = getPage(store.getState().doc, pageId).nodes[pen.nodeId];
+    if (node && node.points?.length) {
+      const first = node.points[0];
+      const m = nodeMatrix(page, node.id);
+      const firstScreen = toScreen(applyMatrix(m, { x: first.x * node.width, y: first.y * node.height }));
+      if (pen.points.length >= 2 && Math.hypot(screen.x - firstScreen.x, screen.y - firstScreen.y) < 12) {
+        finishPen(true);
+        return;
+      }
     }
-    const points = [...pen.points, world];
-    pen.points = points;
-    updatePenPoints(points, pen.parentId);
+    const local = parentLocalPoint(page, pen.parentId, world);
+    pen.points.push({ x: local.x, y: local.y });
+    updatePenPoints(pen.points, pen.parentId);
+    beginPenHandle(pen, pen.points.length - 1, local);
   };
 
   useEffect(() => {
@@ -693,6 +757,7 @@ export function Canvas({
     e.preventDefault();
     e.stopPropagation();
     const points = node.points ?? [];
+    store.getState().setSelectedPoint(index);
     if (e.altKey) {
       if (points.length <= 2) {
         toast.error(t("A vector needs at least two points"));
@@ -700,10 +765,11 @@ export function Canvas({
       }
       store.getState().pushHistory();
       store.getState().updateNode(id, { points: points.filter((_, i) => i !== index) }, false);
+      store.getState().setSelectedPoint(null);
       return;
     }
     store.getState().pushHistory();
-    dragRef.current = { kind: "vector-point", nodeId: id, index, start: { ...node }, moved: false };
+    dragRef.current = { kind: "vector-point", nodeId: id, index, start: { ...node, points: points.map((p) => ({ ...p })) }, moved: false };
     beginGesture(
       (ev) => {
         if (suppressRef.current) return;
@@ -712,9 +778,41 @@ export function Canvas({
         const local = parentLocalPoint(page, d.nodeId, worldPoint(ev));
         const x = clamp(local.x / Math.max(d.start.width, 1), 0, 1);
         const y = clamp(local.y / Math.max(d.start.height, 1), 0, 1);
-        const next = (d.start.points ?? []).map((p, i) => (i === d.index ? { x, y } : p));
+        const next = (d.start.points ?? []).map((p, i) => (i === d.index ? movePoint(p, x, y) : p));
         d.moved = true;
         store.getState().updateNode(d.nodeId, { points: next }, false);
+      },
+      () => {
+        dragRef.current = null;
+      },
+    );
+  };
+
+  const onVectorHandleStart = (e: React.PointerEvent, id: string, index: number, which: "in" | "out") => {
+    if (readOnly) return;
+    const node = page.nodes[id];
+    if (!node || node.type !== "vector") return;
+    e.preventDefault();
+    e.stopPropagation();
+    store.getState().setSelectedPoint(index);
+    store.getState().pushHistory();
+    dragRef.current = {
+      kind: "vector-handle", nodeId: id, index, which,
+      start: { ...node, points: (node.points ?? []).map((p) => ({ ...p })) }, moved: false,
+    };
+    beginGesture(
+      (ev) => {
+        if (suppressRef.current) return;
+        const d = dragRef.current;
+        if (!d || d.kind !== "vector-handle") return;
+        const local = parentLocalPoint(page, d.nodeId, worldPoint(ev));
+        const h = { x: local.x / Math.max(d.start.width, 1), y: local.y / Math.max(d.start.height, 1) };
+        const points = (d.start.points ?? []).map((p, i) => {
+          if (i !== d.index) return p;
+          return ev.altKey ? { ...p, [d.which]: h } : mirrorHandle(p, d.which, h);
+        });
+        d.moved = true;
+        store.getState().updateNode(d.nodeId, { points }, false);
       },
       () => {
         dragRef.current = null;
@@ -728,29 +826,27 @@ export function Canvas({
     const ny = clamp(local.y / Math.max(node.height, 1), 0, 1);
     const points = [...(node.points ?? [])];
     if (points.some((p) => Math.hypot(p.x - nx, p.y - ny) < 0.025)) return;
-    if (points.length < 2) {
-      points.push({ x: nx, y: ny });
-    } else {
-      const segments = points.length + (node.closed ? 1 : 0);
-      let best = points.length - 1;
+    let segment = points.length - 1;
+    if (node.closed || points.length > 1) {
       let bestDist = Infinity;
+      const segments = points.length + (node.closed ? 1 : 0);
       for (let i = 0; i < segments; i++) {
         const a = points[i];
         const b = points[(i + 1) % points.length];
         const dx = b.x - a.x, dy = b.y - a.y;
         const len = dx * dx + dy * dy;
         const t = len === 0 ? 0 : clamp(((nx - a.x) * dx + (ny - a.y) * dy) / len, 0, 1);
-        const px = a.x + t * dx, py = a.y + t * dy;
-        const dist = Math.hypot(nx - px, ny - py);
+        const dist = Math.hypot(nx - (a.x + t * dx), ny - (a.y + t * dy));
         if (dist < bestDist) {
           bestDist = dist;
-          best = i;
+          segment = i;
         }
       }
-      points.splice(best + 1, 0, { x: nx, y: ny });
     }
+    const inserted = insertPointOnVector(points, Math.max(0, segment), nx, ny, node.closed);
     store.getState().pushHistory();
-    store.getState().updateNode(node.id, { points }, false);
+    store.getState().updateNode(node.id, { points: inserted.points }, false);
+    store.getState().setSelectedPoint(inserted.index);
   };
 
   const onNodeDoubleClick = (e: React.MouseEvent, id: string) => {
@@ -1036,6 +1132,8 @@ export function Canvas({
         onResizeStart={onResizeStart}
         onRotateStart={onRotateStart}
         onVectorAnchorStart={onVectorAnchorStart}
+        onVectorHandleStart={onVectorHandleStart}
+        selectedPoint={selectedPoint}
       />
 
       {/* comment pins */}

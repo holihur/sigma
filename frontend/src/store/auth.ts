@@ -10,6 +10,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   ssoLogin: (code: string) => Promise<string>;
+  updateProfile: (body: { name: string; color: string; avatar: string }) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
 }
@@ -47,6 +48,10 @@ export const useAuth = create<AuthState>((set) => ({
     setToken(token);
     set({ token, user, loading: false });
     return returnTo || "/";
+  },
+  updateProfile: async (body) => {
+    const { user } = await authApi.updateProfile(body);
+    set({ user });
   },
   logout: () => {
     setToken(null);

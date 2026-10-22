@@ -8,6 +8,7 @@ type User struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	Color     string `json:"color"`
+	Avatar    string `json:"avatar,omitempty"`
 	CreatedAt string `json:"createdAt"`
 }
 
@@ -55,6 +56,7 @@ type Comment struct {
 	AuthorID  string  `json:"authorId"`
 	Author    string  `json:"author"`
 	Color     string  `json:"color"`
+	Avatar    string  `json:"avatar,omitempty"`
 	Resolved  bool    `json:"resolved"`
 	CreatedAt string  `json:"createdAt"`
 }
@@ -74,6 +76,7 @@ type Member struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	Color     string `json:"color"`
+	Avatar    string `json:"avatar,omitempty"`
 	Role      string `json:"role"`
 	CreatedAt string `json:"createdAt"`
 }
@@ -91,6 +94,7 @@ type Notification struct {
 	ActorID   string `json:"actorId"`
 	Actor     string `json:"actor"`
 	Color     string `json:"color"`
+	Avatar    string `json:"avatar,omitempty"`
 	Text      string `json:"text"`
 	Read      bool   `json:"read"`
 	CreatedAt string `json:"createdAt"`

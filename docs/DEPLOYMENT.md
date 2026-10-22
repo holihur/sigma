@@ -21,6 +21,7 @@
 | `SIGMA_UPDATE_REPO` | `holihur/sigma` | Release 仓库 |
 | `SIGMA_UPDATE_API` | `https://api.github.com` | GitHub API（可指向镜像） |
 | `GITHUB_TOKEN` | 空 | 避免 API 限流 |
+| `SIGMA_ADMIN_EMAILS` | 空 | 逗号分隔的实例管理员邮箱；只有管理员可查看/触发系统更新 |
 | `SIGMA_ALLOW_DEV_UPDATE` | 空 | 允许 dev 构建自更新（默认拒绝，防止覆盖开发二进制） |
 | `FIGMA_API_BASE` | `https://api.figma.com` | Figma API 地址 |
 | `VITE_API_PROXY` | `http://localhost:9000` | 仅 Vite 开发代理 |
@@ -80,6 +81,8 @@ loginctl enable-linger "$USER"
 
 ## 自动更新
 
+> `GET /api/system/update`、`check`、`apply` 仅对 `SIGMA_ADMIN_EMAILS` 中的实例管理员开放。自动更新本身由服务端执行，不依赖普通用户点击。
+
 服务启动后默认每 10 分钟：
 
 1. 请求 GitHub `releases/latest`。
@@ -131,6 +134,12 @@ WebSocket 必须透传 `Upgrade` / `Connection`。HTTPS 下设置：
 
 ```bash
 APP_BASE_URL=https://sigma.example.com
+```
+
+首次注册管理员后，把邮箱写入环境变量：
+
+```bash
+SIGMA_ADMIN_EMAILS="you@company.com,ops@company.com"
 ```
 
 ## OIDC

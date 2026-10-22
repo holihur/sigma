@@ -5,12 +5,12 @@
 每位用户使用自己的模型 Key：
 
 1. 编辑器 → 顶栏 **Sigma AI** → 设置。
-2. 选择 Provider（默认 DeepSeek）、Base URL、Model。
+2. 选择 Provider 预设（DeepSeek / OpenAI / Gemini / OpenRouter / Groq / Mistral / xAI / Together / Ollama / 自定义），或直接填写任意 OpenAI-compatible Base URL 与 Model。
 3. 输入 API Key → **Save & test**。
 4. Key 使用 `SIGMA_SECRET` 派生 AES-256-GCM 加密，写入 `ai_settings.api_key_enc`。
 5. API 响应只返回 `••••` 尾号；日志与数据库都不保存明文。
 
-默认模型：`deepseek-v4.1-flash`。可切换 `deepseek-chat`、`deepseek-reasoner` 或任意 OpenAI-compatible 端点。
+默认仍为 `deepseek-v4.1-flash`，但不锁定服务商。只要实现 OpenAI-compatible `/chat/completions` 与 function calling，就可以接入。内置预设包括 OpenAI、Google Gemini、OpenRouter、Groq、Mistral、xAI、Together、Ollama 等。
 
 ## Agent 如何改设计
 
@@ -39,6 +39,23 @@ sigma.userId
 ```
 
 模型只能操作当前文件 / 页面，无法通过参数越权。
+
+## 服务商预设
+
+| Provider | Base URL | 示例模型 |
+| --- | --- | --- |
+| DeepSeek | `https://api.deepseek.com` | `deepseek-v4.1-flash` |
+| OpenAI | `https://api.openai.com/v1` | `gpt-4.1-mini` |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-2.5-flash` |
+| OpenRouter | `https://openrouter.ai/api/v1` | `openai/gpt-4.1-mini` |
+| Groq | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` |
+| Mistral | `https://api.mistral.ai/v1` | `mistral-large-latest` |
+| xAI | `https://api.x.ai/v1` | `grok-3-mini` |
+| Together | `https://api.together.xyz/v1` | `meta-llama/Llama-3.3-70B-Instruct-Turbo` |
+| Ollama / local | `http://localhost:11434/v1` | `llama3.1` |
+| Custom | 任意 `/v1` | 任意模型 ID |
+
+自定义服务商需要支持 OpenAI Chat Completions 和 function calling。模型 ID 与 Base URL 由用户控制，Sigma 不把服务商写死。
 
 ## 设计工具
 
@@ -185,7 +202,7 @@ duplicate_node  link_to_frame
 | 现象 | 检查 |
 | --- | --- |
 | 401 / 未配置 Key | AI 设置中保存 Key 并测试 |
-| 模型 404 | Base URL 与模型 ID 是否匹配 DeepSeek 账号 |
+| 模型 404 | Base URL 与模型 ID 是否匹配当前服务商账号 |
 | Agent 不调用技能 | 技能描述是否说明“何时使用”，尝试明确说“使用 mobile-checkout skill” |
 | MCP 403 | PAT 是否包含对应 scope，是否过期 |
 | AI 修改看不到 | 是否处于只读分享权限；刷新 / 检查 WebSocket |

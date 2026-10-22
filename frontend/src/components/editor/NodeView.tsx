@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import type { Page, SceneNode, Tool } from "@/lib/types";
 import { nodeLabel, paintToCss, shadowToCss } from "@/lib/nodes";
+import { vectorPathData } from "@/lib/vector";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n";
 import { Image as ImageIcon, Lock } from "lucide-react";
@@ -153,15 +154,19 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
       </svg>
     );
   } else if (node.type === "vector") {
-    const points = (node.points ?? []).map((p) => `${p.x * 1000},${p.y * 1000}`).join(" ");
+    const d = vectorPathData(node);
     content =
-      points.length > 0 ? (
+      d ? (
         <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" style={{ pointerEvents: "none" }}>
-          {node.closed ? (
-            <polygon points={points} fill={fill} stroke={strokeColor} strokeWidth={node.strokeWidth} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-          ) : (
-            <polyline points={points} fill="none" stroke={strokeColor} strokeWidth={node.strokeWidth} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
-          )}
+          <path
+            d={d}
+            fill={node.closed ? fill : "none"}
+            stroke={strokeColor}
+            strokeWidth={node.strokeWidth}
+            vectorEffect="non-scaling-stroke"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       ) : null;
   } else if (node.type === "frame" || node.type === "group") {

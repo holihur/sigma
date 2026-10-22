@@ -86,6 +86,8 @@ export const authApi = {
       body: { name, email, password },
     }),
   me: () => api<{ user: User }>("/auth/me"),
+  updateProfile: (body: { name: string; color: string; avatar: string }) =>
+    api<{ user: User }>("/users/me", { method: "PATCH", body }),
   oidcConfig: () => api<OIDCConfig>("/auth/oidc/config"),
   oidcExchange: (code: string) =>
     api<OIDCExchange>("/auth/oidc/exchange", { method: "POST", body: { code } }),

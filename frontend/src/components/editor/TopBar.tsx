@@ -25,6 +25,7 @@ import {
   SlidersHorizontal,
   Languages,
   Terminal,
+  UserRound,
 } from "lucide-react";
 import { useAuth } from "@/store/auth";
 import { useI18n, useT } from "@/i18n";
@@ -33,7 +34,8 @@ import { useTheme } from "@/store/theme";
 import { useEditor } from "@/store/editor";
 import { cn, formatRelative, initials } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileDialog } from "@/components/ProfileDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -94,6 +96,7 @@ export function TopBar({
   const toggleLocale = useI18n((s) => s.toggle);
   const [editing, setEditing] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [draft, setDraft] = useState(file?.name ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -281,6 +284,7 @@ export function TopBar({
           <DropdownMenuTrigger asChild>
             <button title={t("Account menu")} className="flex h-7 items-center gap-0.5 rounded-md px-0.5 hover:bg-secondary sm:h-8 sm:gap-1 sm:px-1">
               <Avatar className="size-6">
+                {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
                 <AvatarFallback className="text-[9px] font-semibold text-white" style={{ background: user?.color }}>
                   {initials(user?.name ?? "?")}
                 </AvatarFallback>
@@ -294,6 +298,9 @@ export function TopBar({
               <div className="truncate text-[10px] text-muted-foreground">{user?.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setProfileOpen(true)}>
+              <UserRound className="size-4" /> {t("Personal settings")}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onOpenAISettings}>
               <Settings2 className="size-4" /> {t("AI settings")}
             </DropdownMenuItem>
@@ -351,6 +358,7 @@ export function TopBar({
         </Tooltip>
       </header>
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </TooltipProvider>
   );
 }

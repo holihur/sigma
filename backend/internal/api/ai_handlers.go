@@ -142,7 +142,7 @@ func (a *API) handleTestAI(w http.ResponseWriter, r *http.Request, u appmodel.Us
 		return
 	}
 	if key == "" {
-		writeError(w, http.StatusBadRequest, "Add a DeepSeek API key first")
+		writeError(w, http.StatusBadRequest, "Add an AI provider API key first")
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
@@ -276,7 +276,7 @@ func (a *API) handleAIChat(w http.ResponseWriter, r *http.Request, u appmodel.Us
 		return
 	}
 	if key == "" {
-		writeError(w, http.StatusBadRequest, "Add your DeepSeek API key in AI settings first")
+		writeError(w, http.StatusBadRequest, "Add your AI provider API key in AI settings first")
 		return
 	}
 
@@ -470,7 +470,14 @@ func (a *API) designAgentTools(recorder *agentActionRecorder) ([]tool.Tool, erro
 		}
 		node := design.NewNode("vector", args.Name, args.X, args.Y, args.Width, args.Height)
 		for _, p := range args.Points {
-			node.Points = append(node.Points, design.VectorPoint{X: clamp01(p.X), Y: clamp01(p.Y)})
+			point := design.VectorPoint{X: clamp01(p.X), Y: clamp01(p.Y)}
+			if p.In != nil {
+				point.In = &design.VectorHandle{X: p.In.X, Y: p.In.Y}
+			}
+			if p.Out != nil {
+				point.Out = &design.VectorHandle{X: p.Out.X, Y: p.Out.Y}
+			}
+			node.Points = append(node.Points, point)
 		}
 		if len(node.Points) == 0 {
 			node.Points = []design.VectorPoint{{X: 0.5, Y: 0}, {X: 1, Y: 1}, {X: 0, Y: 1}}
@@ -749,9 +756,16 @@ type createTextArgs struct {
 	ParentID   string  `json:"parentId,omitempty"`
 }
 
-type vectorPointArg struct {
+type vectorHandleArg struct {
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
+}
+
+type vectorPointArg struct {
+	X   float64          `json:"x"`
+	Y   float64          `json:"y"`
+	In  *vectorHandleArg `json:"in,omitempty"`
+	Out *vectorHandleArg `json:"out,omitempty"`
 }
 
 type createVectorArgs struct {

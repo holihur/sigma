@@ -23,6 +23,7 @@ MCP 也接受 `Authorization: Bearer sigma_pat_...`。
 | `POST` | `/auth/register` | `{name,email,password}` → `{token,user}` |
 | `POST` | `/auth/login` | `{email,password}` → `{token,user}` |
 | `GET` | `/auth/me` | 当前用户 |
+| `PATCH` | `/users/me` | `{name,color,avatar}` 更新个人资料；头像必须是 `/api/uploads/...` |
 | `GET` | `/auth/oidc/config` | `{enabled,label}`，公开 |
 | `GET` | `/auth/oidc/login?returnTo=/` | 跳转 OIDC Provider，公开 |
 | `GET` | `/auth/oidc/callback` | Provider 回调，公开 |
@@ -56,7 +57,7 @@ OIDC 使用 Authorization Code + PKCE + nonce。回调成功后前端用一次�
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `GET/PUT` | `/ai/settings` | 读取 / 保存 Provider、Base URL、Model、API Key |
+| `GET/PUT` | `/ai/settings` | 读取 / 保存任意 OpenAI-compatible Provider、Base URL、Model、API Key |
 | `POST` | `/ai/test` | 测试模型连接，返回延迟与回复 |
 | `POST` | `/ai/chat` | `{fileId,pageId,message,sessionId?,selection?}` |
 | `GET/PUT` | `/ai/context` | `{designMd,agentsMd}` |
@@ -155,11 +156,13 @@ Claude Desktop / Cursor 配置：
 
 ## 系统 / 自动更新
 
+这三个端点只允许 `SIGMA_ADMIN_EMAILS` 中的实例管理员访问；普通登录用户返回 `403`。普通用户不应能触发二进制替换或服务重启。
+
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `GET` | `/system/update` | 当前版本、最新版本、间隔、最近检查、错误 |
-| `POST` | `/system/update/check` | 立即检查 |
-| `POST` | `/system/update/apply` | 下载、校验并替换，随后重启 |
+| `GET` | `/system/update` | 当前版本、最新版本、间隔、最近检查、错误（仅管理员） |
+| `POST` | `/system/update/check` | 立即检查（仅管理员） |
+| `POST` | `/system/update/apply` | 下载、校验并替换，随后重启（仅管理员） |
 
 状态示例：
 

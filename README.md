@@ -6,7 +6,7 @@
 
 一个面向产品团队的协作式界面设计工作台：无限画布、矢量路径、组件实例、可点击原型、实时多人协作，以及可以读取项目规范、调用自定义 Skills 的 AI 设计助手。
 
-`Go` · `React 19` · `TypeScript` · `Tailwind CSS 4` · `SQLite` · `WebSocket` · `Google ADK` · `DeepSeek`
+`Go` · `React 19` · `TypeScript` · `Tailwind CSS 4` · `SQLite` · `WebSocket` · `Google ADK` · `Any OpenAI-compatible LLM`
 
 </div>
 
@@ -18,7 +18,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 
 - **AI 真的会改设计**：不是生成图片，而是通过结构化工具创建画板、文本、矢量、组件实例和原型链接。
 - **AI 懂你的设计系统**：上传 `Design.md`、`AGENTS.md` 和自定义 `SKILL.md`，每次请求自动注入。
-- **Agent 可以来自任何地方**：内置 DeepSeek BYOK，也通过 MCP + PAT 让 Claude、Cursor 或自研 Agent 直接操作文件。
+- **Agent 可以来自任何地方**：内置 BYOK（DeepSeek / OpenAI / Gemini / OpenRouter / Groq / Ollama / 自托管），也通过 MCP + PAT 让 Claude、Cursor 或自研 Agent 直接操作文件。
 - **设计和原型在同一个文件里**：从静态界面到可点击流程，不需要切换工具。
 - **数据是你的**：单二进制、SQLite、本地文件存储、可选企业 OIDC，一条命令部署。
 
@@ -28,7 +28,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 
 - 无限画布、缩放平移、点阵网格、框选、吸附辅助线、旋转、八向缩放。
 - Frame、矩形、椭圆、直线、文本、图片、**可编辑矢量路径**。
-- 钢笔工具逐点绘制路径，双击加锚点，拖拽锚点，`Alt` + 点击删除锚点，闭合路径自动填充。
+- 钢笔工具逐点绘制路径，拖拽生成贝塞尔控制柄；平滑 / 尖角切换、双击加锚点、拖拽控制柄、`Alt` + 点击删锚点，闭合路径自动填充，矩形 / 椭圆 / 直线可一键转为矢量。
 - 图层树、显示 / 隐藏、锁定、拖拽排序、跨 Frame 拖拽、分组 / 取消分组。
 - 位置尺寸、透明度、圆角、纯色 / 渐变、描边、阴影、模糊、字体排版、图片填充、对齐 / 分布。
 - **组件实例**：把任意图层转换为主组件，在组件库中一键插入实例；组件内部属性变化自动同步，也可手动更新实例或分离实例。
@@ -42,11 +42,12 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - WebSocket 实时协作：多人光标、选区、在线状态、自动保存、断线重连。
 - 节点级 LWW 合并 + 墓碑删除 + 增量同步，小操作不再上传整份文档。
 - 评论、定位图层、解决 / 重新打开、站内通知、版本快照与恢复。
+- 个人中心：自定义用户名、头像与个人颜色，头像同步到评论、协作者和通知。
 
 ### 3. AI 设计助手（BYOK）
 
-- 用户自带 DeepSeek API Key，AES-GCM 加密存储，只返回尾号。
-- 默认模型 `deepseek-v4.1-flash`，可切换 `deepseek-chat`、`deepseek-reasoner` 或任意 OpenAI-compatible 端点。
+- 用户自带任意 OpenAI-compatible 服务商 Key，AES-GCM 加密存储，只返回尾号。
+- 内置 DeepSeek、OpenAI、Google Gemini、OpenRouter、Groq、Mistral、xAI、Together、Ollama 和自定义端点预设；默认仍为 `deepseek-v4.1-flash`。
 - 基于 **Google ADK for Go** 的 `llmagent` + 结构化设计工具。
 - 自然语言创建登录页、卡片、价格区块、图标；修改颜色、字号、圆角、位置；添加原型跳转。
 - AI 修改实时广播给协作者，并支持本地撤销。
@@ -79,7 +80,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - **PAT + Scope**：为 MCP 创建个人访问令牌，支持 `mcp:read` / `mcp:write` 最小权限、过期时间和撤销。
 - **OIDC SSO**：标准 Authorization Code + PKCE，支持任意 OpenID Connect Provider；首次登录自动创建账号并绑定身份。
 - **企业部署**：一键安装脚本、systemd 系统服务、Docker Compose、单二进制内嵌前端。
-- **自动更新**：默认每 10 分钟检查 GitHub Release，SHA-256 校验后原子替换并重启；可关闭或调整间隔。
+- **自动更新**：默认每 10 分钟检查 GitHub Release，SHA-256 校验后原子替换并重启；可关闭或调整间隔。更新控制仅对 `SIGMA_ADMIN_EMAILS` 中的实例管理员开放。
 
 ![Components](docs/screenshots/25-components.png)
 
@@ -95,9 +96,13 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 | --- | --- |
 | ![OIDC](docs/screenshots/31-oidc.png) | ![Design systems](docs/screenshots/30-design-systems.png) |
 
-| AI 设置（BYOK） | 自然语言设计 |
+| AI 设置（任意服务商） | 自然语言设计 |
 | --- | --- |
-| ![AI settings](docs/screenshots/21-ai-settings.png) | ![AI chat](docs/screenshots/22-ai-chat.png) |
+| ![AI settings](docs/screenshots/33-ai-providers.png) | ![AI chat](docs/screenshots/22-ai-chat.png) |
+
+| 个人中心 | Agent 上下文与 Skills |
+| --- | --- |
+| ![Profile](docs/screenshots/32-profile.png) | ![Agent context](docs/screenshots/27-agent-context.png) |
 
 | 文件面板 | 协作编辑器 |
 | --- | --- |
@@ -193,7 +198,7 @@ make run     # http://localhost:9000
 | [架构与数据模型](docs/ARCHITECTURE.md) | 技术栈、目录、LWW 合并、增量同步、向量 / 组件数据模型 |
 | [API 参考](docs/API.md) | REST、WebSocket、MCP、PAT、OIDC、Figma、自动更新接口 |
 | [部署指南](docs/DEPLOYMENT.md) | 环境变量、systemd、一键安装、Docker、OIDC、自动更新、发布流程 |
-| [AI Agent 与 Skills](docs/AI-AGENTS.md) | DeepSeek BYOK、ADK、设计工具、Design.md / AGENTS.md / SKILL.md、MCP |
+| [AI Agent 与 Skills](docs/AI-AGENTS.md) | 多服务商 BYOK、ADK、设计工具、Design.md / AGENTS.md / SKILL.md、MCP |
 | [Figma 互通](docs/FIGMA.md) | REST 导入、插件导出、字段映射、限制 |
 | [设计系统模板](docs/DESIGN-SYSTEMS.md) | Material 3、Apple HIG、Fluent 2、Carbon 的 token 与模板说明 |
 | [快捷键](docs/SHORTCUTS.md) | 完整编辑器快捷键 |
@@ -204,7 +209,7 @@ make run     # http://localhost:9000
 | --- | --- |
 | 前端 | React 19, TypeScript, Vite 7, Tailwind CSS 4, Radix primitives, zustand, lucide-react, sonner |
 | 后端 | Go 1.25+, `net/http`, gorilla/websocket, SQLite (modernc.org/sqlite), JWT, bcrypt, Google ADK |
-| AI | DeepSeek OpenAI-compatible API, `deepseek-v4.1-flash`, custom ADK `model.LLM` adapter |
+| AI | 任意 OpenAI-compatible 服务商（DeepSeek 默认）、自定义 ADK `model.LLM` adapter |
 | 发布 | GoReleaser, GitHub Actions, systemd, Docker, SHA-256 self-update |
 
 ## 已知限制

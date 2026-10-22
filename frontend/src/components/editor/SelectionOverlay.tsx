@@ -26,6 +26,8 @@ interface Props {
   onResizeStart?: (handle: ResizeHandle, event: React.PointerEvent) => void;
   onRotateStart?: (event: React.PointerEvent) => void;
   onVectorAnchorStart?: (event: React.PointerEvent, nodeId: string, index: number) => void;
+  onVectorHandleStart?: (event: React.PointerEvent, nodeId: string, index: number, which: "in" | "out") => void;
+  selectedPoint?: number | null;
 }
 
 const HANDLE_CURSORS: Record<ResizeHandle, string> = {
@@ -64,6 +66,8 @@ export function SelectionOverlay({
   onResizeStart,
   onRotateStart,
   onVectorAnchorStart,
+  onVectorHandleStart,
+  selectedPoint,
 }: Props) {
   const toScreen = (p: Point) => ({
     x: p.x * viewport.zoom + viewport.x,
@@ -98,10 +102,20 @@ export function SelectionOverlay({
 
   const showHandles = !readOnly && !!target && !editing;
   const vectorAnchors: Point[] = [];
+  const vectorHandles: { point: Point; which: "in" | "out"; anchor: Point }[] = [];
   if (!readOnly && !editing && target?.type === "vector") {
     const m = nodeMatrix(page, target.id);
-    for (const p of target.points ?? []) {
+    const points = target.points ?? [];
+    for (const p of points) {
       vectorAnchors.push(toScreen(applyMatrix(m, { x: p.x * target.width, y: p.y * target.height })));
+    }
+    const p = selectedPoint != null ? points[selectedPoint] : null;
+    if (p) {
+      const anchor = toScreen(applyMatrix(m, { x: p.x * target.width, y: p.y * target.height }));
+      for (const which of ["in", "out"] as const) {
+        const h = p[which];
+        if (h) vectorHandles.push({ which, anchor, point: toScreen(applyMatrix(m, { x: h.x * target.width, y: h.y * target.height })) });
+      }
     }
   }
   const handlePoints: { key: ResizeHandle; x: number; y: number }[] = [];
@@ -211,20 +225,50 @@ export function SelectionOverlay({
           </>
         )}
 
-        {vectorAnchors.map((p, i) => (
-          <g
-            key={`anchor-${i}`}
-            style={{ pointerEvents: "auto", cursor: "move" }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onVectorAnchorStart?.(e, target!.id, i);
-            }}
-          >
-            <circle cx={p.x} cy={p.y} r={11} fill="transparent" />
-            <rect x={p.x - 3.5} y={p.y - 3.5} width={7} height={7} rx={1} fill="var(--card)" stroke="var(--selection)" strokeWidth={1.5} style={{ pointerEvents: "none" }} />
+        {vectorHandles.map((h) => (
+          <g key={`handle-${h.which}`}>
+            <line x1={h.anchor.x} y1={h.anchor.y} x2={h.point.x} y2={h.point.y} stroke="var(--selection)" strokeWidth={1} opacity={0.65} />
+            <g
+              style={{ pointerEvents: "auto", cursor: "crosshair" }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onVectorHandleStart?.(e, target!.id, selectedPoint!, h.which);
+              }}
+            >
+              <circle cx={h.point.x} cy={h.point.y} r={10} fill="transparent" />
+              <circle cx={h.point.x} cy={h.point.y} r={4} fill="var(--card)" stroke="var(--selection)" strokeWidth={1.3} style={{ pointerEvents: "none" }} />
+            </g>
           </g>
         ))}
+
+        {vectorAnchors.map((p, i) => {
+          const isActive = selectedPoint === i;
+          return (
+            <g
+              key={`anchor-${i}`}
+              style={{ pointerEvents: "auto", cursor: "move" }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onVectorAnchorStart?.(e, target!.id, i);
+              }}
+            >
+              <circle cx={p.x} cy={p.y} r={11} fill="transparent" />
+              <rect
+                x={p.x - (isActive ? 4.5 : 3.5)}
+                y={p.y - (isActive ? 4.5 : 3.5)}
+                width={isActive ? 9 : 7}
+                height={isActive ? 9 : 7}
+                rx={1}
+                fill={isActive ? "var(--selection)" : "var(--card)"}
+                stroke="var(--selection)"
+                strokeWidth={1.5}
+                style={{ pointerEvents: "none" }}
+              />
+            </g>
+          );
+        })}
 
         {guides.map((g, i) =>
           g.orientation === "v" ? (

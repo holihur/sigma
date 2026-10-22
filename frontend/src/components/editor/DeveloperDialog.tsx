@@ -286,6 +286,7 @@ export function DeveloperDialog({ open, onOpenChange }: { open: boolean; onOpenC
             </div>
           </section>
 
+          {update && (
           <section className="rounded-xl border border-border bg-secondary/30 p-3.5">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 text-[12px] font-semibold">
@@ -320,6 +321,7 @@ export function DeveloperDialog({ open, onOpenChange }: { open: boolean; onOpenC
               {t("Release binaries verify SHA-256 checksums before replacing the running server.")}
             </p>
           </section>
+          )}
 
           <section>
             <div className="mb-2 flex items-center gap-2 text-[12px] font-semibold">

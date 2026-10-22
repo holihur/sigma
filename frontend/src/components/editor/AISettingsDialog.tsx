@@ -18,7 +18,20 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const MODELS = ["deepseek-v4.1-flash", "deepseek-chat", "deepseek-reasoner"];
+const PROVIDERS = [
+  { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com", models: ["deepseek-v4.1-flash", "deepseek-chat", "deepseek-reasoner"], hint: "DeepSeek API" },
+  { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini", "o4-mini"], hint: "OpenAI API" },
+  { id: "gemini", label: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", models: ["gemini-2.5-flash", "gemini-2.5-pro"], hint: "Gemini OpenAI-compatible endpoint" },
+  { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", models: ["openai/gpt-4.1-mini", "anthropic/claude-sonnet-4", "google/gemini-2.5-flash"], hint: "OpenRouter API" },
+  { id: "groq", label: "Groq", baseUrl: "https://api.groq.com/openai/v1", models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"], hint: "Groq API" },
+  { id: "mistral", label: "Mistral", baseUrl: "https://api.mistral.ai/v1", models: ["mistral-large-latest", "mistral-small-latest"], hint: "Mistral API" },
+  { id: "xai", label: "xAI", baseUrl: "https://api.x.ai/v1", models: ["grok-3-mini", "grok-3"], hint: "xAI API" },
+  { id: "together", label: "Together", baseUrl: "https://api.together.xyz/v1", models: ["meta-llama/Llama-3.3-70B-Instruct-Turbo"], hint: "Together API" },
+  { id: "ollama", label: "Ollama / local", baseUrl: "http://localhost:11434/v1", models: ["llama3.1", "qwen2.5-coder"], hint: "Local OpenAI-compatible endpoint" },
+  { id: "custom", label: "Custom / self-hosted", baseUrl: "", models: [], hint: "Any OpenAI-compatible /chat/completions endpoint" },
+] as const;
+
+type ProviderId = (typeof PROVIDERS)[number]["id"];
 
 export function AISettingsDialog({
   open,
@@ -31,7 +44,7 @@ export function AISettingsDialog({
 }) {
   const t = useT();
   const [settings, setSettings] = useState<AISettings | null>(null);
-  const [provider, setProvider] = useState("deepseek");
+  const [provider, setProvider] = useState<ProviderId>("deepseek");
   const [baseUrl, setBaseUrl] = useState("https://api.deepseek.com");
   const [model, setModel] = useState("deepseek-v4.1-flash");
   const [apiKey, setApiKey] = useState("");
@@ -48,13 +61,24 @@ export function AISettingsDialog({
       .settings()
       .then((s) => {
         setSettings(s);
-        setProvider(s.provider || "deepseek");
+        const known = PROVIDERS.find((p) => p.id === s.provider);
+        setProvider((known?.id ?? "custom") as ProviderId);
         setBaseUrl(s.baseUrl || "https://api.deepseek.com");
         setModel(s.model || "deepseek-v4.1-flash");
       })
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
   }, [open]);
+
+  const activeProvider = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[PROVIDERS.length - 1];
+
+  const chooseProvider = (id: string) => {
+    const next = PROVIDERS.find((p) => p.id === id) ?? PROVIDERS[PROVIDERS.length - 1];
+    setProvider(next.id);
+    if (next.baseUrl) setBaseUrl(next.baseUrl);
+    const firstModel = next.models[0];
+    if (firstModel) setModel(firstModel);
+  };
 
   const save = async (clearKey = false) => {
     setSaving(true);
@@ -96,7 +120,7 @@ export function AISettingsDialog({
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-4 text-primary" /> {t("AI settings")}
           </DialogTitle>
-          <DialogDescription>{t("Bring your own DeepSeek key. It is encrypted at rest and never leaves this server.")}</DialogDescription>
+          <DialogDescription>{t("Bring your own AI provider key. Any OpenAI-compatible endpoint works; the key is encrypted at rest and never leaves this server.")}</DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -129,27 +153,28 @@ export function AISettingsDialog({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>{t("Provider")}</Label>
-                <Select value={provider} onValueChange={setProvider}>
+                <Select value={provider} onValueChange={chooseProvider}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="deepseek">DeepSeek</SelectItem>
-                    <SelectItem value="openai-compatible">{t("OpenAI-compatible")}</SelectItem>
+                    {PROVIDERS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>{t("Base URL")}</Label>
-                <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.deepseek.com" />
+                <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={activeProvider.baseUrl || "https://your-provider.example/v1"} />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label>{t("Model")}</Label>
-              <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="deepseek-v4.1-flash" />
+              <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="model-id" />
               <div className="flex flex-wrap gap-1.5">
-                {MODELS.map((m) => (
+                {activeProvider.models.map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -166,6 +191,9 @@ export function AISettingsDialog({
                   </button>
                 ))}
               </div>
+              <p className="text-[10px] leading-relaxed text-muted-foreground">
+                {t(activeProvider.hint)} · {t("Base URL must point at an OpenAI-compatible /v1 endpoint.")}
+              </p>
             </div>
 
             <div className="space-y-1.5">

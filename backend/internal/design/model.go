@@ -29,9 +29,16 @@ type Shadow struct {
 	Color  string  `json:"color"`
 }
 
-type VectorPoint struct {
+type VectorHandle struct {
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
+}
+
+type VectorPoint struct {
+	X   float64       `json:"x"`
+	Y   float64       `json:"y"`
+	In  *VectorHandle `json:"in,omitempty"`
+	Out *VectorHandle `json:"out,omitempty"`
 }
 
 type Link struct {

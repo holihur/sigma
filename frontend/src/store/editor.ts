@@ -39,6 +39,7 @@ interface EditorState {
   pageId: string;
   version: number;
   selection: string[];
+  selectedPoint: number | null;
   hoveredId: string | null;
   tool: Tool;
   viewport: Viewport;
@@ -70,6 +71,7 @@ interface EditorState {
   fitView: (width: number, height: number, padding?: number) => void;
   centerOn: (point: Point, width: number, height: number, zoom?: number) => void;
   select: (ids: string[], additive?: boolean) => void;
+  setSelectedPoint: (index: number | null) => void;
   toggleSelect: (id: string) => void;
   setHovered: (id: string | null) => void;
   setEditingId: (id: string | null) => void;
@@ -230,6 +232,7 @@ export const useEditor = create<EditorState>((set, get) => {
     pageId: emptyDoc.pages[0].id,
     version: 0,
     selection: [],
+    selectedPoint: null,
     hoveredId: null,
     tool: "select",
     viewport: { x: 0, y: 0, zoom: 1 },
@@ -259,6 +262,7 @@ export const useEditor = create<EditorState>((set, get) => {
         pageId: normalized.pages[0].id,
         version,
         selection: [],
+        selectedPoint: null,
         hoveredId: null,
         editingId: null,
         past: [],
@@ -296,9 +300,9 @@ export const useEditor = create<EditorState>((set, get) => {
     setFileMeta: (file) => set({ file, isReadOnly: file.role === "view" }),
     setPage: (id) => {
       if (!get().doc.pages.some((p) => p.id === id)) return;
-      set({ pageId: id, selection: [], editingId: null, hoveredId: null });
+      set({ pageId: id, selection: [], selectedPoint: null, editingId: null, hoveredId: null });
     },
-    setTool: (tool) => set({ tool, editingId: null }),
+    setTool: (tool) => set({ tool, selectedPoint: null, editingId: null }),
     setViewport: (vp) => set({ viewport: vp }),
     zoomAt: (factor, screen, size) => {
       const { viewport } = get();
@@ -347,12 +351,14 @@ export const useEditor = create<EditorState>((set, get) => {
       const unique = Array.from(new Set(ids));
       set({
         selection: additive ? Array.from(new Set([...get().selection, ...unique])) : unique,
+        selectedPoint: null,
         editingId: null,
       });
     },
+    setSelectedPoint: (index) => set({ selectedPoint: index }),
     toggleSelect: (id) => {
       const sel = get().selection;
-      set({ selection: sel.includes(id) ? sel.filter((s) => s !== id) : [...sel, id], editingId: null });
+      set({ selection: sel.includes(id) ? sel.filter((s) => s !== id) : [...sel, id], selectedPoint: null, editingId: null });
     },
     setHovered: (id) => set({ hoveredId: id }),
     setEditingId: (id) => set({ editingId: id }),
@@ -372,6 +378,7 @@ export const useEditor = create<EditorState>((set, get) => {
         past: past.slice(0, -1),
         future: [doc, ...future].slice(0, 60),
         selection: pageExists ? get().selection.filter((id) => getPage(prev, nextPageId).nodes[id]) : [],
+        selectedPoint: null,
         dirty: true,
         changeSeq: get().changeSeq + 1,
         syncStatus: "saving",
@@ -389,6 +396,7 @@ export const useEditor = create<EditorState>((set, get) => {
         future: future.slice(1),
         past: [...past, doc].slice(-60),
         selection: pageExists ? get().selection.filter((id) => getPage(next, nextPageId).nodes[id]) : [],
+        selectedPoint: null,
         dirty: true,
         changeSeq: get().changeSeq + 1,
         syncStatus: "saving",
@@ -478,7 +486,7 @@ export const useEditor = create<EditorState>((set, get) => {
         }
         p.ts = now;
       });
-      set({ selection: [], editingId: null });
+      set({ selection: [], selectedPoint: null, editingId: null });
     },
     duplicateSelection: () => {
       if (get().isReadOnly) return;

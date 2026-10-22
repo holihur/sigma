@@ -21,12 +21,16 @@ import {
   MousePointerClick,
   Plus,
   RotateCcw,
+  Spline,
+  CornerDownRight,
+  PenTool,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { toPng, toSvg } from "html-to-image";
 import type { Page, Paint, SceneNode, SigmaDoc, Transition } from "@/lib/types";
 import { FONT_FAMILIES, FONT_WEIGHTS, createNode, defaultGradient, getPage, nodeAABB } from "@/lib/nodes";
+import { canConvertToVector, cornerPoint, removePoint, shapeToVector, smoothPoint } from "@/lib/vector";
 import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
@@ -201,6 +205,8 @@ function DesignTab({
         </div>
       </Section>
 
+      <VectorSection node={node} readOnly={readOnly} />
+
       <AppearanceSection
         opacity={node.opacity}
         blur={node.blur}
@@ -296,6 +302,122 @@ function SelectionBounds({ page, ids }: { page: Page; ids: string[] }) {
       <NumberField icon="W" value={round(maxX - minX, 1)} disabled onChange={() => undefined} />
       <NumberField icon="H" value={round(maxY - minY, 1)} disabled onChange={() => undefined} />
     </div>
+  );
+}
+
+function VectorSection({ node, readOnly }: { node: SceneNode; readOnly: boolean }) {
+  const t = useT();
+  const updateNode = useEditor((s) => s.updateNode);
+  const pushHistory = useEditor((s) => s.pushHistory);
+  const selectedPoint = useEditor((s) => s.selectedPoint);
+  const setSelectedPoint = useEditor((s) => s.setSelectedPoint);
+  const isVector = node.type === "vector";
+  const canConvert = canConvertToVector(node);
+  if (!isVector && !canConvert) return null;
+  const points = node.points ?? [];
+  const hasPoint = selectedPoint != null && selectedPoint >= 0 && selectedPoint < points.length;
+
+  const updatePoints = (next: typeof points) => {
+    if (readOnly) return;
+    pushHistory();
+    updateNode(node.id, { points: next }, false);
+  };
+
+  return (
+    <Section title={t("Vector")}>
+      {!isVector && canConvert ? (
+        <>
+          <p className="mb-2 text-[10px] leading-relaxed text-muted-foreground">
+            {t("Convert this shape into an editable vector path.")}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5"
+            disabled={readOnly}
+            onClick={() => {
+              const converted = shapeToVector(node);
+              pushHistory();
+              updateNode(node.id, {
+                type: "vector",
+                points: converted.points,
+                closed: converted.closed,
+                radius: 0,
+                height: node.type === "line" ? Math.max(node.height, 1) : node.height,
+              }, false);
+              setSelectedPoint(null);
+            }}
+          >
+            <PenTool className="size-3.5" /> {t("Convert to vector")}
+          </Button>
+        </>
+      ) : (
+        <>
+          <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>{t("{count} points", { count: points.length })}</span>
+            <span>{node.closed ? t("Closed path") : t("Open path")}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-[10px]"
+              disabled={readOnly}
+              onClick={() => {
+                const nextClosed = !node.closed;
+                pushHistory();
+                updateNode(node.id, { closed: nextClosed, fill: nextClosed ? node.fill ?? { type: "solid", color: "#0ea5e9" } : null }, false);
+              }}
+            >
+              <Spline className="size-3.5" /> {node.closed ? t("Open path") : t("Close path")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-[10px]"
+              disabled={readOnly || !hasPoint}
+              onClick={() => {
+                if (selectedPoint == null) return;
+                const p = points[selectedPoint];
+                const smooth = !(p.in || p.out);
+                updatePoints(smooth ? smoothPoint(points, selectedPoint, node.closed) : cornerPoint(points, selectedPoint));
+              }}
+            >
+              {hasPoint && selectedPoint != null && (points[selectedPoint].in || points[selectedPoint].out) ? (
+                <><CornerDownRight className="size-3.5" /> {t("Make corner")}</>
+              ) : (
+                <><Spline className="size-3.5" /> {t("Smooth point")}</>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-[10px] text-destructive"
+              disabled={readOnly || !hasPoint || points.length <= 2}
+              onClick={() => {
+                if (selectedPoint == null) return;
+                updatePoints(removePoint(points, selectedPoint));
+                setSelectedPoint(null);
+              }}
+            >
+              <Trash2 className="size-3.5" /> {t("Delete point")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-[10px]"
+              disabled={selectedPoint == null}
+              onClick={() => setSelectedPoint(null)}
+            >
+              <CornerDownRight className="size-3.5" /> {t("Deselect point")}
+            </Button>
+          </div>
+          <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+            {t("Double-click the path to add a point. Drag anchors or handles; Alt-click deletes an anchor.")}
+          </p>
+        </>
+      )}
+    </Section>
   );
 }
 
