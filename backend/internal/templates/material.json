@@ -4,7 +4,8 @@
     "name": "Material Design 3",
     "description": "Material You color roles, Roboto type scale, expressive cards, FAB and navigation bar.",
     "accent": "#6750A4",
-    "icon": "smartphone"
+    "icon": "smartphone",
+    "logo": "/brand/google.svg"
   },
   "doc": {
     "pages": [

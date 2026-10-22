@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Loader2, Maximize, Minus, Plus, Sparkles, AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
-import { toPng } from "html-to-image";
 import { commentsApi, filesApi } from "@/lib/api";
 import type { Comment, Point } from "@/lib/types";
 import { boundsOf, getPage, nodeAABB } from "@/lib/nodes";
@@ -12,14 +11,6 @@ import { useCollaboration } from "@/hooks/useCollaboration";
 import { useT } from "@/i18n";
 import { clamp, cn, isEditableTarget, round } from "@/lib/utils";
 import { Canvas } from "@/components/editor/Canvas";
-import { AIChatPanel } from "@/components/editor/AIChatPanel";
-import { AISettingsDialog } from "@/components/editor/AISettingsDialog";
-import { DeveloperDialog } from "@/components/editor/DeveloperDialog";
-import { ComponentsDialog } from "@/components/editor/ComponentsDialog";
-import { AgentContextDialog } from "@/components/editor/AgentContextDialog";
-import { CommandPalette } from "@/components/editor/CommandPalette";
-import { FindTextDialog } from "@/components/editor/FindTextDialog";
-import { StylesDialog } from "@/components/editor/StylesDialog";
 import { SelectionToolbar } from "@/components/editor/SelectionToolbar";
 import { figmaApi } from "@/lib/api";
 import { Toolbar } from "@/components/editor/Toolbar";
@@ -27,7 +18,6 @@ import { TopBar } from "@/components/editor/TopBar";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { PropertiesPanel } from "@/components/editor/PropertiesPanel";
 import { CommentsPanel } from "@/components/editor/CommentsPanel";
-import { PreviewMode } from "@/components/editor/PreviewMode";
 import { ShareDialog } from "@/components/editor/ShareDialog";
 import { VersionHistoryDialog } from "@/components/editor/VersionHistoryDialog";
 import {
@@ -38,6 +28,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+
+const AIChatPanel = React.lazy(() =>
+  import("@/components/editor/AIChatPanel").then((m) => ({ default: m.AIChatPanel })),
+);
+const AISettingsDialog = React.lazy(() =>
+  import("@/components/editor/AISettingsDialog").then((m) => ({ default: m.AISettingsDialog })),
+);
+const DeveloperDialog = React.lazy(() =>
+  import("@/components/editor/DeveloperDialog").then((m) => ({ default: m.DeveloperDialog })),
+);
+const ComponentsDialog = React.lazy(() =>
+  import("@/components/editor/ComponentsDialog").then((m) => ({ default: m.ComponentsDialog })),
+);
+const AgentContextDialog = React.lazy(() =>
+  import("@/components/editor/AgentContextDialog").then((m) => ({ default: m.AgentContextDialog })),
+);
+const CommandPalette = React.lazy(() =>
+  import("@/components/editor/CommandPalette").then((m) => ({ default: m.CommandPalette })),
+);
+const FindTextDialog = React.lazy(() =>
+  import("@/components/editor/FindTextDialog").then((m) => ({ default: m.FindTextDialog })),
+);
+const StylesDialog = React.lazy(() =>
+  import("@/components/editor/StylesDialog").then((m) => ({ default: m.StylesDialog })),
+);
+const PreviewMode = React.lazy(() =>
+  import("@/components/editor/PreviewMode").then((m) => ({ default: m.PreviewMode })),
+);
 
 export default function EditorPage() {
   const { id = "" } = useParams();
@@ -52,6 +70,7 @@ export default function EditorPage() {
   const readOnly = useEditor((s) => s.isReadOnly);
   const tool = useEditor((s) => s.tool);
   const viewport = useEditor((s) => s.viewport);
+  const previewOpen = useEditor((s) => s.previewOpen);
   const selection = useEditor((s) => s.selection);
   const editingId = useEditor((s) => s.editingId);
   const comments = useEditor((s) => s.comments);
@@ -226,6 +245,7 @@ export default function EditorPage() {
     host.appendChild(clone);
     document.body.appendChild(host);
     try {
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(clone, {
         pixelRatio: 0.35,
         cacheBust: true,
@@ -683,22 +703,28 @@ export default function EditorPage() {
           </Drawer>
         )}
 
-        <AIChatPanel
-          open={aiOpen}
-          onClose={() => setAiOpen(false)}
-          onOpenSettings={() => setAiSettingsOpen(true)}
-          pageId={pageId}
-          configVersion={aiConfigVersion}
-        />
-        <AISettingsDialog
-          open={aiSettingsOpen}
-          onOpenChange={setAiSettingsOpen}
-          onSaved={() => setAiConfigVersion((v) => v + 1)}
-        />
-        <DeveloperDialog open={developerOpen} onOpenChange={setDeveloperOpen} />
-        <ComponentsDialog open={componentsOpen} onOpenChange={setComponentsOpen} />
-        <AgentContextDialog open={agentContextOpen} onOpenChange={setAgentContextOpen} />
-        <StylesDialog open={stylesOpen} onOpenChange={setStylesOpen} />
+        <React.Suspense fallback={null}>
+          {aiOpen && (
+            <AIChatPanel
+              open={aiOpen}
+              onClose={() => setAiOpen(false)}
+              onOpenSettings={() => setAiSettingsOpen(true)}
+              pageId={pageId}
+              configVersion={aiConfigVersion}
+            />
+          )}
+          {aiSettingsOpen && (
+            <AISettingsDialog
+              open={aiSettingsOpen}
+              onOpenChange={setAiSettingsOpen}
+              onSaved={() => setAiConfigVersion((v) => v + 1)}
+            />
+          )}
+          {developerOpen && <DeveloperDialog open={developerOpen} onOpenChange={setDeveloperOpen} />}
+          {componentsOpen && <ComponentsDialog open={componentsOpen} onOpenChange={setComponentsOpen} />}
+          {agentContextOpen && <AgentContextDialog open={agentContextOpen} onOpenChange={setAgentContextOpen} />}
+          {stylesOpen && <StylesDialog open={stylesOpen} onOpenChange={setStylesOpen} />}
+        </React.Suspense>
 
         {showComments && (
           <>
@@ -714,9 +740,15 @@ export default function EditorPage() {
         )}
       </div>
 
-      <PreviewMode />
-      <CommandPalette
-        open={commandOpen}
+      {previewOpen && (
+        <React.Suspense fallback={null}>
+          <PreviewMode />
+        </React.Suspense>
+      )}
+      {commandOpen && (
+        <React.Suspense fallback={null}>
+          <CommandPalette
+            open={commandOpen}
         onOpenChange={setCommandOpen}
         hostRef={hostRef}
         onShare={() => setShareOpen(true)}
@@ -730,9 +762,15 @@ export default function EditorPage() {
           const input = document.querySelector('input[accept=".svg,image/svg+xml"]') as HTMLInputElement | null;
           input?.click();
         }}
-        onDeveloper={() => setDeveloperOpen(true)}
-      />
-      <FindTextDialog open={findOpen} onOpenChange={setFindOpen} hostRef={hostRef} />
+            onDeveloper={() => setDeveloperOpen(true)}
+          />
+        </React.Suspense>
+      )}
+      {findOpen && (
+        <React.Suspense fallback={null}>
+          <FindTextDialog open={findOpen} onOpenChange={setFindOpen} hostRef={hostRef} />
+        </React.Suspense>
+      )}
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
       <VersionHistoryDialog open={versionsOpen} onOpenChange={setVersionsOpen} />
     </div>

@@ -16,6 +16,7 @@ type Meta struct {
 	Description string `json:"description"`
 	Accent      string `json:"accent"`
 	Icon        string `json:"icon"`
+	Logo        string `json:"logo,omitempty"`
 }
 
 // Load returns the raw document JSON for a template id.

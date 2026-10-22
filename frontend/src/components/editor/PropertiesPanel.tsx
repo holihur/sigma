@@ -36,7 +36,6 @@ import {
   MoveVertical,
 } from "lucide-react";
 import { toast } from "sonner";
-import { toPng, toSvg } from "html-to-image";
 import type { Page, Paint, SceneNode, SigmaDoc, Transition } from "@/lib/types";
 import { FONT_FAMILIES, FONT_WEIGHTS, createNode, defaultGradient, getPage, nodeAABB } from "@/lib/nodes";
 import { allVectorPoints, canConvertToVector, cornerPoint, removePoint, shapeToVector, smoothPoint, subpathPatch, vectorSubpaths } from "@/lib/vector";
@@ -324,9 +323,19 @@ function ConstraintsSection({
 }) {
   const t = useT();
   const parent = node.parentId ? page.nodes[node.parentId] : null;
-  if (!parent || parent.type !== "frame" || (parent.layout && parent.layout !== "none")) return null;
+  if (!parent || parent.type !== "frame") return null;
+  const inAutoLayout = parent.layout === "horizontal" || parent.layout === "vertical";
   return (
     <Section title={t("Constraints")}>
+      {inAutoLayout && (
+        <label className="mb-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span>{t("Absolute position in auto layout")}</span>
+          <Switch
+            checked={node.layoutPositioning === "absolute"}
+            onCheckedChange={(absolute) => onChange({ layoutPositioning: absolute ? "absolute" : "auto" })}
+          />
+        </label>
+      )}
       <div className="grid grid-cols-2 gap-2">
         <Select value={node.constraintH ?? "left"} onValueChange={(v) => onChange({ constraintH: v as SceneNode["constraintH"] })}>
           <SelectTrigger className="h-8"><MoveHorizontal className="size-3.5 text-muted-foreground" /><SelectValue /></SelectTrigger>
@@ -349,7 +358,11 @@ function ConstraintsSection({
           </SelectContent>
         </Select>
       </div>
-      <p className="mt-2 text-[10px] text-muted-foreground">{t("How this layer responds when its frame is resized.")}</p>
+      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+        {inAutoLayout && node.layoutPositioning !== "absolute"
+          ? t("Position follows the auto layout. Constraints can still scale the layer when its frame resizes.")
+          : t("How this layer responds when its frame is resized.")}
+      </p>
     </Section>
   );
 }
@@ -1177,6 +1190,7 @@ function ExportSection({ page, selected }: { page: Page; selected: SceneNode[] }
           transformOrigin: "center center",
         },
       };
+      const { toPng, toSvg } = await import("html-to-image");
       const dataUrl = format === "png" ? await toPng(el, options) : await toSvg(el, options);
       downloadDataUrl(dataUrl, `${safeName(first.name)}.${format}`);
       toast.success(`Exported ${format.toUpperCase()}`);
@@ -1192,6 +1206,7 @@ function ExportSection({ page, selected }: { page: Page; selected: SceneNode[] }
     const el = document.querySelector(`[data-node-id="${first.id}"]`) as HTMLElement | null;
     if (!el) return;
     try {
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(el, {
         pixelRatio: Number(scale) || 1,
         width: Math.max(first.width, 1),

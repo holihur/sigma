@@ -4,7 +4,8 @@
     "name": "IBM Carbon",
     "description": "Carbon UI shell, side navigation, data table and productive IBM Plex Sans components.",
     "accent": "#0F62FE",
-    "icon": "layout-dashboard"
+    "icon": "layout-dashboard",
+    "logo": "/brand/ibm.svg"
   },
   "doc": {
     "pages": [

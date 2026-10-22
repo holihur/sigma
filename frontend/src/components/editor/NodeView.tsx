@@ -37,6 +37,8 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
   if (node.shadow) shadows.push(shadowToCss(node.shadow)!);
   if (node.strokeWidth > 0 && node.stroke) shadows.push(`inset 0 0 0 ${node.strokeWidth}px ${strokeColor}`);
 
+  const layoutParent = node.parentId ? page.nodes[node.parentId] : null;
+  const inAutoLayout = !!layoutParent && layoutParent.type === "frame" && (layoutParent.layout === "horizontal" || layoutParent.layout === "vertical");
   const style: React.CSSProperties = {
     position: "absolute",
     left: node.x,
@@ -49,6 +51,7 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
     display: node.visible ? undefined : "none",
     pointerEvents: canInteract ? "auto" : "none",
     zIndex: undefined,
+    transition: inAutoLayout ? "left 160ms cubic-bezier(.2,.8,.2,1), top 160ms cubic-bezier(.2,.8,.2,1), width 160ms ease, height 160ms ease" : undefined,
   };
 
   const innerStyle: React.CSSProperties = {

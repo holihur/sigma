@@ -48,6 +48,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - 移动端工具栏提供 Undo / Redo，触控用户不再依赖键盘。
 - 仪表盘支持文件夹、批量星标 / 移动 / 删除、网格 / 列表视图。
 - `⌘F` 在当前页或整个文件中查找和替换文本。
+- **加载性能**：路由 / 对话框 / 矢量引擎 / 导出库全部按需拆包；静态资源 gzip + 哈希一年缓存；首屏内联 Boot，页面 JS 到达前即可显示品牌加载态。
 
 ### 3. 原型与协作
 
@@ -134,6 +135,10 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 | 文件夹与批量操作 | 本地样式 |
 | --- | --- |
 | ![Folders](docs/screenshots/43-folders-bulk.png) | ![Styles](docs/screenshots/44-local-styles.png) |
+
+| 设计系统公司 Logo |
+| --- |
+| ![Template logos](docs/screenshots/45-template-logos.png) |
 
 ## 一键安装
 

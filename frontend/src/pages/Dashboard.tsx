@@ -33,6 +33,7 @@ import {
   Terminal,
   UserRound,
   Check,
+  ChevronDown,
   FolderOpen,
   List,
   MoveRight,
@@ -66,9 +67,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DeveloperDialog } from "@/components/editor/DeveloperDialog";
-import { FigmaImportDialog } from "@/components/editor/FigmaImportDialog";
+const DeveloperDialog = React.lazy(() =>
+  import("@/components/editor/DeveloperDialog").then((m) => ({ default: m.DeveloperDialog })),
+);
+const FigmaImportDialog = React.lazy(() =>
+  import("@/components/editor/FigmaImportDialog").then((m) => ({ default: m.FigmaImportDialog })),
+);
 
 type Nav = "all" | "starred" | "shared";
 
@@ -436,9 +440,13 @@ export default function DashboardPage() {
                 onClick={() => openNew(tpl.id)}
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
-                <span className="flex size-5 items-center justify-center rounded text-white" style={{ background: tpl.accent }}>
-                  <TemplateIcon icon={tpl.icon} className="size-3" />
-                </span>
+                {tpl.logo ? (
+                  <img src={tpl.logo} alt="" className="size-5 shrink-0 rounded-[5px] object-cover" />
+                ) : (
+                  <span className="flex size-5 items-center justify-center rounded text-white" style={{ background: tpl.accent }}>
+                    <TemplateIcon icon={tpl.icon} className="size-3" />
+                  </span>
+                )}
                 <span className="truncate">{t(tpl.name)}</span>
               </button>
             ))}
@@ -552,17 +560,20 @@ export default function DashboardPage() {
               </kbd>
             </div>
             <div className="flex items-center gap-2 sm:ml-auto">
-              <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-                <SelectTrigger className="hidden h-9 w-[142px] bg-panel sm:flex">
-                  <Clock className="size-3.5 text-muted-foreground" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="updated">{t("Last updated")}</SelectItem>
-                  <SelectItem value="created">{t("Date created")}</SelectItem>
-                  <SelectItem value="name">{t("Name")}</SelectItem>
-                </SelectContent>
-              </Select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="hidden h-9 items-center gap-1.5 rounded-lg border border-border bg-panel px-3 text-[12px] text-muted-foreground hover:text-foreground sm:flex">
+                    <Clock className="size-3.5" />
+                    {sort === "updated" ? t("Last updated") : sort === "created" ? t("Date created") : t("Name")}
+                    <ChevronDown className="size-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSort("updated")}>{t("Last updated")}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSort("created")}>{t("Date created")}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSort("name")}>{t("Name")}</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="hidden items-center gap-0.5 rounded-md border border-border p-0.5 sm:flex">
                 <button
                   onClick={() => setView("grid")}
@@ -769,12 +780,16 @@ export default function DashboardPage() {
                   template === tpl.id ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border hover:border-muted-foreground/30 hover:bg-secondary/40",
                 )}
               >
-                <div
-                  className="flex size-10 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
-                  style={{ background: `linear-gradient(135deg, ${tpl.accent}, color-mix(in oklch, ${tpl.accent} 55%, #111))` }}
-                >
-                  <TemplateIcon icon={tpl.icon} className="size-4.5" />
-                </div>
+                {tpl.logo ? (
+                  <img src={tpl.logo} alt="" className="size-10 shrink-0 rounded-lg object-cover shadow-sm" />
+                ) : (
+                  <div
+                    className="flex size-10 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
+                    style={{ background: `linear-gradient(135deg, ${tpl.accent}, color-mix(in oklch, ${tpl.accent} 55%, #111))` }}
+                  >
+                    <TemplateIcon icon={tpl.icon} className="size-4.5" />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 text-[13px] font-medium">
                     {t(tpl.name)}
@@ -916,9 +931,17 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <FigmaImportDialog open={figmaOpen} onOpenChange={setFigmaOpen} onImported={(file) => { void load(); navigate(`/file/${file.id}`); }} />
+      {figmaOpen && (
+        <React.Suspense fallback={null}>
+          <FigmaImportDialog open={figmaOpen} onOpenChange={setFigmaOpen} onImported={(file) => { void load(); navigate(`/file/${file.id}`); }} />
+        </React.Suspense>
+      )}
       <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
-      <DeveloperDialog open={developerOpen} onOpenChange={setDeveloperOpen} />
+      {developerOpen && (
+        <React.Suspense fallback={null}>
+          <DeveloperDialog open={developerOpen} onOpenChange={setDeveloperOpen} />
+        </React.Suspense>
+      )}
     </div>
   );
 }

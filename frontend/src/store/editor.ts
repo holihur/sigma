@@ -13,10 +13,7 @@ import type {
   TextStyle,
 } from "@/lib/types";
 import { collectSubtree, instantiateSubtree, mergeDocs } from "@/lib/merge";
-import {
-  combineVectors, offsetVector, outlineStroke, pathfinder, simplifyVector, splitCompound,
-  svgToNodes, traceImage, type PathfinderKind,
-} from "@/lib/vector-ops";
+import type { PathfinderKind } from "@/lib/vector-ops";
 import { subpathPatch } from "@/lib/vector";
 import {
   ancestorsOf,
@@ -112,15 +109,16 @@ interface EditorState {
   insertInstance: (componentId: string) => string | null;
   detachInstance: (id: string) => void;
   syncInstances: (componentId: string, record?: boolean) => number;
-  pathfinder: (kind: PathfinderKind) => boolean;
-  combineSelectedVectors: () => boolean;
-  splitCompound: () => boolean;
-  simplifySelectedVector: () => boolean;
-  offsetSelectedVector: (delta: number) => boolean;
-  outlineSelectedStroke: () => boolean;
+  pathfinder: (kind: PathfinderKind) => Promise<boolean>;
+  combineSelectedVectors: () => Promise<boolean>;
+  splitCompound: () => Promise<boolean>;
+  simplifySelectedVector: () => Promise<boolean>;
+  offsetSelectedVector: (delta: number) => Promise<boolean>;
+  outlineSelectedStroke: () => Promise<boolean>;
   importSVG: (svg: string, name?: string) => Promise<number>;
   traceSelectedImage: () => Promise<boolean>;
   reorderSelection: (mode: ReorderMode) => void;
+  reorderChildren: (parentId: string, order: string[]) => void;
   reparentNode: (nodeId: string, parentId: string | null, index: number) => void;
   translateSelection: (dx: number, dy: number, record?: boolean) => void;
   align: (kind: AlignKind) => void;
@@ -178,6 +176,7 @@ function normalizeDoc(doc: SigmaDoc): SigmaDoc {
       node.layoutAlign = node.layoutAlign ?? "start";
       node.layoutHugWidth = node.layoutHugWidth ?? false;
       node.layoutHugHeight = node.layoutHugHeight ?? false;
+      node.layoutPositioning = node.layoutPositioning ?? "auto";
       node.constraintH = node.constraintH ?? "left";
       node.constraintV = node.constraintV ?? "top";
     }
@@ -205,7 +204,7 @@ function reflowNode(page: Page, id: string, seen: Set<string>) {
   if (node.type !== "frame" || (node.layout !== "horizontal" && node.layout !== "vertical")) return;
   const kids = node.children
     .map((cid) => page.nodes[cid])
-    .filter((n): n is SceneNode => !!n && n.visible && n.type !== "group");
+    .filter((n): n is SceneNode => !!n && n.visible && n.type !== "group" && n.layoutPositioning !== "absolute");
   if (kids.length === 0) return;
   const row = node.layout === "horizontal";
   const gap = Math.max(0, node.gap ?? 0);
@@ -1071,8 +1070,9 @@ export const useEditor = create<EditorState>((set, get) => {
       });
       return count;
     },
-    pathfinder: (kind) => {
+    pathfinder: async (kind) => {
       if (get().isReadOnly) return false;
+      const { pathfinder } = await import("@/lib/vector-ops");
       const state = get();
       const page = currentPage(state);
       const roots = topLevelSelection(page, state.selection)
@@ -1093,8 +1093,9 @@ export const useEditor = create<EditorState>((set, get) => {
       set({ selection: [result.id], selectedPoint: null });
       return true;
     },
-    combineSelectedVectors: () => {
+    combineSelectedVectors: async () => {
       if (get().isReadOnly) return false;
+      const { combineVectors } = await import("@/lib/vector-ops");
       const state = get();
       const page = currentPage(state);
       const roots = topLevelSelection(page, state.selection)
@@ -1113,8 +1114,9 @@ export const useEditor = create<EditorState>((set, get) => {
       set({ selection: [result.id], selectedPoint: null });
       return true;
     },
-    splitCompound: () => {
+    splitCompound: async () => {
       if (get().isReadOnly) return false;
+      const { splitCompound } = await import("@/lib/vector-ops");
       const state = get();
       const page = currentPage(state);
       if (state.selection.length !== 1) return false;
@@ -1135,8 +1137,9 @@ export const useEditor = create<EditorState>((set, get) => {
       set({ selection: parts.map((p) => p.id), selectedPoint: null });
       return true;
     },
-    simplifySelectedVector: () => {
+    simplifySelectedVector: async () => {
       if (get().isReadOnly) return false;
+      const { simplifyVector } = await import("@/lib/vector-ops");
       const state = get();
       const page = currentPage(state);
       if (state.selection.length !== 1) return false;
@@ -1155,8 +1158,9 @@ export const useEditor = create<EditorState>((set, get) => {
       set({ selection: [result.id], selectedPoint: null });
       return true;
     },
-    offsetSelectedVector: (delta) => {
+    offsetSelectedVector: async (delta) => {
       if (get().isReadOnly) return false;
+      const { offsetVector } = await import("@/lib/vector-ops");
       const state = get();
       const page = currentPage(state);
       if (state.selection.length !== 1) return false;
@@ -1173,8 +1177,9 @@ export const useEditor = create<EditorState>((set, get) => {
       set({ selection: [result.id], selectedPoint: null });
       return true;
     },
-    outlineSelectedStroke: () => {
+    outlineSelectedStroke: async () => {
       if (get().isReadOnly) return false;
+      const { outlineStroke } = await import("@/lib/vector-ops");
       const state = get();
       const page = currentPage(state);
       if (state.selection.length !== 1) return false;
@@ -1193,6 +1198,7 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     importSVG: async (svg, name = "SVG") => {
       if (get().isReadOnly) return 0;
+      const { svgToNodes } = await import("@/lib/vector-ops");
       const nodes = await svgToNodes(svg, name);
       if (!nodes.length) return 0;
       const state = get();
@@ -1223,6 +1229,7 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     traceSelectedImage: async () => {
       if (get().isReadOnly) return false;
+      const { traceImage } = await import("@/lib/vector-ops");
       const state = get();
       const page = currentPage(state);
       if (state.selection.length !== 1) return false;
@@ -1287,6 +1294,22 @@ export const useEditor = create<EditorState>((set, get) => {
         }
         p.ts = now;
       });
+    },
+    reorderChildren: (parentId, order) => {
+      if (get().isReadOnly) return;
+      const state = get();
+      const page = currentPage(state);
+      const parent = page.nodes[parentId];
+      if (!parent || parent.type !== "frame") return;
+      const valid = order.filter((id) => parent.children.includes(id));
+      if (valid.length !== parent.children.length) return;
+      mutate((p) => {
+        const target = p.nodes[parentId];
+        if (!target) return;
+        target.children = [...valid];
+        target.ts = Date.now();
+        p.ts = Date.now();
+      }, false);
     },
     reparentNode: (nodeId, parentId, index) => {
       if (get().isReadOnly) return;

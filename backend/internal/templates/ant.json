@@ -4,7 +4,8 @@
     "name": "Ant Design",
     "description": "Alibaba Ant Group enterprise patterns, #1677FF primary, Chinese typography and data tables.",
     "accent": "#1677FF",
-    "icon": "layout-dashboard"
+    "icon": "layout-dashboard",
+    "logo": "/brand/ant.svg"
   },
   "doc": {
     "pages": [

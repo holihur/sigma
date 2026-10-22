@@ -4,7 +4,8 @@
     "name": "ByteDance Arco",
     "description": "ByteDance Arco console patterns, #165DFF primary, compact 4px geometry and data-dense tables.",
     "accent": "#165DFF",
-    "icon": "layout-dashboard"
+    "icon": "layout-dashboard",
+    "logo": "/brand/bytedance.svg"
   },
   "doc": {
     "pages": [

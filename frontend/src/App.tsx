@@ -4,8 +4,7 @@ import { Toaster } from "sonner";
 import { useAuth } from "@/store/auth";
 import { bootTheme, useTheme } from "@/store/theme";
 import { bootI18n } from "@/i18n";
-import LoginPage from "@/pages/Login";
-
+const LoginPage = lazy(() => import("@/pages/Login"));
 const DashboardPage = lazy(() => import("@/pages/Dashboard"));
 const EditorPage = lazy(() => import("@/pages/Editor"));
 const PublicPrototypePage = lazy(() => import("@/pages/PublicPrototype"));

@@ -4,7 +4,8 @@
     "name": "Microsoft Fluent 2",
     "description": "Fluent command bar, navigation, metric cards and a data table with Segoe UI styling.",
     "accent": "#0F6CBD",
-    "icon": "layout-dashboard"
+    "icon": "layout-dashboard",
+    "logo": "/brand/microsoft.svg"
   },
   "doc": {
     "pages": [

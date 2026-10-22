@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { toPng, toSvg } from "html-to-image";
 import {
   ArrowUpRight,
   BringToFront,
@@ -107,6 +106,15 @@ type DragState =
       startLocal: Point;
       parentId: string | null;
       moved: boolean;
+    }
+  | {
+      kind: "layout-reorder";
+      parentId: string;
+      nodeId: string;
+      startWorld: Point;
+      startLocal: Point;
+      moved: boolean;
+      history: boolean;
     }
   | {
       kind: "vector-point";
@@ -395,6 +403,9 @@ export function Canvas({
     st.updateNode(pen.nodeId, {
       closed,
       fill: closed ? node.fill ?? { type: "solid", color: "#0ea5e9" } : null,
+      // Closed shapes should look like filled vectors, not a 2px stroke.
+      // Open paths keep the visible stroke so they remain discoverable.
+      stroke: closed ? null : node.stroke ?? { type: "solid", color: "#0ea5e9" },
       name: node.name === "Vector" ? "Vector" : node.name,
     }, false);
     st.select([pen.nodeId]);
@@ -708,6 +719,63 @@ export function Canvas({
     const selectedPage = getPage(store.getState().doc, pageId);
     const ids = topLevelSelection(selectedPage, store.getState().selection);
     if (ids.length === 0) return;
+
+    // Auto-layout children reorder by dragging along the layout axis. This is
+    // deliberately separate from free move so the layout engine remains the
+    // single source of truth for x/y.
+    if (!e.altKey && ids.length === 1) {
+      const dragged = selectedPage.nodes[ids[0]];
+      const parent = dragged?.parentId ? selectedPage.nodes[dragged.parentId] : null;
+      if (dragged && parent && parent.type === "frame" && (parent.layout === "horizontal" || parent.layout === "vertical")) {
+        const startLocal = parentLocalPoint(selectedPage, parent.id, worldPoint(e));
+        dragRef.current = {
+          kind: "layout-reorder",
+          parentId: parent.id,
+          nodeId: dragged.id,
+          startWorld: worldPoint(e),
+          startLocal,
+          moved: false,
+          history: false,
+        };
+        beginGesture(
+          (ev) => {
+            const d = dragRef.current;
+            if (!d || d.kind !== "layout-reorder") return;
+            const now = worldPoint(ev);
+            if (!d.moved) {
+              if (Math.hypot(now.x - d.startWorld.x, now.y - d.startWorld.y) * viewport.zoom < 4) return;
+              d.moved = true;
+            }
+            if (!d.history) {
+              d.history = true;
+              store.getState().pushHistory();
+            }
+            const current = getPage(store.getState().doc, pageId);
+            const container = current.nodes[d.parentId];
+            if (!container) return;
+            const row = container.layout === "horizontal";
+            const local = parentLocalPoint(current, container.id, now);
+            const axis = row ? local.x : local.y;
+            const siblings = container.children.filter((id) => id !== d.nodeId).map((id) => current.nodes[id]).filter(Boolean);
+            let target = siblings.length;
+            for (let i = 0; i < siblings.length; i++) {
+              const sibling = siblings[i];
+              const center = row ? sibling.x + sibling.width / 2 : sibling.y + sibling.height / 2;
+              if (axis < center) { target = i; break; }
+            }
+            const nextOrder = container.children.filter((id) => id !== d.nodeId);
+            nextOrder.splice(target, 0, d.nodeId);
+            if (nextOrder.join("|") === container.children.join("|")) return;
+            store.getState().reorderChildren(d.parentId, nextOrder);
+          },
+          () => {
+            dragRef.current = null;
+          },
+        );
+        return;
+      }
+    }
+
     const initialBounds = boundsOf(selectedPage, ids);
     const exclude = new Set<string>();
     for (const root of ids) {
@@ -1284,6 +1352,7 @@ export function Canvas({
                 const el = document.querySelector(`[data-node-id="${ctxNode.id}"]`) as HTMLElement | null;
                 if (!el) return;
                 try {
+                  const { toPng } = await import("html-to-image");
                   const dataUrl = await toPng(el, {
                     pixelRatio: 2,
                     width: Math.max(ctxNode.width, 1),
@@ -1307,6 +1376,7 @@ export function Canvas({
                 const el = document.querySelector(`[data-node-id="${ctxNode.id}"]`) as HTMLElement | null;
                 if (!el) return;
                 try {
+                  const { toSvg } = await import("html-to-image");
                   const dataUrl = await toSvg(el, {
                     width: Math.max(ctxNode.width, 1),
                     height: Math.max(Math.abs(ctxNode.height), 1),
@@ -1329,6 +1399,7 @@ export function Canvas({
                 const el = document.querySelector(`[data-node-id="${ctxNode.id}"]`) as HTMLElement | null;
                 if (!el) return;
                 try {
+                  const { toPng } = await import("html-to-image");
                   const dataUrl = await toPng(el, {
                     pixelRatio: 2,
                     width: Math.max(ctxNode.width, 1),

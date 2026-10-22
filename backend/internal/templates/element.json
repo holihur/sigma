@@ -4,7 +4,8 @@
     "name": "Element Plus",
     "description": "Eleme Element blue, classic admin sidebar, 4px controls and enterprise table patterns.",
     "accent": "#409EFF",
-    "icon": "layout-dashboard"
+    "icon": "layout-dashboard",
+    "logo": "/brand/element.svg"
   },
   "doc": {
     "pages": [

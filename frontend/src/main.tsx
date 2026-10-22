@@ -9,3 +9,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <App />
   </BrowserRouter>,
 );
+
+// The inline boot screen in index.html makes first paint instant; hand off to
+// React as soon as the first frame is committed.
+requestAnimationFrame(() => document.getElementById("boot")?.remove());

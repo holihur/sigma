@@ -100,6 +100,7 @@ export interface SceneNode {
   layoutAlign?: "start" | "center" | "end" | "stretch";
   layoutHugWidth?: boolean;
   layoutHugHeight?: boolean;
+  layoutPositioning?: "auto" | "absolute";
 
   /** Constraints applied when the parent frame resizes. */
   constraintH?: "left" | "right" | "left-right" | "center" | "scale";
@@ -210,6 +211,7 @@ export interface TemplateMeta {
   description: string;
   accent: string;
   icon: string;
+  logo?: string;
 }
 
 export interface PresenceUser {

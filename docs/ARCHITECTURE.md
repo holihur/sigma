@@ -163,6 +163,15 @@ presence（光标、选区）走独立 WebSocket 消息，约 45ms 节流，不�
 - 自定义 Skills 通过 `skilltoolset` 适配 `dbSkillSource`，数据来自 `ai_skills` 表。
 - 更多见 [AI-AGENTS.md](AI-AGENTS.md)。
 
+## 前端加载与缓存
+
+- 路由级 `React.lazy`：Dashboard、Editor、Public Prototype、Login 分开加载。
+- 编辑器内 AI、组件、样式、命令面板、导入导出、预览等对话框按需加载。
+- Paper.js、Clipper、ImageTracer 只在首次执行布尔 / 偏移 / SVG / 描摹时动态加载。
+- `html-to-image` 只在导出 PNG/SVG 或生成缩略图时加载。
+- Go 静态文件服务对 JS/CSS/HTML/SVG/JSON 使用 gzip，带哈希的 `/assets/*` 设置 `immutable` 一年缓存；`index.html` 使用 `no-cache` 以便升级后立即生效。
+- `index.html` 内含轻量首屏 Boot，避免 JS 解析期间白屏。
+
 ## 安全边界
 
 - JWT 30 天有效，HS256，`SIGMA_SECRET` 签名。

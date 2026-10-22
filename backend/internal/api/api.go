@@ -1,6 +1,7 @@
 package api
 
 import (
+	"compress/gzip"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -230,23 +231,78 @@ func spaHandler(dir string) http.Handler {
 
 func spaFSHandler(root fs.FS) http.Handler {
 	fileServer := http.FileServer(http.FS(root))
+	serve := func(w http.ResponseWriter, r *http.Request, p string, next http.Handler) {
+		w.Header().Add("Vary", "Accept-Encoding")
+		if strings.HasPrefix(p, "assets/") {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+		if r.Method != http.MethodHead && acceptsGzip(r) && gzipEligible(p) {
+			w.Header().Set("Content-Encoding", "gzip")
+			gw := gzip.NewWriter(w)
+			defer gw.Close()
+			next.ServeHTTP(&gzipResponseWriter{ResponseWriter: w, gzip: gw}, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
 		if p != "" {
 			if f, err := root.Open(p); err == nil {
 				_ = f.Close()
-				fileServer.ServeHTTP(w, r)
+				serve(w, r, p, fileServer)
 				return
 			}
+		}
+		if strings.HasPrefix(p, "assets/") || strings.HasPrefix(p, "brand/") {
+			http.NotFound(w, r)
+			return
 		}
 		index, err := fs.ReadFile(root, "index.html")
 		if err != nil {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write(index)
+		serve(w, r, "index.html", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write(index)
+		}))
 	})
+}
+
+func acceptsGzip(r *http.Request) bool {
+	for _, part := range strings.Split(r.Header.Get("Accept-Encoding"), ",") {
+		if strings.EqualFold(strings.TrimSpace(strings.SplitN(part, ";", 2)[0]), "gzip") {
+			return true
+		}
+	}
+	return false
+}
+
+func gzipEligible(p string) bool {
+	switch strings.ToLower(path.Ext(p)) {
+	case ".html", ".js", ".mjs", ".css", ".svg", ".json", ".txt", ".xml", ".map":
+		return true
+	default:
+		return false
+	}
+}
+
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	gzip *gzip.Writer
+}
+
+func (w *gzipResponseWriter) WriteHeader(status int) {
+	w.Header().Del("Content-Length")
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *gzipResponseWriter) Write(p []byte) (int, error) {
+	w.Header().Del("Content-Length")
+	return w.gzip.Write(p)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

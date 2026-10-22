@@ -4,7 +4,8 @@
     "name": "Apple HIG",
     "description": "iOS grouped settings, SF Pro typography, switches, tab bar and Human Interface colors.",
     "accent": "#007AFF",
-    "icon": "smartphone"
+    "icon": "smartphone",
+    "logo": "/brand/apple.svg"
   },
   "doc": {
     "pages": [
