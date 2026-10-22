@@ -276,6 +276,44 @@ const zh: Record<string, string> = {
 
   "New": "新增",
   "Design": "设计",
+  "AI assistant": "AI 助手",
+  "AI settings": "AI 设置",
+  "Design with Sigma AI": "用 Sigma AI 设计",
+  "Describe a screen or a change in natural language. Sigma edits the canvas through real design tools.":
+    "用自然语言描述一个页面或修改需求，Sigma 会通过真实设计工具直接修改画布。",
+  "Configure your DeepSeek API key": "配置你的 DeepSeek API Key",
+  "Try": "试试",
+  "Generate a clean login screen with email, password and a primary button":
+    "生成一个简洁的登录页，包含邮箱、密码和主按钮",
+  "Create a mobile onboarding flow with three steps and prototype links":
+    "创建一个包含三步引导和原型跳转的移动端流程",
+  "Restyle the selected layer with sky-blue accents and rounded corners":
+    "把选中图层改成天蓝点缀与圆角风格",
+  "Add a pricing section with three cards to this page": "在此页面添加一个包含三张卡片的价格区块",
+  "Thinking and editing…": "正在思考并修改…",
+  "Ask Sigma to design…": "让 Sigma 帮你设计…",
+  "Configure a key to start…": "配置 Key 后开始…",
+  "Enter to send · Shift+Enter for a new line": "Enter 发送 · Shift+Enter 换行",
+  "AI edits are applied to the shared canvas and can be undone.": "AI 修改会应用到共享画布，也可以撤销。",
+  "Bring your own DeepSeek key. It is encrypted at rest and never leaves this server.":
+    "使用你自己的 DeepSeek Key，加密存储，不会离开服务器。",
+  "AI settings saved": "AI 设置已保存",
+  "Connected · {model} · {ms}ms": "连接成功 · {model} · {ms}ms",
+  "Connection OK": "连接正常",
+  "Key configured": "已配置 Key",
+  "No API key configured": "尚未配置 API Key",
+  "Clear key": "清除 Key",
+  "Provider": "服务商",
+  "Base URL": "接口地址",
+  "Model": "模型",
+  "latest": "最新",
+  "API key": "API Key",
+  "Leave blank to keep the current key": "留空以保留当前 Key",
+  "The key is encrypted with AES-GCM and only used to call the model you configure.":
+    "Key 使用 AES-GCM 加密，仅用于调用你配置的模型。",
+  "Save & test": "保存并测试",
+  "OpenAI-compatible": "OpenAI 兼容",
+
   "(you)": "（你）",
   "{count} selected": "已选 {count} 个",
   "Press F and drag to create a frame.": "按 F 并在画布上拖拽以创建画板。",

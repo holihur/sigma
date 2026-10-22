@@ -16,6 +16,8 @@ import {
   Undo2,
   Users,
   MessageCircle,
+  Sparkles,
+  Settings2,
   PanelLeft,
   SlidersHorizontal,
   Languages,
@@ -46,6 +48,8 @@ export function TopBar({
   onDuplicate,
   onOpenLayers,
   onOpenProperties,
+  onOpenAI,
+  onOpenAISettings,
 }: {
   onShare: () => void;
   onVersions: () => void;
@@ -53,6 +57,8 @@ export function TopBar({
   onDuplicate: () => void;
   onOpenLayers: () => void;
   onOpenProperties: () => void;
+  onOpenAI: () => void;
+  onOpenAISettings: () => void;
 }) {
   const file = useEditor((s) => s.file);
   const syncStatus = useEditor((s) => s.syncStatus);
@@ -225,6 +231,14 @@ export function TopBar({
           <SlidersHorizontal className="size-4" />
         </button>
 
+        <button
+          title={t("AI assistant")}
+          onClick={onOpenAI}
+          className="flex size-7 items-center justify-center rounded-md bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white shadow-sm transition-transform hover:scale-105 sm:size-8"
+        >
+          <Sparkles className="size-4" />
+        </button>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -268,6 +282,9 @@ export function TopBar({
               <div className="truncate text-[10px] text-muted-foreground">{user?.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onOpenAISettings}>
+              <Settings2 className="size-4" /> {t("AI settings")}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onVersions}>
               <History className="size-4" /> {t("Version history")}
             </DropdownMenuItem>

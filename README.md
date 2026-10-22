@@ -6,7 +6,7 @@
 
 Infinite canvas · Layers & properties · Click-through prototypes · Real-time multiplayer · Comments · Version history
 
-`Go` · `React 19` · `TypeScript` · `Tailwind CSS 4` · `shadcn/ui style components` · `SQLite` · `WebSocket`
+`Go` · `React 19` · `TypeScript` · `Tailwind CSS 4` · `shadcn/ui style components` · `SQLite` · `WebSocket` · `Go ADK` · `DeepSeek`
 
 </div>
 
@@ -28,6 +28,7 @@ Infinite canvas · Layers & properties · Click-through prototypes · Real-time 
 - **导出**：PNG / SVG 下载、复制为 PNG、系统深浅色主题。
 - **手机 / 平板适配**：编辑器侧栏自动收进抽屉，底部触控工具栏，单指平移、双指缩放，触控友好的缩放手柄；文件面板、评论、分享、原型演示均已响应式适配。
 - **中英文界面**：内置轻量 i18n，跟随浏览器语言，可在登录页、文件面板和编辑器账号菜单中切换；主色采用天蓝。
+- **AI 设计助手（BYOK）**：用户自带 DeepSeek API Key，AES-GCM 加密存储；基于 Go ADK 的设计 Agent 可通过自然语言创建画板、文本、卡片、按钮、修改样式和添加原型跳转。
 - **内置模板**：移动端 Onboarding、SaaS Landing Page、Analytics Dashboard，均带可点击原型链路。
 
 | 文件面板 | 协作编辑器 |
@@ -46,17 +47,22 @@ Infinite canvas · Layers & properties · Click-through prototypes · Real-time 
 | --- | --- |
 | ![Mobile editor](docs/screenshots/14-mobile-editor.png) | ![Tablet editor](docs/screenshots/15-tablet-editor.png) |
 
+| AI 设置（BYOK） | 自然语言设计 |
+| --- | --- |
+| ![AI settings](docs/screenshots/21-ai-settings.png) | ![AI chat](docs/screenshots/22-ai-chat.png) |
+
 ## 技术栈
 
 | 层 | 技术 |
 | --- | --- |
 | 前端 | React 19, TypeScript, Vite 7, Tailwind CSS 4, Radix primitives + shadcn 风格组件, zustand, lucide-react, html-to-image, sonner |
-| 后端 | Go 1.24+, `net/http` 路由, gorilla/websocket, SQLite (modernc.org/sqlite 纯 Go 驱动), JWT (golang-jwt), bcrypt |
+| 后端 | Go 1.25+, `net/http` 路由, gorilla/websocket, SQLite (modernc.org/sqlite 纯 Go 驱动), JWT (golang-jwt), bcrypt, Google ADK for Go |
+| AI | DeepSeek OpenAI-compatible API, 默认 `deepseek-v4.1-flash`（可配置 `deepseek-chat` / `deepseek-reasoner` / 自定义兼容端点） |
 | 存储 | 文件文档以 JSON 存储，节点级 LWW 合并；图片以 Data URL 内嵌 |
 
 ## 快速开始
 
-要求：**Go 1.24+**、**Node.js 20+**、**pnpm 10+**。
+要求：**Go 1.25+**、**Node.js 20+**、**pnpm 10+**。
 
 ```bash
 # 1. 安装前端依赖
@@ -118,7 +124,7 @@ docker run --rm -p 9000:9000 -v sigma-data:/app/data sigma
 | --- | --- | --- |
 | `PORT` | `9000` | 后端监听端口 |
 | `DB_PATH` | `data/sigma.db` | SQLite 文件路径 |
-| `SIGMA_SECRET` | 开发用默认值 | JWT 签名密钥，生产环境必须替换 |
+| `SIGMA_SECRET` | 开发用默认值 | JWT 签名密钥，同时用于加密 BYOK API Key，生产环境必须替换且保持稳定 |
 | `UPLOAD_DIR` | 与数据库同级的 `uploads/` | 图片与资源文件存储目录 |
 | `STATIC_DIR` | 自动探测 `frontend/dist` | 生产环境前端静态目录 |
 | `VITE_API_PROXY` | `http://localhost:9000` | Vite 开发代理目标（可选） |
@@ -183,6 +189,9 @@ sigma/
 | `GET` | `/api/uploads/{name}` | 读取已上传图片（随机文件名） |
 | `GET/POST` | `/api/files/{id}/public-link` | 查询 / 开启关闭公开原型链接（仅 Owner） |
 | `GET` | `/api/public/{token}` | 无需登录读取公开原型文档 |
+| `GET/PUT` | `/api/ai/settings` | 读取 / 保存 BYOK 设置（Key 加密存储，仅返回尾号） |
+| `POST` | `/api/ai/test` | 测试 DeepSeek / 兼容端点连通性 |
+| `POST` | `/api/ai/chat` | 通过 Go ADK Agent 执行自然语言设计修改 |
 | `GET` | `/api/notifications` | 当前用户通知列表与未读数 |
 | `POST` | `/api/notifications/read` | 全部标记已读 |
 | `GET` | `/api/ws?fileId=&token=&clientId=` | WebSocket 协作通道 |
@@ -203,11 +212,33 @@ sigma/
 
 完整列表可在编辑器右上角 **⋯ → Keyboard shortcuts** 查看。
 
+## AI 设计助手
+
+1. 打开任意设计文件。
+2. 点击顶栏的 **Sigma AI**（天蓝色星标按钮）。
+3. 首次使用点击右上角设置，填写 Base URL、模型和 DeepSeek API Key。
+4. 点击 **Save & test** 验证连接，然后直接输入自然语言，例如：
+   - “生成一个简洁的登录页，包含邮箱、密码和主按钮”
+   - “把选中图层改成天蓝点缀与圆角风格”
+   - “添加一个三列价格区块”
+   - “给 Get started 添加跳转到第二个画板的原型链接”
+
+模型默认使用 `deepseek-v4.1-flash`，可在设置中切换为 `deepseek-chat`、`deepseek-reasoner` 或任意 OpenAI-compatible 端点。API Key 使用 AES-GCM 加密，只有服务端调用模型时才会解密；不会出现在 API 响应或日志中。
+
+Agent 通过结构化设计工具工作：先读取页面节点，再创建 Frame / 文本 / 矩形 / 椭圆，更新样式，删除或复制节点，建立原型跳转。所有修改都会写回协作文档并广播给其他在线成员。
+
+### AI 架构
+
+- **BYOK 密钥保险箱**：`SIGMA_SECRET` 派生 AES-256-GCM 密钥，加密存储于 `ai_settings`。
+- **DeepSeek 适配器**：实现 ADK `model.LLM` 接口，支持 OpenAI Chat Completions 与 function calling。
+- **Go ADK Agent**：`llmagent` + `functiontool`，每次工具调用都带服务端注入的 `fileId/pageId/userId`，模型无法指定其他文件。
+- **设计工具层**：`internal/design` 提供 Node/Page/Doc 工厂、更新、删除、复制、Frame 查找和摘要。
+- **协作同步**：Agent 修改走现有文档保存与 WebSocket 广播，其他协作者实时看到结果。
+
 ## 路线图：从设计工具到 Agent 平台
 
 下一阶段围绕「超越 Figma」的能力建设：
 
-- **BYOK + DeepSeek + Go ADK**：用户自带模型 Key，DeepSeek 默认使用最新 `deepseek-chat`；通过 Go ADK 提供可调用设计工具的 Agent，支持自然语言生成 / 修改画板、组件、文案与原型跳转。
 - **OIDC**：企业 SSO，支持任意标准 OpenID Connect Provider。
 - **MCP**：把 Sigma 的文件、图层、原型和导出能力暴露为 MCP Server，供 Claude / Cursor / 自研 Agent 调用。
 - **Figma 互通**：Figma REST API 导入 + Figma 插件 / JSON 导出，避免不可靠的封闭 `.fig` 二进制解析。

@@ -97,6 +97,14 @@ CREATE TABLE IF NOT EXISTS public_links (
 	enabled    INTEGER NOT NULL DEFAULT 0,
 	created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS ai_settings (
+	user_id      TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+	provider     TEXT NOT NULL DEFAULT 'deepseek',
+	base_url     TEXT NOT NULL DEFAULT 'https://api.deepseek.com',
+	model        TEXT NOT NULL DEFAULT 'deepseek-v4.1-flash',
+	api_key_enc  TEXT NOT NULL DEFAULT '',
+	updated_at   TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS notifications (
 	id         TEXT PRIMARY KEY,
 	user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -362,6 +370,33 @@ func (s *Store) VersionDoc(fileID, versionID string) (string, int, error) {
 	var version int
 	err := s.db.QueryRow(`SELECT doc,version FROM versions WHERE id=? AND file_id=?`, versionID, fileID).Scan(&doc, &version)
 	return doc, version, err
+}
+
+// ---------- AI / BYOK settings ----------
+
+type AISettingsRecord struct {
+	UserID    string
+	Provider  string
+	BaseURL   string
+	Model     string
+	APIKeyEnc string
+	UpdatedAt string
+}
+
+func (s *Store) AISettings(userID string) (AISettingsRecord, error) {
+	var r AISettingsRecord
+	err := s.db.QueryRow(`SELECT user_id,provider,base_url,model,api_key_enc,updated_at FROM ai_settings WHERE user_id=?`, userID).
+		Scan(&r.UserID, &r.Provider, &r.BaseURL, &r.Model, &r.APIKeyEnc, &r.UpdatedAt)
+	return r, err
+}
+
+func (s *Store) SaveAISettings(r AISettingsRecord) error {
+	_, err := s.db.Exec(`INSERT INTO ai_settings(user_id,provider,base_url,model,api_key_enc,updated_at)
+		VALUES(?,?,?,?,?,?)
+		ON CONFLICT(user_id) DO UPDATE SET provider=excluded.provider,base_url=excluded.base_url,
+		model=excluded.model,api_key_enc=excluded.api_key_enc,updated_at=excluded.updated_at`,
+		r.UserID, r.Provider, r.BaseURL, r.Model, r.APIKeyEnc, model.Now())
+	return err
 }
 
 // ---------- public links ----------

@@ -49,7 +49,7 @@ func main() {
 	}
 
 	uploadDir := env("UPLOAD_DIR", filepath.Join(filepath.Dir(dbPath), "uploads"))
-	a := api.New(st, am, staticDir, uploadDir)
+	a := api.New(st, am, staticDir, uploadDir, secret)
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           a.Handler(),

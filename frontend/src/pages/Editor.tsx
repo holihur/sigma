@@ -12,6 +12,8 @@ import { useCollaboration } from "@/hooks/useCollaboration";
 import { useT } from "@/i18n";
 import { clamp, cn, isEditableTarget, round } from "@/lib/utils";
 import { Canvas } from "@/components/editor/Canvas";
+import { AIChatPanel } from "@/components/editor/AIChatPanel";
+import { AISettingsDialog } from "@/components/editor/AISettingsDialog";
 import { Toolbar } from "@/components/editor/Toolbar";
 import { TopBar } from "@/components/editor/TopBar";
 import { LayersPanel } from "@/components/editor/LayersPanel";
@@ -57,6 +59,9 @@ export default function EditorPage() {
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
+  const [aiConfigVersion, setAiConfigVersion] = useState(0);
   const hostRef = useRef<HTMLDivElement>(null);
   const { sendDoc, sendPresence } = useCollaboration(file?.id ?? null, !!file);
 
@@ -471,6 +476,16 @@ export default function EditorPage() {
           setLayersOpen(false);
           setPropertiesOpen(true);
         }}
+        onOpenAI={() => {
+          setAiOpen(true);
+          setLayersOpen(false);
+          setPropertiesOpen(false);
+          setShowComments(false);
+        }}
+        onOpenAISettings={() => {
+          setAiOpen(true);
+          setAiSettingsOpen(true);
+        }}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -517,6 +532,19 @@ export default function EditorPage() {
             <PropertiesPanel page={page} readOnly={readOnly} doc={doc} />
           </Drawer>
         )}
+
+        <AIChatPanel
+          open={aiOpen}
+          onClose={() => setAiOpen(false)}
+          onOpenSettings={() => setAiSettingsOpen(true)}
+          pageId={pageId}
+          configVersion={aiConfigVersion}
+        />
+        <AISettingsDialog
+          open={aiSettingsOpen}
+          onOpenChange={setAiSettingsOpen}
+          onSaved={() => setAiConfigVersion((v) => v + 1)}
+        />
 
         {showComments && (
           <>

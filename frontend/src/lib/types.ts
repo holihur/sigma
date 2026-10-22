@@ -204,3 +204,29 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+
+export interface AISettings {
+  configured: boolean;
+  provider: string;
+  baseUrl: string;
+  model: string;
+  keyHint: string;
+  updatedAt?: string;
+}
+
+export interface AIAction {
+  tool: string;
+  summary: string;
+  nodeId?: string;
+  ok?: boolean;
+  count?: number;
+}
+
+export interface AIChatResponse {
+  reply: string;
+  sessionId: string;
+  actions: AIAction[];
+  doc: SigmaDoc;
+  version: number;
+}

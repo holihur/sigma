@@ -2,6 +2,8 @@ import type {
   Comment,
   FileMeta,
   Member,
+  AIChatResponse,
+  AISettings,
   Notification,
   SigmaDoc,
   TemplateMeta,
@@ -131,6 +133,17 @@ export const commentsApi = {
   resolve: (commentId: string, resolved: boolean) =>
     api<{ comments: Comment[] }>(`/comments/${commentId}`, { method: "PATCH", body: { resolved } }),
   remove: (commentId: string) => api<{ ok: true }>(`/comments/${commentId}`, { method: "DELETE" }),
+};
+
+// ---------- AI / BYOK ----------
+
+export const aiApi = {
+  settings: () => api<AISettings>("/ai/settings"),
+  save: (settings: { provider: string; baseUrl: string; model: string; apiKey?: string; clearKey?: boolean }) =>
+    api<AISettings>("/ai/settings", { method: "PUT", body: settings }),
+  test: () => api<{ ok: boolean; latencyMs: number; model: string; reply: string }>("/ai/test", { method: "POST" }),
+  chat: (body: { fileId: string; pageId: string; message: string; sessionId?: string; selection?: string[] }) =>
+    api<AIChatResponse>("/ai/chat", { method: "POST", body }),
 };
 
 // ---------- public links & notifications ----------

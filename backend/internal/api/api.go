@@ -17,6 +17,8 @@ import (
 	"sigma/internal/model"
 	"sigma/internal/store"
 	"sigma/internal/ws"
+
+	"google.golang.org/adk/session"
 )
 
 type AuthedHandler func(http.ResponseWriter, *http.Request, model.User)
@@ -27,11 +29,13 @@ type API struct {
 	hub       *ws.Hub
 	staticDir string
 	uploadDir string
+	secret    string
 	locks     sync.Map
+	aiSessions session.Service
 }
 
-func New(st *store.Store, am *auth.Manager, staticDir, uploadDir string) *API {
-	a := &API{st: st, auth: am, staticDir: staticDir, uploadDir: uploadDir}
+func New(st *store.Store, am *auth.Manager, staticDir, uploadDir, secret string) *API {
+	a := &API{st: st, auth: am, staticDir: staticDir, uploadDir: uploadDir, secret: secret, aiSessions: session.InMemoryService()}
 	_ = os.MkdirAll(uploadDir, 0o755)
 	a.hub = ws.NewHub(
 		a.wsAccess,
@@ -51,6 +55,10 @@ func (a *API) Handler() http.Handler {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "time": time.Now().UTC()})
 	})
 	mux.HandleFunc("GET /api/templates", a.handleTemplates)
+	mux.HandleFunc("GET /api/ai/settings", a.requireAuth(a.handleAISettings))
+	mux.HandleFunc("PUT /api/ai/settings", a.requireAuth(a.handleSetAISettings))
+	mux.HandleFunc("POST /api/ai/test", a.requireAuth(a.handleTestAI))
+	mux.HandleFunc("POST /api/ai/chat", a.requireAuth(a.handleAIChat))
 
 	mux.HandleFunc("POST /api/auth/register", a.handleRegister)
 	mux.HandleFunc("POST /api/auth/login", a.handleLogin)
