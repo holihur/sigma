@@ -65,6 +65,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/templates", a.handleTemplates)
 	mux.HandleFunc("GET /api/ai/settings", a.requireAuth(a.handleAISettings))
 	mux.HandleFunc("PUT /api/ai/settings", a.requireAuth(a.handleSetAISettings))
+	mux.HandleFunc("POST /api/ai/models", a.requireAuth(a.handleListAIModels))
 	mux.HandleFunc("POST /api/ai/test", a.requireAuth(a.handleTestAI))
 	mux.HandleFunc("POST /api/ai/chat", a.requireAuth(a.handleAIChat))
 	mux.HandleFunc("GET /api/ai/context", a.requireAuth(a.handleAIContext))

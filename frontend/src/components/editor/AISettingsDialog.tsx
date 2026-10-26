@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, KeyRound, Loader2, Sparkles, Trash2, Zap } from "lucide-react";
+import { CheckCircle2, KeyRound, Loader2, RefreshCw, Sparkles, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { aiApi } from "@/lib/api";
 import type { AISettings } from "@/lib/types";
@@ -19,13 +19,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const PROVIDERS = [
-  { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com", models: ["deepseek-v4.1-flash", "deepseek-chat", "deepseek-reasoner"], hint: "DeepSeek API" },
-  { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini", "o4-mini"], hint: "OpenAI API" },
-  { id: "gemini", label: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", models: ["gemini-2.5-flash", "gemini-2.5-pro"], hint: "Gemini OpenAI-compatible endpoint" },
-  { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", models: ["openai/gpt-4.1-mini", "anthropic/claude-sonnet-4", "google/gemini-2.5-flash"], hint: "OpenRouter API" },
-  { id: "groq", label: "Groq", baseUrl: "https://api.groq.com/openai/v1", models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"], hint: "Groq API" },
-  { id: "mistral", label: "Mistral", baseUrl: "https://api.mistral.ai/v1", models: ["mistral-large-latest", "mistral-small-latest"], hint: "Mistral API" },
-  { id: "xai", label: "xAI", baseUrl: "https://api.x.ai/v1", models: ["grok-3-mini", "grok-3"], hint: "xAI API" },
+  { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com", models: ["deepseek-chat", "deepseek-reasoner"], hint: "Both aliases always track DeepSeek's latest chat / reasoner models." },
+  { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-5.2", "gpt-5.2-mini", "gpt-5.2-nano", "gpt-4.1"], hint: "Use Refresh models to load the IDs available to your account." },
+  { id: "gemini", label: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", models: ["gemini-3-pro-preview", "gemini-3-flash-preview", "gemini-2.5-flash"], hint: "Gemini OpenAI-compatible endpoint. Model IDs change frequently." },
+  { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", models: ["anthropic/claude-opus-4-5", "anthropic/claude-sonnet-4-5", "openai/gpt-5.2", "google/gemini-3-pro-preview"], hint: "OpenRouter aggregates providers; Refresh loads the current catalog." },
+  { id: "groq", label: "Groq", baseUrl: "https://api.groq.com/openai/v1", models: ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"], hint: "Groq API" },
+  { id: "mistral", label: "Mistral", baseUrl: "https://api.mistral.ai/v1", models: ["mistral-large-latest", "mistral-medium-latest", "codestral-latest"], hint: "Mistral ALIAS models always point at the latest release." },
+  { id: "xai", label: "xAI", baseUrl: "https://api.x.ai/v1", models: ["grok-4", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning"], hint: "xAI API" },
   { id: "together", label: "Together", baseUrl: "https://api.together.xyz/v1", models: ["meta-llama/Llama-3.3-70B-Instruct-Turbo"], hint: "Together API" },
   { id: "ollama", label: "Ollama / local", baseUrl: "http://localhost:11434/v1", models: ["llama3.1", "qwen2.5-coder"], hint: "Local OpenAI-compatible endpoint" },
   { id: "custom", label: "Custom / self-hosted", baseUrl: "", models: [], hint: "Any OpenAI-compatible /chat/completions endpoint" },
@@ -46,12 +46,14 @@ export function AISettingsDialog({
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [provider, setProvider] = useState<ProviderId>("deepseek");
   const [baseUrl, setBaseUrl] = useState("https://api.deepseek.com");
-  const [model, setModel] = useState("deepseek-v4.1-flash");
+  const [model, setModel] = useState("deepseek-chat");
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -64,7 +66,8 @@ export function AISettingsDialog({
         const known = PROVIDERS.find((p) => p.id === s.provider);
         setProvider((known?.id ?? "custom") as ProviderId);
         setBaseUrl(s.baseUrl || "https://api.deepseek.com");
-        setModel(s.model || "deepseek-v4.1-flash");
+        setModel(s.model || "deepseek-chat");
+        setAvailableModels([]);
       })
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
@@ -78,6 +81,20 @@ export function AISettingsDialog({
     if (next.baseUrl) setBaseUrl(next.baseUrl);
     const firstModel = next.models[0];
     if (firstModel) setModel(firstModel);
+    setAvailableModels([]);
+  };
+
+  const loadModels = async () => {
+    setLoadingModels(true);
+    try {
+      const data = await aiApi.models({ baseUrl, apiKey: apiKey || undefined });
+      setAvailableModels(data.models);
+      toast.success(t("Loaded {count} models", { count: data.models.length }));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoadingModels(false);
+    }
   };
 
   const save = async (clearKey = false) => {
@@ -171,28 +188,46 @@ export function AISettingsDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label>{t("Model")}</Label>
-              <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="model-id" />
-              <div className="flex flex-wrap gap-1.5">
-                {activeProvider.models.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setModel(m)}
-                    className={
-                      "rounded-full border px-2 py-0.5 text-[10px] transition-colors " +
-                      (model === m
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:bg-secondary")
-                    }
-                  >
-                    {m}
-                    {m === "deepseek-v4.1-flash" && <span className="ml-1 opacity-70">{t("latest")}</span>}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between gap-2">
+                <Label>{t("Model")}</Label>
+                <button
+                  type="button"
+                  onClick={() => void loadModels()}
+                  disabled={loadingModels || loading}
+                  className="flex items-center gap-1 text-[10px] text-primary hover:underline disabled:opacity-40"
+                >
+                  {loadingModels ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
+                  {t("Refresh models from provider")}
+                </button>
+              </div>
+              <Input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="model-id"
+                spellCheck={false}
+                className="font-mono text-[12px]"
+              />
+              <div className="max-h-24 overflow-y-auto">
+                <div className="flex flex-wrap gap-1.5">
+                  {(availableModels.length ? availableModels : activeProvider.models).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setModel(m)}
+                      className={
+                        "rounded-full border px-2 py-0.5 text-[10px] transition-colors " +
+                        (model === m
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:bg-secondary")
+                      }
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
               </div>
               <p className="text-[10px] leading-relaxed text-muted-foreground">
-                {t(activeProvider.hint)} · {t("Base URL must point at an OpenAI-compatible /v1 endpoint.")}
+                {t(activeProvider.hint)} {t("You can also paste any model ID manually; Refresh reads the provider's current /models list.")}
               </p>
             </div>
 

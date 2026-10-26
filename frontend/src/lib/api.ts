@@ -155,6 +155,8 @@ export const aiApi = {
   save: (settings: { provider: string; baseUrl: string; model: string; apiKey?: string; clearKey?: boolean }) =>
     api<AISettings>("/ai/settings", { method: "PUT", body: settings }),
   test: () => api<{ ok: boolean; latencyMs: number; model: string; reply: string }>("/ai/test", { method: "POST" }),
+  models: (body: { baseUrl: string; apiKey?: string }) =>
+    api<{ models: string[] }>("/ai/models", { method: "POST", body }),
   chat: (body: { fileId: string; pageId: string; message: string; sessionId?: string; selection?: string[] }) =>
     api<AIChatResponse>("/ai/chat", { method: "POST", body }),
   context: () => api<AIContext>("/ai/context"),

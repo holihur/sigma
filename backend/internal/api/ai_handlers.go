@@ -135,6 +135,42 @@ func (a *API) handleSetAISettings(w http.ResponseWriter, r *http.Request, u appm
 	writeJSON(w, http.StatusOK, settingsResponse(rec, key))
 }
 
+func (a *API) handleListAIModels(w http.ResponseWriter, r *http.Request, u appmodel.User) {
+	var body struct {
+		BaseURL string `json:"baseUrl"`
+		APIKey  string `json:"apiKey"`
+	}
+	if err := readJSON(r, &body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request")
+		return
+	}
+	rec, storedKey, err := a.loadAISettings(u.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	baseURL := strings.TrimSpace(body.BaseURL)
+	if baseURL == "" {
+		baseURL = rec.BaseURL
+	}
+	key := strings.TrimSpace(body.APIKey)
+	if key == "" {
+		key = storedKey
+	}
+	if key == "" {
+		writeError(w, http.StatusBadRequest, "Add an AI provider API key first")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+	defer cancel()
+	models, err := ai.ListModels(ctx, baseURL, key)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"models": models})
+}
+
 func (a *API) handleTestAI(w http.ResponseWriter, r *http.Request, u appmodel.User) {
 	rec, key, err := a.loadAISettings(u.ID)
 	if err != nil {

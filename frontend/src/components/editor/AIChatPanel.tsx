@@ -112,7 +112,7 @@ export function AIChatPanel({
           <div className="flex items-center gap-1.5 text-[13px] font-medium">
             Sigma AI
             <Badge variant="outline" className="text-[9px]">
-              {settings?.model || "deepseek-v4.1-flash"}
+              {settings?.model || "deepseek-chat"}
             </Badge>
           </div>
         </div>

@@ -18,7 +18,7 @@ import (
 const (
 	DefaultProvider = "deepseek"
 	DefaultBaseURL  = "https://api.deepseek.com"
-	DefaultModel    = "deepseek-v4.1-flash"
+	DefaultModel    = "deepseek-chat"
 )
 
 type Config struct {
