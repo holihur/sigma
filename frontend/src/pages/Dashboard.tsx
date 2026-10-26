@@ -1067,7 +1067,7 @@ function FileCard({
       >
         <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
           {file.thumbnail ? (
-            <img src={file.thumbnail} alt={file.name} className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]" />
+            <img src={file.thumbnail} alt={file.name} loading="lazy" decoding="async" className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]" />
           ) : (
             <TemplatePreview file={file} template={template} />
           )}
@@ -1196,7 +1196,7 @@ function FileRow({
       </button>
       <button onClick={onOpen} className="size-14 shrink-0 overflow-hidden rounded-lg bg-secondary">
         {file.thumbnail ? (
-          <img src={file.thumbnail} alt="" className="h-full w-full object-contain p-0.5" />
+          <img src={file.thumbnail} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain p-0.5" />
         ) : (
           <div className="flex h-full items-center justify-center" style={{ background: `${template?.accent ?? "#0ea5e9"}18` }}>
             <TemplateIcon icon={template?.icon ?? "square"} className="size-5" />

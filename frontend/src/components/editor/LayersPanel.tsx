@@ -78,6 +78,11 @@ export function LayersPanel() {
   const [dragId, setDragId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
   const [drop, setDrop] = useState<{ id: string; position: "before" | "after" | "inside" } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(560);
+  const ROW_HEIGHT = 28;
+  const OVERSCAN = 8;
 
   // Expand the ancestors of the current selection automatically.
   useEffect(() => {
@@ -114,6 +119,25 @@ export function LayersPanel() {
     }
   }
   const visibleRows = query ? rows.filter(({ node }) => searchVisible.has(node.id)) : rows;
+  const firstRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+  const lastRow = Math.min(visibleRows.length, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + OVERSCAN);
+  const windowedRows = visibleRows.slice(firstRow, lastRow);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const measure = () => setViewportHeight(el.clientHeight || 560);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!listRef.current) return;
+    listRef.current.scrollTop = 0;
+    setScrollTop(0);
+  }, [query, pageId]);
 
   const startRename = (node: SceneNode) => {
     setRenaming(node.id);
@@ -278,8 +302,10 @@ export function LayersPanel() {
           </div>
         </div>
         <div
+          ref={listRef}
           className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-3"
           onPointerLeave={() => setHovered(null)}
+          onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
         >
           {rows.length === 0 && (
             <div className="mx-2 mt-3 rounded-lg border border-dashed border-border px-3 py-6 text-center">
@@ -296,7 +322,8 @@ export function LayersPanel() {
               {t("No layers match “{name}”", { name: layerQuery })}
             </div>
           )}
-          {visibleRows.map(({ node, depth }) => {
+          {firstRow > 0 && <div style={{ height: firstRow * ROW_HEIGHT }} />}
+          {windowedRows.map(({ node, depth }) => {
             const selected = selection.includes(node.id);
             const container = node.children.length > 0 || node.type === "frame" || node.type === "group";
             return (
@@ -537,6 +564,7 @@ export function LayersPanel() {
               </ContextMenu>
             );
           })}
+          {lastRow < visibleRows.length && <div style={{ height: (visibleRows.length - lastRow) * ROW_HEIGHT }} />}
 
           {/* Root drop zone */}
           {dragId && (
