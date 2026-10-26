@@ -696,6 +696,21 @@ export function Canvas({
     const node = page.nodes[id];
     if (!node || node.locked) return;
 
+    // Clicking the empty background of a frame while one of its children is
+    // selected clears the child selection first. A second click selects the
+    // frame itself. This makes "click blank to deselect" work on full-screen
+    // artboards, where the frame covers the entire canvas.
+    if (
+      node.type === "frame" &&
+      !e.shiftKey &&
+      state.selection.length > 0 &&
+      !state.selection.includes(id) &&
+      state.selection.every((sel) => ancestorsOf(page, sel).some((a) => a.id === id))
+    ) {
+      state.select([]);
+      return;
+    }
+
     const groupAnc = ancestorsOf(page, id).find((n) => n.type === "group");
     const deep = e.metaKey || e.ctrlKey;
     const targetId = groupAnc && !deep ? groupAnc.id : id;

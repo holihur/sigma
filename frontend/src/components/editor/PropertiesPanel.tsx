@@ -577,7 +577,14 @@ function VectorSection({ node, readOnly }: { node: SceneNode; readOnly: boolean 
               onClick={() => {
                 const nextClosed = !node.closed;
                 pushHistory();
-                updateNode(node.id, { ...subpathPatch(subpaths.map((sub) => ({ ...sub, closed: nextClosed }))), closed: nextClosed, fill: nextClosed ? node.fill ?? { type: "solid", color: "#0ea5e9" } : null }, false);
+                updateNode(node.id, {
+                  ...subpathPatch(subpaths.map((sub) => ({ ...sub, closed: nextClosed }))),
+                  closed: nextClosed,
+                  fill: nextClosed ? node.fill ?? { type: "solid", color: "#0ea5e9" } : null,
+                  // Closing a path turns it into a filled shape. Do not keep the
+                  // pen preview stroke, otherwise it looks like an unwanted border.
+                  stroke: nextClosed ? null : node.stroke ?? { type: "solid", color: "#0ea5e9" },
+                }, false);
               }}
             >
               <Spline className="size-3.5" /> {node.closed ? t("Open path") : t("Close path")}

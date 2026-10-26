@@ -6,6 +6,7 @@ import { useAuth } from "@/store/auth";
 import { authApi } from "@/lib/api";
 import type { OIDCConfig } from "@/lib/types";
 import { useT } from "@/i18n";
+import { prefetchDashboard, whenIdle } from "@/lib/prefetch";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,9 @@ export default function LoginPage() {
   useEffect(() => {
     authApi.oidcConfig().then(setOidc).catch(() => setOidc({ enabled: false, label: "" }));
   }, []);
+
+  // Warm the workspace route after login paints, so the demo button feels immediate.
+  useEffect(() => whenIdle(prefetchDashboard, 1200), []);
 
   useEffect(() => {
     if (handledCallback.current) return;

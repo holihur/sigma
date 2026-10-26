@@ -47,6 +47,7 @@ import { useAuth } from "@/store/auth";
 import { useTheme } from "@/store/theme";
 import { useI18n, useT } from "@/i18n";
 import { cn, formatRelative, initials, isEditableTarget } from "@/lib/utils";
+import { prefetchEditor, whenIdle } from "@/lib/prefetch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -141,6 +142,10 @@ export default function DashboardPage() {
     void load();
     void loadNotifications();
   }, [load, loadNotifications]);
+
+  // Prefetch the editor once the dashboard is interactive. Hovering a card is
+  // an even stronger signal, so FileCard also calls prefetchEditor directly.
+  useEffect(() => whenIdle(prefetchEditor, 3200), []);
 
   useEffect(() => {
     const onFocus = () => {
@@ -1038,7 +1043,11 @@ function FileCard({
 }) {
   const t = useT();
   return (
-    <div className={cn("group relative rounded-xl", selected && "ring-2 ring-primary ring-offset-2 ring-offset-background")}>
+    <div
+      className={cn("group relative rounded-xl", selected && "ring-2 ring-primary ring-offset-2 ring-offset-background")}
+      onMouseEnter={prefetchEditor}
+      onTouchStart={prefetchEditor}
+    >
       <button
         onClick={(e) => {
           e.stopPropagation();
