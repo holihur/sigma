@@ -1,6 +1,6 @@
 # ---- frontend ----
-FROM node:24-alpine AS web
-RUN npm install -g pnpm@12.4.1
+FROM node:26-alpine AS web
+RUN npm install -g pnpm@12.15.0
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
@@ -8,7 +8,7 @@ COPY frontend/ ./
 RUN pnpm build
 
 # ---- backend ----
-FROM golang:1.25-alpine AS api
+FROM golang:1.27-alpine AS api
 WORKDIR /src
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
