@@ -54,7 +54,7 @@ jobs:
       - run: pnpm build
   e2e:
     name: Browser critical-path smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [backend, frontend]
     defaults:
       run:
