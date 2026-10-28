@@ -36,6 +36,9 @@ type Clipboard = { roots: string[]; nodes: Record<string, SceneNode>; pageId: st
 
 let nudgeHistoryAt = 0;
 
+const HISTORY_LIMIT = 120;
+const NUDGE_GROUP_MS = 500;
+
 export type AlignKind = "left" | "hcenter" | "right" | "top" | "vcenter" | "bottom";
 export type ReorderMode = "front" | "back" | "forward" | "backward";
 export type SyncStatus = "saved" | "saving" | "offline";
@@ -336,7 +339,8 @@ export const useEditor = create<EditorState>((set, get) => {
       ...state.doc,
       pages: state.doc.pages.map((p) => (p.id === committed.id ? committed : p)),
     };
-    const past = record ? [...state.past, state.doc].slice(-60) : state.past;
+    const past = record ? [...state.past, state.doc].slice(-HISTORY_LIMIT) : state.past;
+    if (record) nudgeHistoryAt = 0;
     set({
       doc: nextDoc,
       past,
@@ -370,7 +374,8 @@ export const useEditor = create<EditorState>((set, get) => {
     const page = getPage(next, state.pageId);
     fn(page, next);
     reflowPage(page);
-    const past = record ? [...state.past, state.doc].slice(-60) : state.past;
+    const past = record ? [...state.past, state.doc].slice(-HISTORY_LIMIT) : state.past;
+    if (record) nudgeHistoryAt = 0;
     set({
       doc: next,
       past,
@@ -412,6 +417,7 @@ export const useEditor = create<EditorState>((set, get) => {
     loading: true,
 
     load: (file, doc, version) => {
+      nudgeHistoryAt = 0;
       const normalized = normalizeDoc(doc);
       set({
         file,
@@ -527,7 +533,8 @@ export const useEditor = create<EditorState>((set, get) => {
     setEditingId: (id) => set({ editingId: id }),
     pushHistory: () => {
       const { doc, past } = get();
-      set({ past: [...past, doc].slice(-60), future: [] });
+      nudgeHistoryAt = 0;
+      set({ past: [...past, doc].slice(-HISTORY_LIMIT), future: [] });
     },
     undo: () => {
       const { past, doc, future } = get();
@@ -535,11 +542,12 @@ export const useEditor = create<EditorState>((set, get) => {
       const prev = rebaseHistoryDoc(past[past.length - 1], doc);
       const pageExists = prev.pages.some((p) => p.id === get().pageId);
       const nextPageId = pageExists ? get().pageId : prev.pages[0]?.id ?? get().pageId;
+      nudgeHistoryAt = 0;
       set({
         doc: prev,
         pageId: nextPageId,
         past: past.slice(0, -1),
-        future: [doc, ...future].slice(0, 60),
+        future: [doc, ...future].slice(0, HISTORY_LIMIT),
         selection: pageExists ? get().selection.filter((id) => getPage(prev, nextPageId).nodes[id]) : [],
         selectedPoint: null,
         dirty: true,
@@ -553,11 +561,12 @@ export const useEditor = create<EditorState>((set, get) => {
       const next = rebaseHistoryDoc(future[0], doc);
       const pageExists = next.pages.some((p) => p.id === get().pageId);
       const nextPageId = pageExists ? get().pageId : next.pages[0]?.id ?? get().pageId;
+      nudgeHistoryAt = 0;
       set({
         doc: next,
         pageId: nextPageId,
         future: future.slice(1),
-        past: [...past, doc].slice(-60),
+        past: [...past, doc].slice(-HISTORY_LIMIT),
         selection: pageExists ? get().selection.filter((id) => getPage(next, nextPageId).nodes[id]) : [],
         selectedPoint: null,
         dirty: true,
@@ -1012,9 +1021,10 @@ export const useEditor = create<EditorState>((set, get) => {
       }
       target.rootIds.push(rootId);
       target.ts = now;
+      nudgeHistoryAt = 0;
       set({
         doc: next,
-        past: [...state.past, state.doc].slice(-60),
+        past: [...state.past, state.doc].slice(-HISTORY_LIMIT),
         future: [],
         selection: [rootId],
         editingId: null,
@@ -1068,9 +1078,10 @@ export const useEditor = create<EditorState>((set, get) => {
         }
       }
       if (count === 0) return 0;
+      if (record) nudgeHistoryAt = 0;
       set({
         doc: next,
-        past: record ? [...state.past, state.doc].slice(-60) : state.past,
+        past: record ? [...state.past, state.doc].slice(-HISTORY_LIMIT) : state.past,
         future: record ? [] : state.future,
         dirty: true,
         changeSeq: state.changeSeq + 1,
@@ -1458,7 +1469,7 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     nudge: (dx, dy) => {
       const now = Date.now();
-      if (now - nudgeHistoryAt > 500) get().pushHistory();
+      if (now - nudgeHistoryAt > NUDGE_GROUP_MS) get().pushHistory();
       nudgeHistoryAt = now;
       get().translateSelection(dx, dy, false);
     },
@@ -1495,11 +1506,12 @@ export const useEditor = create<EditorState>((set, get) => {
         ts: Date.now(),
       };
       const next = { ...get().doc, pages: [...get().doc.pages, newPage] };
+      nudgeHistoryAt = 0;
       set({
         doc: next,
         pageId: newPage.id,
         selection: [],
-        past: [...get().past, get().doc].slice(-60),
+        past: [...get().past, get().doc].slice(-HISTORY_LIMIT),
         future: [],
         dirty: true,
         changeSeq: get().changeSeq + 1,
@@ -1513,11 +1525,12 @@ export const useEditor = create<EditorState>((set, get) => {
       const pages = doc.pages.filter((p) => p.id !== id);
       const nextPage = pageId === id ? pages[Math.max(0, doc.pages.findIndex((p) => p.id === id) - 1)].id : pageId;
       const now = Date.now();
+      nudgeHistoryAt = 0;
       set({
         doc: { ...doc, pages, deletedPages: { ...(doc.deletedPages ?? {}), [id]: now } },
         pageId: nextPage,
         selection: [],
-        past: [...get().past, doc].slice(-60),
+        past: [...get().past, doc].slice(-HISTORY_LIMIT),
         future: [],
         dirty: true,
         changeSeq: get().changeSeq + 1,
@@ -1580,12 +1593,13 @@ export const useEditor = create<EditorState>((set, get) => {
       const pageIds = new Set(normalized.pages.map((p) => p.id));
       const nextPageId = pageIds.has(get().pageId) ? get().pageId : normalized.pages[0].id;
       const nextPage = getPage(normalized, nextPageId);
+      nudgeHistoryAt = 0;
       set({
         doc: normalized,
         pageId: nextPageId,
         version,
         selection: get().selection.filter((id) => nextPage.nodes[id]),
-        past: [...get().past, get().doc].slice(-60),
+        past: [...get().past, get().doc].slice(-HISTORY_LIMIT),
         future: [],
         dirty: false,
         syncSeq: get().changeSeq,
