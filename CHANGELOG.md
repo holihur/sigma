@@ -20,6 +20,8 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 - SQLite concurrency 1→4 + WAL — fixes #31 #46
 
 ### Fixed
+- Chinese locale now lazy-loads as a separate chunk before first paint — fixes #64
+- Font picker remains a bounded 8-family list; documented the non-virtualized constraint — fixes #61
 - Prototype hotspot hover now shows target and transition preview — fixes #65
 - Thumbnails are now stored as files with lazy authenticated URLs; legacy inline data URLs migrate on first read — fixes #63
 - Undo history now keeps 120 steps and groups sustained nudges without merging across other edits — fixes #62

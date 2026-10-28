@@ -370,6 +370,8 @@ export function nodeLabel(node: SceneNode): string {
   return node.name;
 }
 
+// Keep this list small: TypographySection renders it directly without
+// virtualization. The picker intentionally offers 8 broadly available families.
 export const FONT_FAMILIES = [
   "Inter Variable",
   "Arial",

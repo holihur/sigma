@@ -39,7 +39,7 @@ export default function App() {
 
   useEffect(() => {
     bootTheme();
-    bootI18n();
+    void bootI18n();
     void init();
   }, [init]);
 
