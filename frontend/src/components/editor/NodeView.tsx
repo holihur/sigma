@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
 import type { Page, SceneNode, Tool } from "@/lib/types";
 import { nodeLabel, paintToCss, shadowToCss } from "@/lib/nodes";
 import { vectorPathData, vectorSubpaths } from "@/lib/vector";
@@ -235,6 +235,12 @@ function TextEditor({
   onFocus: () => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const resize = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -242,30 +248,58 @@ function TextEditor({
     const len = el.value.length;
     el.setSelectionRange(len, len);
   }, []);
+  useLayoutEffect(() => {
+    resize();
+  }, [node.text, node.width, node.fontSize, node.lineHeight, node.letterSpacing, node.fontWeight]);
+  const editorStyle: React.CSSProperties = {
+    width: "100%",
+    height: "auto",
+    minHeight: "1em",
+    flex: "0 0 auto",
+    display: "block",
+    boxSizing: "border-box",
+    border: 0,
+    padding: 0,
+    margin: 0,
+    background: "transparent",
+    color: "inherit",
+    font: "inherit",
+    lineHeight: style.lineHeight,
+    letterSpacing: "inherit",
+    textAlign: "inherit",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    resize: "none",
+    overflow: "hidden",
+  };
   return (
-    <textarea
-      ref={ref}
-      value={node.text}
-      spellCheck={false}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onDone}
-      onPointerDown={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          onDone();
-        }
-        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-          e.preventDefault();
-          onDone();
-        }
-        e.stopPropagation();
-      }}
-      onFocus={onFocus}
-      className="text-node-editor absolute inset-0 z-10"
-      style={style}
-    />
+    <div className="absolute inset-0 z-10" style={style} onPointerDown={(e) => e.stopPropagation()}>
+      <textarea
+        ref={ref}
+        rows={1}
+        value={node.text}
+        spellCheck={false}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onDone}
+        onInput={resize}
+        onPointerDown={(e) => e.stopPropagation()}
+        onDoubleClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            onDone();
+          }
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            onDone();
+          }
+          e.stopPropagation();
+        }}
+        onFocus={onFocus}
+        className="text-node-editor"
+        style={editorStyle}
+      />
+    </div>
   );
 }
 
