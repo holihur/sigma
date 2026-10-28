@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef } from "react";
-import type { Page, SceneNode, Tool } from "@/lib/types";
-import { nodeLabel, paintToCss, shadowToCss } from "@/lib/nodes";
+import type { Bounds, Page, SceneNode, Tool } from "@/lib/types";
+import { nodeAABB, nodeLabel, paintToCss, shadowToCss } from "@/lib/nodes";
 import { vectorPathData, vectorSubpaths } from "@/lib/vector";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n";
@@ -23,6 +23,8 @@ export interface NodeViewContext {
   onEditEnd?: () => void;
   onTextFocus?: () => void;
   hideLockedIndicator?: boolean;
+  cullBounds?: Bounds | null;
+  pinnedIds?: Set<string>;
 }
 
 export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext }) {
@@ -77,6 +79,10 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
     return node.children.map((childId) => {
       const child = page.nodes[childId];
       if (!child) return null;
+      const cull = ctx.cullBounds;
+      if (cull && child.visible && !ctx.pinnedIds?.has(child.id)) {
+        if (!intersectsBounds(nodeAABB(page, child), cull)) return null;
+      }
       return <NodeView key={childId} node={child} ctx={ctx} />;
     });
   };
@@ -303,6 +309,10 @@ function TextEditor({
       />
     </div>
   );
+}
+
+function intersectsBounds(a: Bounds, b: Bounds): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
 export { nodeLabel };

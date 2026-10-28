@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowUpRight,
@@ -177,6 +177,7 @@ export function Canvas({
   const [draft, setDraft] = useState<{ world: Point; text: string } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [imagePending, setImagePending] = useState<{ point: Point; replaceId?: string } | null>(null);
+  const [stageSize, setStageSize] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const hoveredId = useEditor((s) => s.hoveredId);
   const selectedPoint = useEditor((s) => s.selectedPoint);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -188,8 +189,53 @@ export function Canvas({
 
   const store = useEditor;
   const pageId = page.id;
-  const rootNodes = page.rootIds.map((id) => page.nodes[id]).filter(Boolean);
+  const cullBounds = useMemo(() => {
+    if (!stageSize.width || !stageSize.height) return null;
+    const margin = 240 / viewport.zoom;
+    return {
+      x: -viewport.x / viewport.zoom - margin,
+      y: -viewport.y / viewport.zoom - margin,
+      width: stageSize.width / viewport.zoom + margin * 2,
+      height: stageSize.height / viewport.zoom + margin * 2,
+    };
+  }, [stageSize, viewport.x, viewport.y, viewport.zoom]);
   const selectedSet = new Set(selection);
+  const pinnedIds = useMemo(() => {
+    const pinned = new Set<string>();
+    const addAncestors = (id: string) => {
+      let node: SceneNode | undefined = page.nodes[id];
+      let guard = 0;
+      while (node && guard++ < 200) {
+        pinned.add(node.id);
+        node = node.parentId ? page.nodes[node.parentId] : undefined;
+      }
+    };
+    for (const id of selection) addAncestors(id);
+    if (hoveredId) addAncestors(hoveredId);
+    if (editingId) addAncestors(editingId);
+    return pinned;
+  }, [page, selection, hoveredId, editingId]);
+  const rootNodes = useMemo(
+    () =>
+      page.rootIds
+        .map((id) => page.nodes[id])
+        .filter((node): node is SceneNode => {
+          if (!node || !node.visible) return false;
+          if (!cullBounds || pinnedIds.has(node.id)) return true;
+          return intersects(nodeAABB(page, node), cullBounds);
+        }),
+    [page, cullBounds, pinnedIds],
+  );
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setStageSize({ width: el.clientWidth, height: el.clientHeight });
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // ---------- coordinate helpers ----------
   const rect = () => containerRef.current?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0);
@@ -1257,6 +1303,8 @@ export function Canvas({
     selected: selectedSet,
     hoveredId,
     editingId,
+    cullBounds: Object.keys(page.nodes).length > 250 ? cullBounds : null,
+    pinnedIds,
     onPointerDown: onNodePointerDown,
     onDoubleClick: onNodeDoubleClick,
     onContextMenu: onNodeContextMenu,

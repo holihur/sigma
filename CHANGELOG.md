@@ -19,6 +19,9 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 - `docker-compose` requires `SIGMA_SECRET` — fixes #27
 - SQLite concurrency 1→4 + WAL — fixes #31 #46
 
+### Performance
+- Large pages now mount only visible/nearby canvas nodes; selected, hovered and editing branches stay mounted
+
 ### Fixed
 - Chinese locale now lazy-loads as a separate chunk before first paint — fixes #64
 - Vector editing: correct compound-point deletion, tiny-path bounds, edge smooth handles, closest-point insertion, asymmetric handle mirroring, pen zoom/touch deadzone, user stroke/fill presets and grouped pen-cancel undo — fixes #103 #104 #105 #106 #107 #108 #109 #111 #112 #113
