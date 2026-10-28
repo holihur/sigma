@@ -182,7 +182,7 @@ make release-snapshot
 
 需要安装 GoReleaser v2。正式 Release 必须由 GitHub CI 执行。
 
-## 备份
+## 备份与恢复
 
 备份以下内容即可：
 
@@ -191,10 +191,35 @@ sigma.db
 sigma.db-wal
 sigma.db-shm
 uploads/
+ai_sessions/  # 若启用 AI 会话持久化
 ```
 
 SQLite 使用 WAL。在线备份建议：
 
 ```bash
+# 在线热备份（不锁库）
 sqlite3 sigma.db ".backup '/backup/sigma-$(date +%F).db'"
+cp -r uploads /backup/uploads-$(date +%F)
+# 校验
+sqlite3 /backup/sigma-$(date +%F).db "PRAGMA integrity_check;"
 ```
+
+恢复：
+
+```bash
+systemctl stop sigma
+cp /backup/sigma-2026-10-28.db sigma.db
+cp -r /backup/uploads-2026-10-28 uploads
+chown -R sigma:sigma sigma.db uploads
+systemctl start sigma
+# 健康检查
+curl -fsSL http://localhost:9000/api/health
+```
+
+定时备份示例（cron 每日 03:00）：
+
+```bash
+0 3 * * * sqlite3 /var/lib/sigma/sigma.db ".backup '/backup/sigma-$(date +\%F).db'" && find /backup -name "sigma-*.db" -mtime +7 -delete
+```
+
+> 重要：`SIGMA_SECRET` 必须与备份一同安全保管（`\`/etc/sigma/sigma.env\``），否则加密的 AI Key 无法解密。

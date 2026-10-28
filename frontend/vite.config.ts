@@ -24,5 +24,15 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false,
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom", "zustand"],
+          ui: ["lucide-react", "sonner", "@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu"],
+          vector: ["paper", "clipper-lib", "imagetracerjs"],
+        },
+      },
+    },
   },
 });

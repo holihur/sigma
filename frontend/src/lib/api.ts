@@ -21,13 +21,22 @@ import type {
 
 const TOKEN_KEY = "sigma.token";
 
+function getApiBase(): string {
+  const env = (import.meta as unknown as { env?: Record<string, string> }).env;
+  const base = env?.VITE_API_BASE;
+  if (base && typeof base === "string" && base.trim()) return base.trim().replace(/\/$/, "");
+  return "/api";
+}
+
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
 }
 
 export function setToken(token: string | null) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch { /* quota */ }
 }
 
 export class ApiError extends Error {
@@ -49,7 +58,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${getApiBase()}${path}`, {
     method: options.method ?? "GET",
     headers,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
@@ -115,7 +124,7 @@ export async function uploadImage(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file);
   const token = getToken();
-  const res = await fetch("/api/uploads", {
+  const res = await fetch(`${getApiBase()}/uploads`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
@@ -184,7 +193,7 @@ export const figmaApi = {
     api<FigmaImportResult>("/figma/import", { method: "POST", body }),
   importJSON: async (data: string, name: string): Promise<FigmaImportResult> => {
     const token = getToken();
-    const res = await fetch(`/api/figma/import-json?name=${encodeURIComponent(name)}`, {
+    const res = await fetch(`${getApiBase()}/figma/import-json?name=${encodeURIComponent(name)}`, {
       method: "POST",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -210,7 +219,7 @@ export const figmaApi = {
   },
   exportJSON: async (id: string): Promise<{ text: string; filename: string }> => {
     const token = getToken();
-    const res = await fetch(`/api/files/${id}/figma-json`, {
+    const res = await fetch(`${getApiBase()}/files/${id}/figma-json`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!res.ok) throw new ApiError("Export failed", res.status);
@@ -258,5 +267,7 @@ export function wsUrl(fileId: string, clientId: string): string {
   const token = getToken() ?? "";
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const params = new URLSearchParams({ fileId, token, clientId });
-  return `${proto}://${location.host}/api/ws?${params.toString()}`;
+  const base = getApiBase();
+  const wsPath = base.endsWith("/ws") ? base : `${base}/ws`;
+  return `${proto}://${location.host}${wsPath}?${params.toString()}`;
 }
