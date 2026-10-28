@@ -264,6 +264,7 @@ const zh: Record<string, string> = {
 
   // Notifications
   "Notifications": "通知",
+  "Could not mark notifications as read": "无法将通知标记为已读",
   "Comments and activity across your designs.": "你的设计中的评论与动态。",
   "You’re all caught up. New comments will show up here.": "已全部读完。新评论会出现在这里。",
   "commented on": "评论了",

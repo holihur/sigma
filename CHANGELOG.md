@@ -20,6 +20,7 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 - SQLite concurrency 1→4 + WAL — fixes #31 #46
 
 ### Fixed
+- Notification read state now rolls back and resurfaces an error if the API call fails — fixes #54
 - Mobile editor fit now measures the actual toolbar position and safe-area offset instead of a fixed 120px bottom pad — fixes #51
 - Safer design deletion: show last edit/collaborator/comment counts and require typing the design name — fixes #50
 - WCAG AA contrast for primary text, primary buttons, selection handles/labels and focus rings in light/dark themes — fixes #47

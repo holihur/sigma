@@ -362,9 +362,18 @@ export default function DashboardPage() {
   const openNotifications = async () => {
     setNotificationsOpen(true);
     if (unread > 0) {
+      const previousUnread = unread;
+      const previousNotifications = notifications;
       setUnread(0);
       setNotifications((list) => list.map((n) => ({ ...n, read: true })));
-      await notificationsApi.read().catch(() => undefined);
+      try {
+        await notificationsApi.read();
+      } catch {
+        setUnread(previousUnread);
+        setNotifications(previousNotifications);
+        toast.error(t("Could not mark notifications as read"));
+        void loadNotifications();
+      }
     }
   };
 
