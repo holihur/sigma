@@ -491,13 +491,13 @@ export const useEditor = create<EditorState>((set, get) => {
       const state = get();
       const page = state.doc.pages.find((p) => p.id === id);
       if (!page) return;
+      const request = ++pageRequest;
       if (state.loadedPages.has(id)) {
-        set({ pageId: id, selection: [], selectedPoint: null, editingId: null, hoveredId: null });
+        set({ pageId: id, pageLoading: false, selection: [], selectedPoint: null, editingId: null, hoveredId: null });
         return;
       }
       if (!state.file) return;
       const fileId = state.file.id;
-      const request = ++pageRequest;
       set({ pageLoading: true });
       try {
         const latest = await filesApi.getPage(fileId, id);
@@ -1666,6 +1666,7 @@ export const useEditor = create<EditorState>((set, get) => {
         changeSeq: get().changeSeq + 1,
         syncStatus: "saving",
       });
+      if (!get().loadedPages.has(nextPage)) void get().setPage(nextPage).catch(() => undefined);
     },
     setComments: (comments) => set({ comments }),
     appendComment: (comment) => {

@@ -81,6 +81,13 @@ export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; pub
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialFrame, currentPageId]);
 
+  useEffect(() => {
+    if (!open || location || !frames[0]) return;
+    const next = { pageId: frames[0].pageId, frameId: frames[0].frame.id };
+    setLocation(next);
+    initialRef.current = next;
+  }, [open, location, frames]);
+
   // Track stage size for fitting.
   useEffect(() => {
     if (!open) return;

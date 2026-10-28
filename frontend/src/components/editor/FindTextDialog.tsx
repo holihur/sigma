@@ -54,11 +54,13 @@ export function FindTextDialog({
 
   useEffect(() => setActive(0), [query, scope]);
 
-  const reveal = (index: number) => {
+  const reveal = async (index: number) => {
     const hit = results[index];
     if (!hit) return;
     const st = useEditor.getState();
-    if (st.pageId !== hit.page.id) st.setPage(hit.page.id);
+    if (st.pageId !== hit.page.id) {
+      try { await st.setPage(hit.page.id); } catch { return; }
+    }
     st.select([hit.node.id]);
     const host = hostRef.current;
     if (host) {
@@ -72,21 +74,27 @@ export function FindTextDialog({
     }
   };
 
-  const replaceOne = () => {
+  const replaceOne = async () => {
     const hit = results[active];
     if (!hit || !query) return;
     const st = useEditor.getState();
-    if (st.pageId !== hit.page.id) st.setPage(hit.page.id);
+    if (st.pageId !== hit.page.id) {
+      try { await st.setPage(hit.page.id); } catch { return; }
+    }
     st.updateNode(hit.node.id, { text: hit.node.text.replace(new RegExp(escapeRegExp(query), "i"), replace) }, true);
   };
 
-  const replaceAll = () => {
+  const replaceAll = async () => {
     if (!query) return;
     const st = useEditor.getState();
+    try { await st.ensureAllPages(); } catch { return; }
     let count = 0;
-    for (const page of doc.pages) {
+    const currentDoc = useEditor.getState().doc;
+    for (const page of currentDoc.pages) {
       if (scope === "page" && page.id !== st.pageId) continue;
-      st.setPage(page.id);
+      if (st.pageId !== page.id) {
+        try { await st.setPage(page.id); } catch { continue; }
+      }
       for (const node of Object.values(page.nodes)) {
         if (node.type !== "text" || !node.text.toLowerCase().includes(query.toLowerCase())) continue;
         st.updateNode(node.id, { text: node.text.replace(new RegExp(escapeRegExp(query), "gi"), replace) }, true);
