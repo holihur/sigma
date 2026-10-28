@@ -1350,6 +1350,11 @@ function TemplatePreview({ file, template }: { file: FileMeta; template?: Templa
 
 function EmptyState({ nav, search, onCreate, onClear }: { nav: Nav; search: string; onCreate: () => void; onClear: () => void }) {
   const t = useT();
+  const steps = [
+    { icon: <LayoutGrid className="size-3.5" />, title: "Choose a template", body: "Start from a designed system or a blank canvas." },
+    { icon: <Component className="size-3.5" />, title: "Shape the flow", body: "Edit layers, components and clickable interactions." },
+    { icon: <Presentation className="size-3.5" />, title: "Share the prototype", body: "Send a link — viewers don’t need an account." },
+  ];
   if (search) {
     return (
       <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border py-20 text-center">
@@ -1385,6 +1390,20 @@ function EmptyState({ nav, search, onCreate, onClear }: { nav: Nav; search: stri
         <Button onClick={onCreate}>
           <Plus className="size-4" /> {t("Create your first design")}
         </Button>
+      )}
+      {nav === "all" && (
+        <div className="mt-1 grid w-full max-w-2xl grid-cols-1 gap-2 sm:grid-cols-3">
+          {steps.map((step, index) => (
+            <div key={step.title} className="rounded-xl border border-border/70 bg-panel/70 p-3 text-left">
+              <div className="flex items-center gap-2">
+                <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary">{step.icon}</span>
+                <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+              </div>
+              <div className="mt-2 text-[12px] font-medium">{t(step.title)}</div>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{t(step.body)}</p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -564,6 +564,12 @@ const zh: Record<string, string> = {
   "Start from a template or a blank canvas and turn your idea into a clickable prototype.":
     "从模板或空白画布开始，把想法变成可点击的原型。",
   "Create your first design": "创建你的第一个设计",
+  "Choose a template": "选择模板",
+  "Start from a designed system or a blank canvas.": "从设计系统模板或空白画布开始。",
+  "Shape the flow": "搭建流程",
+  "Edit layers, components and clickable interactions.": "编辑图层、组件与可点击交互。",
+  "Share the prototype": "分享原型",
+  "Send a link — viewers don’t need an account.": "发送链接，访问者无需账号。",
   "View all designs": "查看全部设计",
   "Try again": "重试",
   "Remove star": "取消收藏",
