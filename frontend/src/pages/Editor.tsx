@@ -200,7 +200,9 @@ export default function EditorPage() {
       if (frame) {
         const b = nodeAABB(current, frame);
         const topPad = 16;
-        const bottomPad = 120;
+        const hostBottom = el.getBoundingClientRect().bottom;
+        const toolbarTop = document.querySelector<HTMLElement>("[data-editor-toolbar]")?.getBoundingClientRect().top;
+        const bottomPad = toolbarTop == null ? 120 : Math.max(96, Math.round(hostBottom - toolbarTop + 12));
         const availableH = Math.max(height - topPad - bottomPad, 160);
         const zoom = clamp(Math.min((width - 24) / Math.max(b.width, 1), availableH / Math.max(b.height, 1)), 0.05, 1.1);
         st.setViewport({

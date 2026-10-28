@@ -46,7 +46,7 @@ export function Toolbar({ readOnly, onOpenComponents }: { readOnly: boolean; onO
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="no-scrollbar absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100%-0.75rem)] -translate-x-1/2 flex-row items-center gap-0.5 overflow-x-auto rounded-xl border border-panel-border bg-panel/95 p-1 shadow-xl backdrop-blur md:bottom-auto md:left-3 md:top-3 md:max-w-none md:translate-x-0 md:flex-col md:overflow-visible">
+      <div data-editor-toolbar className="no-scrollbar absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100%-0.75rem)] -translate-x-1/2 flex-row items-center gap-0.5 overflow-x-auto rounded-xl border border-panel-border bg-panel/95 p-1 shadow-xl backdrop-blur md:bottom-auto md:left-3 md:top-3 md:max-w-none md:translate-x-0 md:flex-col md:overflow-visible">
         <button
           type="button"
           title={t("Undo")}
