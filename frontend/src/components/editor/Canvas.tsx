@@ -509,6 +509,43 @@ export function Canvas({
   }, [page]);
 
   // ---------- background pointer down ----------
+  const snapCommentPoint = (world: Point): { point: Point; guides: Guide[] } => {
+    const threshold = 8 / viewport.zoom;
+    let bestX: { diff: number; at: number; bounds: Bounds } | null = null;
+    let bestY: { diff: number; at: number; bounds: Bounds } | null = null;
+    for (const node of Object.values(page.nodes)) {
+      if (!node.visible) continue;
+      const b = nodeAABB(page, node);
+      for (const x of [b.x, b.x + b.width]) {
+        const diff = x - world.x;
+        if (Math.abs(diff) <= threshold && (!bestX || Math.abs(diff) < Math.abs(bestX.diff))) bestX = { diff, at: x, bounds: b };
+      }
+      for (const y of [b.y, b.y + b.height]) {
+        const diff = y - world.y;
+        if (Math.abs(diff) <= threshold && (!bestY || Math.abs(diff) < Math.abs(bestY.diff))) bestY = { diff, at: y, bounds: b };
+      }
+    }
+    const point = { x: bestX?.at ?? world.x, y: bestY?.at ?? world.y };
+    const commentGuides: Guide[] = [];
+    if (bestX) {
+      commentGuides.push({
+        orientation: "v",
+        position: bestX.at,
+        from: Math.min(point.y, bestX.bounds.y),
+        to: Math.max(point.y, bestX.bounds.y + bestX.bounds.height),
+      });
+    }
+    if (bestY) {
+      commentGuides.push({
+        orientation: "h",
+        position: bestY.at,
+        from: Math.min(point.x, bestY.bounds.x),
+        to: Math.max(point.x, bestY.bounds.x + bestY.bounds.width),
+      });
+    }
+    return { point, guides: commentGuides };
+  };
+
   const onBackgroundPointerDown = (e: React.PointerEvent) => {
     if (suppressRef.current) return;
     const touchPan = e.pointerType === "touch" && tool === "select";
@@ -547,7 +584,9 @@ export function Canvas({
     }
 
     if (tool === "comment") {
-      setDraft({ world, text: "" });
+      const snap = snapCommentPoint(world);
+      setDraft({ world: snap.point, text: "" });
+      setGuides(snap.guides);
       requestAnimationFrame(() => draftRef.current?.focus());
       return;
     }
@@ -1154,6 +1193,10 @@ export function Canvas({
       toast.error((err as Error).message || "Could not upload image");
     }
   };
+
+  useEffect(() => {
+    if (!draft) setGuides([]);
+  }, [draft]);
 
   // ---------- comments ----------
   const unresolved = comments.filter((c) => c.pageId === pageId && !c.resolved && !c.parentId);

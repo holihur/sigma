@@ -20,6 +20,7 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 - SQLite concurrency 1→4 + WAL — fixes #31 #46
 
 ### Fixed
+- Comment placement now snaps to nearby layer edges with visible guides — fixes #57
 - Text editing now shares the rendered line-height/font metrics and auto-grows inside the same vertical-alignment container — fixes #58
 - Dashboard empty state now guides new users through template, canvas and sharing steps — fixes #49
 - Notification read state now rolls back and resurfaces an error if the API call fails — fixes #54
