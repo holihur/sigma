@@ -82,10 +82,12 @@ func main() {
 
 	go func() {
 		static := staticDir
+		source := "disk"
 		if static == "" {
 			static = "embedded"
+			source = "embed"
 		}
-		log.Printf("Sigma %s (%s) listening on http://localhost:%s (static: %s, uploads: %q)", version, commit, port, static, uploadDir)
+		log.Printf("Sigma %s (%s) listening on http://localhost:%s (static: %s [%s], uploads: %q)", version, commit, port, static, source, uploadDir)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server: %v", err)
 		}

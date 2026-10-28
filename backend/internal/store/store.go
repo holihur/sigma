@@ -38,7 +38,10 @@ func Open(path string) (*Store, error) {
 
 func (s *Store) Close() error { return s.db.Close() }
 
-func (s *Store) Ping() error { return s.db.Ping() }
+func (s *Store) Ping() error {
+	var one int
+	return s.db.QueryRow(`SELECT 1`).Scan(&one)
+}
 
 func (s *Store) migrate() error {
 	schema := `
