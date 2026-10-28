@@ -26,5 +26,23 @@ test("critical path: login, create, open, add page, reload", async ({ page }) =>
   await expect(page.getByRole("button", { name: /Present|演示/i })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/Page 2|页面 2/i).first()).toBeVisible();
 
+  // After reload only the first page is loaded. Switching to Page 2 must fetch
+  // that page on demand and keep the editor mounted.
+  const pageRequest = page.waitForResponse(
+    (r) => /\/api\/files\/[^/]+\/pages\/[^/?]+$/.test(r.url()) && r.request().method() === "GET",
+    { timeout: 30_000 },
+  );
+  await page.getByText(/^Page 2$/i).first().click();
+  expect((await pageRequest).ok()).toBeTruthy();
+  await expect(page.getByRole("button", { name: /Present|演示/i })).toBeVisible();
+
+  // Re-open the same design from the dashboard, matching the normal "open an
+  // existing design" path that previously hit `pages[0]` on an invalid payload.
+  await page.goto("/");
+  await expect(page.getByText(/Recent designs|最近设计/i).first()).toBeVisible();
+  await page.getByRole("button", { name: /^Untitled design$/i }).first().click();
+  await expect(page.getByRole("button", { name: /Present|演示/i })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/Page 2|页面 2/i).first()).toBeVisible();
+
   expect(pageErrors, `runtime page errors:\n${pageErrors.join("\n")}`).toEqual([]);
 });

@@ -87,6 +87,7 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm exec playwright install chromium
       - run: pnpm test:e2e
+        env:
+          PLAYWRIGHT_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
 
