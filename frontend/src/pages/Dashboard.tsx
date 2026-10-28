@@ -15,6 +15,7 @@ import {
   X,
   Moon,
   MoreHorizontal,
+  MessageCircle,
   Pencil,
   Plus,
   Search,
@@ -41,7 +42,7 @@ import {
   Square as SquareIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { filesApi, notificationsApi } from "@/lib/api";
+import { filesApi, notificationsApi, commentsApi, membersApi } from "@/lib/api";
 import type { FileMeta, Notification, TemplateMeta } from "@/lib/types";
 import { useAuth } from "@/store/auth";
 import { useTheme } from "@/store/theme";
@@ -109,6 +110,9 @@ export default function DashboardPage() {
   const [renameTarget, setRenameTarget] = useState<FileMeta | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<FileMeta | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteImpact, setDeleteImpact] = useState<{ members: number | null; comments: number | null } | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -144,6 +148,24 @@ export default function DashboardPage() {
     void load();
     void loadNotifications();
   }, [load, loadNotifications]);
+
+  useEffect(() => {
+    setDeleteConfirm("");
+    setDeleteImpact(null);
+    if (!deleteTarget) return;
+    let cancelled = false;
+    const id = deleteTarget.id;
+    Promise.allSettled([membersApi.list(id), commentsApi.list(id)]).then(([members, comments]) => {
+      if (cancelled) return;
+      setDeleteImpact({
+        members: members.status === "fulfilled" ? members.value.members.length : null,
+        comments: comments.status === "fulfilled" ? comments.value.comments.length : null,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [deleteTarget]);
 
   // Prefetch the editor once the dashboard is interactive. Hovering a card is
   // an even stronger signal, so FileCard also calls prefetchEditor directly.
@@ -261,7 +283,8 @@ export default function DashboardPage() {
   };
 
   const remove = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deleteConfirm.trim() !== deleteTarget.name) return;
+    setDeleteBusy(true);
     try {
       await filesApi.remove(deleteTarget.id);
       setFiles((list) => list.filter((f) => f.id !== deleteTarget.id));
@@ -269,6 +292,8 @@ export default function DashboardPage() {
       toast.success("Design deleted");
     } catch (e) {
       toast.error((e as Error).message);
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -865,7 +890,7 @@ export default function DashboardPage() {
       </Dialog>
 
       {/* Delete confirm */}
-      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && !deleteBusy && setDeleteTarget(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Delete design")} “{deleteTarget?.name}”?</DialogTitle>
@@ -873,12 +898,54 @@ export default function DashboardPage() {
               {t("This permanently deletes the design, its pages, comments and version history. This action cannot be undone.")}
             </DialogDescription>
           </DialogHeader>
+          {deleteTarget && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-border bg-secondary/40 p-3">
+                <div className="truncate text-[13px] font-medium">{deleteTarget.name}</div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="size-3.5" /> {formatRelative(deleteTarget.updatedAt)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="size-3.5" /> {t("Collaborators")}{" "}
+                    {deleteImpact === null ? "…" : deleteImpact.members === null ? "—" : deleteImpact.members}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MessageCircle className="size-3.5" /> {t("Comments")}{" "}
+                    {deleteImpact === null ? "…" : deleteImpact.comments === null ? "—" : deleteImpact.comments}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-muted-foreground" htmlFor="delete-confirm">
+                  {t("Type “{name}” to confirm", { name: deleteTarget.name })}
+                </label>
+                <Input
+                  id="delete-confirm"
+                  autoFocus
+                  value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && deleteConfirm.trim() === deleteTarget.name) void remove();
+                    e.stopPropagation();
+                  }}
+                  placeholder={deleteTarget.name}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleteBusy}>
               {t("Cancel")}
             </Button>
-            <Button variant="destructive" onClick={remove}>
-              <Trash2 className="size-4" /> {t("Delete design")}
+            <Button
+              variant="destructive"
+              onClick={remove}
+              disabled={deleteBusy || !deleteTarget || deleteConfirm.trim() !== deleteTarget.name}
+            >
+              {deleteBusy ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Delete design")}
             </Button>
           </DialogFooter>
         </DialogContent>

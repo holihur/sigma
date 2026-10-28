@@ -42,6 +42,8 @@ const zh: Record<string, string> = {
   "View only": "仅查看",
   "Open in editor": "在编辑器中打开",
   "Delete design": "删除设计",
+  "Collaborators": "协作者",
+  "Type “{name}” to confirm": "输入“{name}”以确认",
   "Rename design": "重命名设计",
   "Create design": "创建设计",
   "Design name": "设计名称",
