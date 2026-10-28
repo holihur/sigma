@@ -165,6 +165,16 @@ CREATE INDEX IF NOT EXISTS idx_versions_file ON versions(file_id);
 CREATE INDEX IF NOT EXISTS idx_pat_user ON personal_access_tokens(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_identity_user ON user_identities(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_skills_user ON ai_skills(user_id, updated_at);
+CREATE TABLE IF NOT EXISTS audit_logs (
+	id         TEXT PRIMARY KEY,
+	file_id    TEXT NOT NULL,
+	actor_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	action     TEXT NOT NULL,
+	meta       TEXT NOT NULL DEFAULT '',
+	created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_audit_file ON audit_logs(file_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id, created_at);
 `
 	if _, err := s.db.Exec(schema); err != nil {
 		return err
@@ -712,6 +722,16 @@ func (s *Store) Notifications(userID string) ([]model.Notification, error) {
 
 func (s *Store) MarkNotificationsRead(userID string) error {
 	_, err := s.db.Exec(`UPDATE notifications SET read=1 WHERE user_id=? AND read=0`, userID)
+	return err
+}
+
+func (s *Store) AddAuditLog(id, fileID, actorID, action, meta string) error {
+	_, err := s.db.Exec(`INSERT INTO audit_logs(id,file_id,actor_id,action,meta,created_at) VALUES(?,?,?,?,?,?)`, id, fileID, actorID, action, meta, model.Now())
+	return err
+}
+
+func (s *Store) CleanupExpiredPATs() error {
+	_, err := s.db.Exec(`DELETE FROM personal_access_tokens WHERE expires_at != '' AND expires_at < ?`, model.Now())
 	return err
 }
 
