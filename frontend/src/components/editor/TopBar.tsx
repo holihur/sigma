@@ -129,7 +129,9 @@ export function TopBar({
 
   const uniqueUsers = Array.from(
     new Map(collaborators.filter((c) => c.userId && c.userId !== user?.id).map((c) => [c.userId, c])).values(),
-  ).slice(0, 4);
+  )
+    .sort((a, b) => a.userId.localeCompare(b.userId))
+    .slice(0, 4);
 
   if (!file) return null;
 

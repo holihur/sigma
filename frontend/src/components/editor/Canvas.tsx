@@ -581,8 +581,8 @@ export function Canvas({
           const hits: string[] = [];
           for (const node of Object.values(page.nodes) as SceneNode[]) {
             if (!node.visible || node.locked) continue;
-            const b = nodeAABB(page, node);
-            if (intersects(b, box)) hits.push(node.id);
+            const b = clippedBounds(page, node);
+            if (b && intersects(b, box)) hits.push(node.id);
           }
           const top = topLevelSelection(page, hits);
           store.getState().select(top, d.additive);
@@ -1632,6 +1632,27 @@ function normalizeRect(a: Point, b: Point): Bounds {
 
 function intersects(a: Bounds, b: Bounds): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function clippedBounds(page: Page, node: SceneNode): Bounds | null {
+  let b = nodeAABB(page, node);
+  let parentId = node.parentId;
+  let guard = 0;
+  while (parentId && guard++ < 100) {
+    const parent = page.nodes[parentId];
+    if (!parent) break;
+    if (parent.type === "frame") {
+      const p = nodeAABB(page, parent);
+      const x1 = Math.max(b.x, p.x);
+      const y1 = Math.max(b.y, p.y);
+      const x2 = Math.min(b.x + b.width, p.x + p.width);
+      const y2 = Math.min(b.y + b.height, p.y + p.height);
+      if (x2 <= x1 || y2 <= y1) return null;
+      b = { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
+    }
+    parentId = parent.parentId;
+  }
+  return b;
 }
 
 function computeSnap(moving: Bounds, targets: Bounds[], threshold: number): { dx: number; dy: number; guides: Guide[] } {

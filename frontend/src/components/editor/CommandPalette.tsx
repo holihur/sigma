@@ -57,6 +57,7 @@ export function CommandPalette({
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const selection = useEditor((s) => s.selection);
   const pageId = useEditor((s) => s.pageId);
   const doc = useEditor((s) => s.doc);
@@ -177,7 +178,25 @@ export function CommandPalette({
   let lastGroup = "";
   return (
     <div className="fixed inset-0 z-[230] flex items-start justify-center bg-black/45 px-3 pt-[12vh] backdrop-blur-sm" onMouseDown={() => onOpenChange(false)}>
-      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-panel-border bg-panel shadow-2xl animate-pop" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className="w-full max-w-xl overflow-hidden rounded-2xl border border-panel-border bg-panel shadow-2xl animate-pop"
+        onMouseDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key !== "Tab") return;
+          const focusable = panelRef.current?.querySelectorAll<HTMLElement>('input, button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+          if (!focusable?.length) return;
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }}
+      >
         <div className="flex items-center gap-2 border-b border-panel-border px-3">
           <Search className="size-4 text-muted-foreground" />
           <input
