@@ -20,6 +20,7 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 - SQLite concurrency 1→4 + WAL — fixes #31 #46
 
 ### Performance
+- Added Playwright browser critical-path smoke test and fixed the WebSocket last-client presence panic
 - Editor now downloads a page manifest plus one page, fetches other pages on demand, saves only loaded pages, and gzips document responses; cross-page tools hydrate pages when opened
 - Large pages now mount only visible/nearby canvas nodes; selected, hovered and editing branches stay mounted
 

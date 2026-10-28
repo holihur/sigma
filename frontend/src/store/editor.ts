@@ -200,7 +200,8 @@ function normalizeDoc(doc: SigmaDoc): SigmaDoc {
   return out;
 }
 
-function normalizePage(page: Page): Page {
+function normalizePage(page: Page | undefined): Page {
+  if (!page) return structuredClone(emptyDoc.pages[0]);
   return normalizeDoc({ pages: [page], tombstones: {}, deletedPages: {}, styles: { colors: [], texts: [] } }).pages[0];
 }
 

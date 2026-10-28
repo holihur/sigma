@@ -29,7 +29,7 @@ func Open(name string) (*Store, error) {
 	if uri == "" {
 		uri = "mongodb://127.0.0.1:27017"
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {

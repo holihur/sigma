@@ -4,13 +4,18 @@ Thanks for helping make Sigma better!
 
 ## Development
 
-**Requirements**: Go 1.27+, Node 26+, pnpm 12+
+**Requirements**: Go 1.27+, Node 26+, pnpm 12+, MongoDB 7+
 
 ```bash
 mise install          # installs Go, Node, pnpm per mise.toml
 cd frontend && pnpm install
-cd ../backend && go test ./...   # vet + test (no build needed for audit)
+cd ../backend && go test ./...   # requires MONGO_URI (default mongodb://127.0.0.1:27017)
 make build            # full build (needs memory)
+
+# Browser critical-path smoke test
+cd frontend
+pnpm exec playwright install chromium   # one-time browser install
+pnpm test:e2e
 ```
 
 ### Commit Convention
@@ -20,7 +25,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 - `feat(canvas): virtualize layer tree`
 - `docs(deploy): add backup instructions`
 
-CI runs `go vet`, `go test`, `pnpm build` — keep `AUDIT_TOP100.md` updated.
+CI runs `go vet`, `go test`, `pnpm build`, and the Playwright critical-path smoke test. Keep `AUDIT_TOP100.md` updated.
 
 ### Pull Requests
 

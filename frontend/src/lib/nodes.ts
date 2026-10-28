@@ -144,6 +144,9 @@ export function shadowToCss(shadow: Shadow | null | undefined): string | undefin
 }
 
 export function getPage(doc: SigmaDoc, pageId: string): Page {
+  if (!doc || !Array.isArray(doc.pages) || doc.pages.length === 0) {
+    return { id: "page-blank", name: "Page 1", nodes: {}, rootIds: [], ts: Date.now() };
+  }
   return doc.pages.find((p) => p.id === pageId) ?? doc.pages[0];
 }
 

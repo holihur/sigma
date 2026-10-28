@@ -148,9 +148,12 @@ export default function EditorPage() {
     filesApi
       .manifest(id)
       .then(async ({ file, version, pages, styles }) => {
+        if (!file || !Array.isArray(pages) || pages.length === 0) {
+          throw new Error("Server returned an invalid page manifest. Restart the updated backend and try again.");
+        }
         const first = pages[0];
-        if (!first) throw new Error("This design has no pages");
         const latest = await filesApi.getPage(id, first.id);
+        if (!latest?.page) throw new Error("Server returned an empty page. Restart the updated backend and try again.");
         if (cancelled) return;
         const doc: SigmaDoc = {
           pages: pages.map((p) =>

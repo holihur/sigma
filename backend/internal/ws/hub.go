@@ -192,8 +192,9 @@ func (h *Hub) broadcastPresence(fileID string) {
 	users := h.presenceLocked(fileID)
 	payload, _ := json.Marshal(outbound{Type: "presence", Users: users})
 	r := h.rooms[fileID]
-	clients := make([]*client, 0, len(r.clients))
+	clients := []*client{}
 	if r != nil {
+		clients = make([]*client, 0, len(r.clients))
 		for c := range r.clients {
 			clients = append(clients, c)
 		}
