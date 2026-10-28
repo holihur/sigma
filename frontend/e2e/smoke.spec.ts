@@ -40,7 +40,7 @@ test("critical path: login, create, open, add page, reload", async ({ page }) =>
   // existing design" path that previously hit `pages[0]` on an invalid payload.
   await page.goto("/");
   await expect(page.getByText(/Recent designs|最近设计/i).first()).toBeVisible();
-  await page.getByRole("button", { name: /^Untitled design$/i }).first().click();
+  await page.getByRole("button", { name: /Open in editor|在编辑器中打开/i }).first().click();
   await expect(page.getByRole("button", { name: /Present|演示/i })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/Page 2|页面 2/i).first()).toBeVisible();
 
