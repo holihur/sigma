@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { filesApi, getToken, wsUrl } from "@/lib/api";
+import { apiRoot, filesApi, getToken, wsUrl } from "@/lib/api";
 import { diffDocs } from "@/lib/delta";
 import { mergeDocs } from "@/lib/merge";
 import type { Comment, Point, PresenceUser, SigmaDoc } from "@/lib/types";
@@ -203,7 +203,7 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
       const st = useEditor.getState();
       if (!st.dirty || !st.file || st.isReadOnly) return;
       const token = getToken();
-      void fetch(`/api/files/${st.file.id}/doc`, {
+      void fetch(`${apiRoot()}/files/${st.file.id}/doc`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

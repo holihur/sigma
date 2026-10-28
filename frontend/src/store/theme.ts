@@ -5,7 +5,7 @@ type Theme = "dark" | "light";
 function initial(): Theme {
   const stored = localStorage.getItem("sigma.theme");
   if (stored === "light" || stored === "dark") return stored;
-  return "dark";
+  return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
 function apply(theme: Theme) {

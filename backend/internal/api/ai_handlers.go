@@ -340,6 +340,12 @@ func (a *API) handleAIChat(w http.ResponseWriter, r *http.Request, u appmodel.Us
 		writeError(w, http.StatusInternalServerError, "Could not initialize design tools")
 		return
 	}
+	selected := make([]string, 0, len(body.Selection))
+	for _, id := range body.Selection {
+		if page.Node(strings.TrimSpace(id)) != nil {
+			selected = append(selected, id)
+		}
+	}
 	mdl := ai.NewOpenAICompatibleModel(ai.Config{APIKey: key, BaseURL: rec.BaseURL, Model: rec.Model})
 	instruction := fmt.Sprintf(`You are Sigma, an AI product designer working inside a collaborative prototyping canvas.
 You can inspect and edit the current page using the provided tools. Always use tools for changes; never claim changes you did not make.
@@ -353,7 +359,7 @@ Rules:
 - Keep the final response short and in the same language as the user.
 Current file: %s
 Current page: %s (%s)
-Selected node ids: %s`, f.Name, page.Name, page.ID, strings.Join(body.Selection, ", "))
+Selected node ids: %s`, f.Name, page.Name, page.ID, strings.Join(selected, ", "))
 
 	ctxRec, ctxErr := a.st.AIContext(u.ID)
 	if ctxErr == nil {

@@ -28,6 +28,10 @@ function getApiBase(): string {
   return "/api";
 }
 
+export function apiRoot(): string {
+  return getApiBase();
+}
+
 export function getToken(): string | null {
   try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
 }
