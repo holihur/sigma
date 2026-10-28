@@ -25,3 +25,6 @@ backend/data/
 
 # GoReleaser output
 dist/
+
+# audit report (not tracked)
+AUDIT_TOP100.md
