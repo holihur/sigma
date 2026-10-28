@@ -91,7 +91,11 @@ func (p *persistentSessions) restore(ctx context.Context, req *session.GetReques
 			return nil, err
 		}
 	}
-	return p.base.Get(ctx, &session.GetRequest{AppName: req.AppName, UserID: req.UserID, SessionID: req.SessionID, NumRecentEvents: req.NumRecentEvents, After: req.After})
+	got, err := p.base.Get(ctx, &session.GetRequest{AppName: req.AppName, UserID: req.UserID, SessionID: req.SessionID, NumRecentEvents: req.NumRecentEvents, After: req.After})
+	if err != nil {
+		return nil, err
+	}
+	return got.Session, nil
 }
 
 func (p *persistentSessions) Create(ctx context.Context, req *session.CreateRequest) (*session.CreateResponse, error) {
