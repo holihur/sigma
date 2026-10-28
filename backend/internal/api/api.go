@@ -60,6 +60,10 @@ func New(st *store.Store, am *auth.Manager, staticDir, uploadDir, secret string)
 func (a *API) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
+		if err := a.st.Ping(); err != nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"ok": false, "error": "database unavailable"})
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "time": time.Now().UTC()})
 	})
 	mux.HandleFunc("GET /api/templates", a.handleTemplates)
@@ -129,7 +133,7 @@ func (a *API) Handler() http.Handler {
 		mux.Handle("/", spaFSHandler(a.staticFS))
 	}
 
-	return withCORS(withLogging(mux))
+	return withSecurityHeaders(withCORS(withRateLimit(withLogging(mux))))
 }
 
 // ---------- middleware & helpers ----------
@@ -183,13 +187,48 @@ func (a *API) requireAuth(next AuthedHandler) http.HandlerFunc {
 	}
 }
 
+func allowedOrigin(origin string) bool {
+	allowed := strings.TrimSpace(os.Getenv("APP_ALLOWED_ORIGINS"))
+	if allowed == "" || allowed == "*" {
+		base := strings.TrimSpace(os.Getenv("APP_BASE_URL"))
+		if base != "" {
+			if u, err := parseOrigin(base); err == nil && u == origin {
+				return true
+			}
+		}
+		// In production without explicit whitelist, only allow same-origin (no Origin header) or base
+		return origin == "" || strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1")
+	}
+	for _, o := range strings.Split(allowed, ",") {
+		if strings.TrimSpace(o) == origin {
+			return true
+		}
+	}
+	return false
+}
+
+func parseOrigin(raw string) (string, error) {
+	// crude origin extraction: scheme://host
+	raw = strings.TrimSpace(raw)
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		parts := strings.SplitN(raw, "/", 4)
+		if len(parts) >= 3 {
+			return parts[0] + "//" + parts[2], nil
+		}
+	}
+	return raw, nil
+}
+
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if origin != "" {
+		if origin != "" && allowedOrigin(origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		} else if origin != "" {
+			// Disallowed origin: do not reflect
+			w.Header().Set("Vary", "Origin")
 		}
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
@@ -197,6 +236,64 @@ func withCORS(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func withSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "0")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		if r.Header.Get("X-Forwarded-Proto") == "https" || strings.HasPrefix(os.Getenv("APP_BASE_URL"), "https://") {
+			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.figma.com https://api.deepseek.com https://api.openai.com")
+		next.ServeHTTP(w, r)
+	})
+}
+
+var rateLimitStore sync.Map // ip -> *rateBucket
+type rateBucket struct {
+	mu    sync.Mutex
+	tokens float64
+	last   time.Time
+}
+
+func withRateLimit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only rate-limit auth & write endpoints
+		if !(strings.HasPrefix(r.URL.Path, "/api/auth/") || strings.HasPrefix(r.URL.Path, "/api/figma/")) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ip := r.RemoteAddr
+		if idx := strings.LastIndex(ip, ":"); idx != -1 {
+			ip = ip[:idx]
+		}
+		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+			ip = strings.TrimSpace(strings.Split(fwd, ",")[0])
+		}
+		v, _ := rateLimitStore.LoadOrStore(ip, &rateBucket{tokens: 5, last: time.Now()})
+		b := v.(*rateBucket)
+		b.mu.Lock()
+		now := time.Now()
+		elapsed := now.Sub(b.last).Seconds()
+		b.tokens += elapsed * (5.0 / 60.0) // 5 req per minute refill
+		if b.tokens > 10 {
+			b.tokens = 10
+		}
+		b.last = now
+		if b.tokens < 1 {
+			b.mu.Unlock()
+			w.Header().Set("Retry-After", "60")
+			writeError(w, http.StatusTooManyRequests, "Too many requests, please try again later")
+			return
+		}
+		b.tokens--
+		b.mu.Unlock()
 		next.ServeHTTP(w, r)
 	})
 }
@@ -230,6 +327,8 @@ func spaHandler(dir string) http.Handler {
 	return spaFSHandler(os.DirFS(dir))
 }
 
+var gzipPool = sync.Pool{New: func() any { return gzip.NewWriter(nil) }}
+
 func spaFSHandler(root fs.FS) http.Handler {
 	fileServer := http.FileServer(http.FS(root))
 	serve := func(w http.ResponseWriter, r *http.Request, p string, next http.Handler) {
@@ -241,8 +340,9 @@ func spaFSHandler(root fs.FS) http.Handler {
 		}
 		if r.Method != http.MethodHead && acceptsGzip(r) && gzipEligible(p) {
 			w.Header().Set("Content-Encoding", "gzip")
-			gw := gzip.NewWriter(w)
-			defer gw.Close()
+			gw := gzipPool.Get().(*gzip.Writer)
+			gw.Reset(w)
+			defer func() { gw.Close(); gzipPool.Put(gw) }()
 			next.ServeHTTP(&gzipResponseWriter{ResponseWriter: w, gzip: gw}, r)
 			return
 		}
@@ -322,8 +422,16 @@ func writeError(w http.ResponseWriter, status int, message string) {
 
 func readJSON(r *http.Request, dst any) error {
 	defer r.Body.Close()
-	dec := json.NewDecoder(io.LimitReader(r.Body, 64<<20))
-	return dec.Decode(dst)
+	// General limit 8MB; Figma import handlers use their own 96MB limit
+	dec := json.NewDecoder(io.LimitReader(r.Body, 8<<20))
+	if err := dec.Decode(dst); err != nil {
+		return err
+	}
+	// Defend against trailing garbage after valid JSON
+	if dec.More() {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 
 func newID(prefix string) string {

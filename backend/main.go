@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -33,7 +34,18 @@ func env(key, fallback string) string {
 func main() {
 	dbPath := env("DB_PATH", filepath.Join("data", "sigma.db"))
 	port := env("PORT", "9000")
-	secret := env("SIGMA_SECRET", "sigma-dev-secret-change-in-production")
+	secret := strings.TrimSpace(os.Getenv("SIGMA_SECRET"))
+	if secret == "" {
+		if env("GO_ENV", "") == "development" || env("SIGMA_ALLOW_INSECURE_SECRET", "") == "1" {
+			log.Println("WARNING: SIGMA_SECRET not set, using insecure development secret")
+			secret = "sigma-dev-secret-change-in-production"
+		} else {
+			log.Fatalf("SIGMA_SECRET is required (generate with: openssl rand -hex 32)")
+		}
+	}
+	if secret == "sigma-dev-secret-change-in-production" || secret == "change-me-in-production" {
+		log.Println("WARNING: running with default SIGMA_SECRET — do not use in production")
+	}
 
 	st, err := store.Open(dbPath)
 	if err != nil {

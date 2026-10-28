@@ -55,6 +55,10 @@ func (a *API) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, auth.OIDCErrorURL(a.oidc.AppBaseURL(), err.Error()), http.StatusFound)
 		return
 	}
+	if !claims.EmailVerified {
+		http.Redirect(w, r, auth.OIDCErrorURL(a.oidc.AppBaseURL(), "Email not verified by identity provider"), http.StatusFound)
+		return
+	}
 	issuer := ""
 	// The issuer is part of the identity key. OIDCManager verifies the token
 	// against the configured issuer; keep the same normalized value here.

@@ -41,8 +41,12 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Please enter a valid email")
 		return
 	}
-	if len(body.Password) < 6 {
-		writeError(w, http.StatusBadRequest, "Password must be at least 6 characters")
+	if len(body.Password) < 10 {
+		writeError(w, http.StatusBadRequest, "Password must be at least 10 characters")
+		return
+	}
+	if len(body.Password) > 72 {
+		writeError(w, http.StatusBadRequest, "Password must be at most 72 characters")
 		return
 	}
 	hash, err := a.auth.HashPassword(body.Password)

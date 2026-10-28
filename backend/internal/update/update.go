@@ -299,6 +299,11 @@ func (m *Manager) Apply(ctx context.Context) error {
 		m.mu.Unlock()
 		return errors.New("update already in progress")
 	}
+	// Prevent downgrade attacks: latest must be greater than current
+	if m.status.LatestVersion != "" && m.status.CurrentVersion != "dev" && !versionGreater(m.status.LatestVersion, m.status.CurrentVersion) {
+		m.mu.Unlock()
+		return errors.New("refusing downgrade: latest version is not newer than current")
+	}
 	assetURL, checksumURL := m.assetURL, m.checksum
 	m.applying = true
 	m.mu.Unlock()

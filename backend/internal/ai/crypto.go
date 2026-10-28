@@ -8,11 +8,18 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+
+	"golang.org/x/crypto/hkdf"
 )
 
 func deriveKey(secret string) []byte {
-	sum := sha256.Sum256([]byte(secret))
-	return sum[:]
+	h := hkdf.New(sha256.New, []byte(secret), []byte("sigma-aes-gcm-v1"), nil)
+	out := make([]byte, 32)
+	if _, err := io.ReadFull(h, out); err != nil {
+		sum := sha256.Sum256([]byte(secret))
+		return sum[:]
+	}
+	return out
 }
 
 // EncryptAPIKey protects a user-provided key at rest.

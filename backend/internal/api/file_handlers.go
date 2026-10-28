@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"sigma/internal/doc"
 	"sigma/internal/model"
@@ -236,6 +237,9 @@ func (a *API) handlePutDoc(w http.ResponseWriter, r *http.Request, u model.User)
 // mergeAndSave merges incoming into the stored document with per-node LWW
 // semantics, then persists it with an incremented version.
 func (a *API) mergeAndSave(fileID string, incoming json.RawMessage) (json.RawMessage, int, error) {
+	if len(incoming) > 8<<20 {
+		return nil, 0, docError("document too large")
+	}
 	lock := a.fileLock(fileID)
 	lock.Lock()
 	defer lock.Unlock()
@@ -255,6 +259,9 @@ func (a *API) mergeAndSave(fileID string, incoming json.RawMessage) (json.RawMes
 	if len(inc.Pages) == 0 {
 		return nil, 0, errEmptyDoc
 	}
+	if err := validateDocLimits(&inc); err != nil {
+		return nil, 0, err
+	}
 	merged := doc.Merge(&base, &inc)
 	merged.Tombstones = pruneTombstones(merged.Tombstones)
 	b, err := json.Marshal(merged)
@@ -272,7 +279,35 @@ func pruneTombstones(in map[string]int64) map[string]int64 {
 	if len(in) == 0 {
 		return map[string]int64{}
 	}
-	return in
+	// Keep tombstones for 30 days to allow offline clients to sync, then GC
+	cutoff := time.Now().AddDate(0, 0, -30).UnixMilli()
+	out := make(map[string]int64, len(in))
+	for k, v := range in {
+		if v >= cutoff {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+func validateDocLimits(d *doc.Doc) error {
+	if len(d.Pages) > 20 {
+		return docError("too many pages (max 20)")
+	}
+	total := 0
+	for _, p := range d.Pages {
+		total += len(p.Nodes)
+		if len(p.RootIDs) > 1000 {
+			return docError("too many root nodes")
+		}
+	}
+	if total > 3000 {
+		return docError("too many nodes (max 3000)")
+	}
+	if total == 0 && len(d.Pages) > 0 {
+		// Allow empty pages but not completely empty doc
+	}
+	return nil
 }
 
 type docError string

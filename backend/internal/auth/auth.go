@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -14,7 +16,7 @@ type Manager struct {
 
 func New(secret string) *Manager {
 	if secret == "" {
-		secret = "sigma-development-secret-change-me"
+		panic("auth: SIGMA_SECRET is required")
 	}
 	return &Manager{secret: []byte(secret)}
 }
@@ -32,9 +34,18 @@ func (m *Manager) Token(userID string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID,
 		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(30 * 24 * time.Hour).Unix(),
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
+		"jti": newJTI(),
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(m.secret)
+}
+
+func newJTI() string {
+	b := make([]byte, 12)
+	if _, err := rand.Read(b); err != nil {
+		return hex.EncodeToString([]byte(time.Now().String()))[:24]
+	}
+	return hex.EncodeToString(b)
 }
 
 func (m *Manager) Parse(token string) (string, error) {

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -81,7 +83,31 @@ type outbound struct {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
-	CheckOrigin:     func(r *http.Request) bool { return true },
+	CheckOrigin: func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true // same-origin / non-browser clients
+		}
+		allowed := r.Header.Get("X-Requested-With") // placeholder to avoid unused
+		_ = allowed
+		base := strings.TrimSpace(os.Getenv("APP_BASE_URL"))
+		if base != "" {
+			if u, err := parseOrigin(base); err == nil && u == origin {
+				return true
+			}
+		}
+		allowedList := strings.TrimSpace(os.Getenv("APP_ALLOWED_ORIGINS"))
+		if allowedList != "" && allowedList != "*" {
+			for _, o := range strings.Split(allowedList, ",") {
+				if strings.TrimSpace(o) == origin {
+					return true
+				}
+			}
+			return false
+		}
+		// Dev fallback: allow localhost
+		return strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1") || strings.HasPrefix(origin, "https://localhost")
+	},
 }
 
 func NewHub(access AccessFunc, save DocFunc, delta DeltaFunc) *Hub {
@@ -166,12 +192,16 @@ func (h *Hub) broadcastPresence(fileID string) {
 	users := h.presenceLocked(fileID)
 	payload, _ := json.Marshal(outbound{Type: "presence", Users: users})
 	r := h.rooms[fileID]
+	clients := make([]*client, 0, len(r.clients))
 	if r != nil {
 		for c := range r.clients {
-			c.enqueue(payload)
+			clients = append(clients, c)
 		}
 	}
 	h.mu.Unlock()
+	for _, c := range clients {
+		c.enqueue(payload)
+	}
 }
 
 // BroadcastDoc lets the HTTP API push an authoritative document to a room.
@@ -182,48 +212,63 @@ func (h *Hub) BroadcastDoc(fileID string, doc json.RawMessage, version int) {
 // BroadcastComment sends a newly created comment to everyone in the file room.
 func (h *Hub) BroadcastComment(fileID string, comment any) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 	r := h.rooms[fileID]
 	if r == nil {
+		h.mu.Unlock()
 		return
 	}
 	payload, err := json.Marshal(outbound{Type: "comment", Comment: comment})
+	clients := make([]*client, 0, len(r.clients))
+	for c := range r.clients {
+		clients = append(clients, c)
+	}
+	h.mu.Unlock()
 	if err != nil {
 		return
 	}
-	for c := range r.clients {
+	for _, c := range clients {
 		c.enqueue(payload)
 	}
 }
 
 func (h *Hub) broadcastDelta(fileID string, delta json.RawMessage, version int) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 	r := h.rooms[fileID]
 	if r == nil {
+		h.mu.Unlock()
 		return
 	}
 	payload, err := json.Marshal(outbound{Type: "doc-delta", Delta: delta, Version: version})
+	clients := make([]*client, 0, len(r.clients))
+	for c := range r.clients {
+		clients = append(clients, c)
+	}
+	h.mu.Unlock()
 	if err != nil {
 		return
 	}
-	for c := range r.clients {
+	for _, c := range clients {
 		c.enqueue(payload)
 	}
 }
 
 func (h *Hub) broadcastDoc(fileID string, doc json.RawMessage, version int) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 	r := h.rooms[fileID]
 	if r == nil {
+		h.mu.Unlock()
 		return
 	}
 	payload, err := json.Marshal(outbound{Type: "doc", Doc: doc, Version: version})
+	clients := make([]*client, 0, len(r.clients))
+	for c := range r.clients {
+		clients = append(clients, c)
+	}
+	h.mu.Unlock()
 	if err != nil {
 		return
 	}
-	for c := range r.clients {
+	for _, c := range clients {
 		c.enqueue(payload)
 	}
 }
@@ -245,9 +290,20 @@ func (c *client) close() {
 	})
 }
 
+func parseOrigin(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		parts := strings.SplitN(raw, "/", 4)
+		if len(parts) >= 3 {
+			return parts[0] + "//" + parts[2], nil
+		}
+	}
+	return raw, nil
+}
+
 func (c *client) readPump() {
 	defer c.close()
-	c.conn.SetReadLimit(48 << 20)
+	c.conn.SetReadLimit(2 << 20)
 	_ = c.conn.SetReadDeadline(time.Now().Add(90 * time.Second))
 	c.conn.SetPongHandler(func(string) error {
 		return c.conn.SetReadDeadline(time.Now().Add(90 * time.Second))
