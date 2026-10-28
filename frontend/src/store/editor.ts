@@ -27,11 +27,14 @@ import {
   matrixAngle,
   nodeAABB,
   nodeMatrix,
+  parentLocalPoint,
   topLevelSelection,
 } from "@/lib/nodes";
 import { clamp, uid } from "@/lib/utils";
 
 type Clipboard = { roots: string[]; nodes: Record<string, SceneNode>; pageId: string; origins: Record<string, Point> };
+
+let nudgeHistoryAt = 0;
 
 export type AlignKind = "left" | "hcenter" | "right" | "top" | "vcenter" | "bottom";
 export type ReorderMode = "front" | "back" | "forward" | "backward";
@@ -438,7 +441,8 @@ export const useEditor = create<EditorState>((set, get) => {
         tool: "select",
       });
     },
-    reset: () =>
+    reset: () => {
+      nudgeHistoryAt = 0;
       set({
         file: null,
         doc: structuredClone(emptyDoc),
@@ -454,7 +458,8 @@ export const useEditor = create<EditorState>((set, get) => {
         loading: true,
         isReadOnly: false,
         previewOpen: false,
-      }),
+      });
+    },
     setFileMeta: (file) => set({ file, isReadOnly: file.role === "view" }),
     setPage: (id) => {
       if (!get().doc.pages.some((p) => p.id === id)) return;
@@ -573,6 +578,8 @@ export const useEditor = create<EditorState>((set, get) => {
         if (!node) continue;
         const next = typeof patch === "function" ? patch(node) : patch;
         const updated = { ...node, ...next, ts: now };
+        updated.width = clamp(Number.isFinite(updated.width) ? updated.width : node.width, 0.01, 100000);
+        updated.height = clamp(Number.isFinite(updated.height) ? updated.height : node.height, 0.01, 100000);
         if (updated.type === "frame" && (updated.width !== node.width || updated.height !== node.height)) {
           resized.push({ id, oldW: node.width, oldH: node.height });
         }
@@ -730,14 +737,15 @@ export const useEditor = create<EditorState>((set, get) => {
           } else {
             p.rootIds.push(root);
           }
-          if (inPlace && !parent && clip.origins[root]) {
+          if (inPlace && clip.origins[root]) {
             const origin = clip.origins[root];
             if (node.type === "group") {
               const box = nodeAABB(p, node);
-              for (const kid of node.children) shiftTree(p, kid, origin.x - box.x, origin.y - box.y);
+              shiftTree(p, root, origin.x - box.x, origin.y - box.y);
             } else {
-              node.x = origin.x;
-              node.y = origin.y;
+              const local = parentLocalPoint(p, parent, origin);
+              node.x = local.x;
+              node.y = local.y;
             }
           } else if (!inPlace) {
             shiftTree(p, root, 20, 20);
@@ -1448,7 +1456,12 @@ export const useEditor = create<EditorState>((set, get) => {
         }
       });
     },
-    nudge: (dx, dy) => get().translateSelection(dx, dy, true),
+    nudge: (dx, dy) => {
+      const now = Date.now();
+      if (now - nudgeHistoryAt > 500) get().pushHistory();
+      nudgeHistoryAt = now;
+      get().translateSelection(dx, dy, false);
+    },
     renameNode: (id, name) =>
       get().updateNode(id, { name: name.trim() || "Layer" }),
     toggleVisible: (id) => {

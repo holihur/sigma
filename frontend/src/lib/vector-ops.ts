@@ -211,11 +211,14 @@ function flattenSubpath(sub: VectorSubpath, node: SceneNode): { pts: { x: number
 
 function clipperOffset(subpaths: VectorSubpath[], node: SceneNode, delta: number): { subpaths: VectorSubpath[]; minX: number; minY: number; width: number; height: number } | null {
   ensurePaper();
-  const scale = 100;
+  const flats = subpaths.map((sub) => flattenSubpath(sub, node)).filter((flat) => flat.pts.length >= 2);
+  if (!flats.length) return null;
+  let maxAbs = 1;
+  for (const flat of flats) for (const p of flat.pts) maxAbs = Math.max(maxAbs, Math.abs(p.x), Math.abs(p.y));
+  // Keep integer inputs well inside Clipper's safe range for very large frames.
+  const scale = Math.max(1, Math.min(100, 1_000_000 / maxAbs));
   const co = new ClipperLib.ClipperOffset(2, 0.25);
-  for (const sub of subpaths) {
-    const flat = flattenSubpath(sub, node);
-    if (flat.pts.length < 2) continue;
+  for (const flat of flats) {
     const path = flat.pts.map((p) => ({ X: Math.round(p.x * scale), Y: Math.round(p.y * scale) }));
     co.AddPath(path, ClipperLib.JoinType.jtRound, flat.closed ? ClipperLib.EndType.etClosedPolygon : ClipperLib.EndType.etOpenRound);
   }

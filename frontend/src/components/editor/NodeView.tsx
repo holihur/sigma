@@ -123,6 +123,7 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
         src={node.src}
         alt={node.name}
         draggable={false}
+        crossOrigin={node.src?.startsWith("data:") ? undefined : "anonymous"}
         style={{ width: "100%", height: "100%", objectFit: node.objectFit, display: "block" }}
       />
     ) : (

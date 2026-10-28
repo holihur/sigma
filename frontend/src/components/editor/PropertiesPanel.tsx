@@ -1101,6 +1101,10 @@ function ImageSection({ node, onChange }: { node: SceneNode; onChange: (patch: P
             const file = e.target.files?.[0];
             e.target.value = "";
             if (!file) return;
+            if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) {
+              toast.error(t("Image must be smaller than 10 MB"));
+              return;
+            }
             try {
               const src = await uploadImage(file);
               onChange({ src });

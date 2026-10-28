@@ -1079,6 +1079,14 @@ export function Canvas({
 
   // ---------- image upload ----------
   const onImageChosen = async (file: File, pending: { point: Point; replaceId?: string }) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("Only image files are supported"));
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(t("Image must be smaller than 10 MB"));
+      return;
+    }
     try {
       const src = await uploadImage(file);
       const img = await loadImage(src);
@@ -1119,6 +1127,10 @@ export function Canvas({
     if (readOnly) return;
     const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"));
     if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(t("Image must be smaller than 10 MB"));
+      return;
+    }
     const point = worldPoint(e);
     try {
       const src = await uploadImage(file);
