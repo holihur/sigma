@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -43,7 +44,11 @@ type API struct {
 }
 
 func New(st *store.Store, am *auth.Manager, staticDir, uploadDir, secret string) *API {
-	a := &API{st: st, auth: am, staticDir: staticDir, staticFS: static.FS(), uploadDir: uploadDir, secret: secret, aiSessions: session.InMemoryService(), oidc: auth.NewOIDCFromEnv(), adminEmails: parseAdminEmails(os.Getenv("SIGMA_ADMIN_EMAILS"))}
+	sessionDir := strings.TrimSpace(os.Getenv("AI_SESSION_DIR"))
+	if sessionDir == "" {
+		sessionDir = filepath.Join(filepath.Dir(uploadDir), "ai-sessions")
+	}
+	a := &API{st: st, auth: am, staticDir: staticDir, staticFS: static.FS(), uploadDir: uploadDir, secret: secret, aiSessions: newPersistentSessions(sessionDir), oidc: auth.NewOIDCFromEnv(), adminEmails: parseAdminEmails(os.Getenv("SIGMA_ADMIN_EMAILS"))}
 	_ = os.MkdirAll(uploadDir, 0o755)
 	a.hub = ws.NewHub(
 		a.wsAccess,
@@ -230,7 +235,7 @@ func withCORS(next http.Handler) http.Handler {
 			// Disallowed origin: do not reflect
 			w.Header().Set("Vary", "Origin")
 		}
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Sigma-Public-Password")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -257,7 +262,7 @@ func withSecurityHeaders(next http.Handler) http.Handler {
 
 var rateLimitStore sync.Map // ip -> *rateBucket
 type rateBucket struct {
-	mu    sync.Mutex
+	mu     sync.Mutex
 	tokens float64
 	last   time.Time
 }

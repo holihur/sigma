@@ -51,6 +51,7 @@ type Options = {
   method?: string;
   body?: unknown;
   signal?: AbortSignal;
+  headers?: Record<string, string>;
 };
 
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
@@ -58,6 +59,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.headers) Object.assign(headers, options.headers);
   const res = await fetch(`${getApiBase()}${path}`, {
     method: options.method ?? "GET",
     headers,
@@ -239,12 +241,21 @@ export const systemApi = {
 
 // ---------- public links & notifications ----------
 
+export interface PublicLinkInfo {
+  token: string;
+  enabled: boolean;
+  expiresAt: number;
+  hasPassword: boolean;
+}
+
 export const publicApi = {
-  link: (fileId: string) =>
-    api<{ token: string; enabled: boolean }>(`/files/${fileId}/public-link`),
-  set: (fileId: string, enabled: boolean) =>
-    api<{ token: string; enabled: boolean }>(`/files/${fileId}/public-link`, { method: "POST", body: { enabled } }),
-  get: (token: string) => api<{ file: FileMeta; doc: SigmaDoc }>(`/public/${token}`),
+  link: (fileId: string) => api<PublicLinkInfo>(`/files/${fileId}/public-link`),
+  set: (fileId: string, data: { enabled: boolean; expiresAt?: number; password?: string; removePassword?: boolean }) =>
+    api<PublicLinkInfo>(`/files/${fileId}/public-link`, { method: "POST", body: data }),
+  get: (token: string, password = "") =>
+    api<{ file: FileMeta; doc: SigmaDoc }>(`/public/${token}`, {
+      headers: password ? { "X-Sigma-Public-Password": password } : undefined,
+    }),
 };
 
 export const notificationsApi = {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Loader2, Sparkles, TriangleAlert } from "lucide-react";
-import { publicApi } from "@/lib/api";
+import { Loader2, LockKeyhole, Sparkles, TriangleAlert } from "lucide-react";
+import { ApiError, publicApi } from "@/lib/api";
 import type { SigmaDoc } from "@/lib/types";
 import { getPage } from "@/lib/nodes";
 import { useT } from "@/i18n";
@@ -14,15 +14,15 @@ export default function PublicPrototypePage() {
   const t = useT();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [password, setPassword] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = (pass = "") => {
     setLoading(true);
     setError(null);
     publicApi
-      .get(token)
+      .get(token, pass)
       .then(({ file, doc }) => {
-        if (cancelled) return;
         const normalized = doc as SigmaDoc;
         useEditor.getState().load(file, normalized, file.version);
         const firstPage = normalized.pages[0];
@@ -33,18 +33,27 @@ export default function PublicPrototypePage() {
           null;
         useEditor.getState().openPreview(frameId);
         document.title = `${file.name} — Sigma prototype`;
+        setNeedsPassword(false);
         setLoading(false);
       })
       .catch((e) => {
-        if (cancelled) return;
-        setError((e as Error).message || "This prototype link is unavailable");
+        if (e instanceof ApiError && e.status === 401) {
+          setNeedsPassword(true);
+          setError(pass ? e.message : null);
+        } else {
+          setError((e as Error).message || "This prototype link is unavailable");
+        }
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    load();
     return () => {
-      cancelled = true;
       useEditor.getState().reset();
       document.title = "Sigma — Prototype design, together";
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (loading) {
@@ -56,6 +65,37 @@ export default function PublicPrototypePage() {
         <div className="flex items-center gap-2 text-[13px] text-white/50">
           <Loader2 className="size-4 animate-spin" /> {t("Opening prototype…")}
         </div>
+      </div>
+    );
+  }
+
+  if (needsPassword) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10">
+          <LockKeyhole className="size-6 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-lg font-semibold">{t("Password required")}</h1>
+          <p className="mt-1 max-w-sm text-sm text-muted-foreground">{t("This prototype is protected by its owner.")}</p>
+        </div>
+        <form
+          className="flex w-full max-w-xs gap-2"
+          onSubmit={(e) => { e.preventDefault(); if (password) load(password); }}
+        >
+          <input
+            autoFocus
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t("Password")}
+            className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-ring"
+          />
+          <button type="submit" disabled={loading || !password} className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60">
+            {loading ? <Loader2 className="size-4 animate-spin" /> : t("Open")}
+          </button>
+        </form>
+        {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
     );
   }

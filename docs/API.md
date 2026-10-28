@@ -47,8 +47,8 @@ OIDC 使用 Authorization Code + PKCE + nonce。回调成功后前端用一次�
 | `GET/POST/DELETE` | `/files/{id}/members` | 协作者管理 |
 | `POST` | `/uploads` | 上传图片（≤10MB），`multipart/form-data` |
 | `GET` | `/uploads/{name}` | 读取上传文件 |
-| `GET/POST` | `/files/{id}/public-link` | 查询 / 开关公开原型（Owner） |
-| `GET` | `/public/{token}` | 公开原型文档，无需登录 |
+| `GET/POST` | `/files/{id}/public-link` | 查询 / 更新公开原型（Owner），支持 `expiresAt`、`password`、`removePassword` |
+| `GET` | `/public/{token}` | 公开原型文档，无需登录；过期链接返回 404，受保护链接需 `X-Sigma-Public-Password` |
 | `GET` | `/notifications` | 通知列表与未读数 |
 | `POST` | `/notifications/read` | 全部已读 |
 | `GET` | `/templates` | 模板元数据 |

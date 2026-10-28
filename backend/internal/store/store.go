@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -102,9 +103,11 @@ CREATE TABLE IF NOT EXISTS versions (
 );
 CREATE TABLE IF NOT EXISTS public_links (
 	file_id    TEXT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,
-	token      TEXT NOT NULL UNIQUE,
-	enabled    INTEGER NOT NULL DEFAULT 0,
-	created_at TEXT NOT NULL
+	token         TEXT NOT NULL UNIQUE,
+	enabled       INTEGER NOT NULL DEFAULT 0,
+	expires_at    INTEGER NOT NULL DEFAULT 0,
+	password_hash TEXT NOT NULL DEFAULT '',
+	created_at    TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS ai_settings (
 	user_id      TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -187,6 +190,8 @@ CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id, created_at);
 		`ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE files ADD COLUMN folder TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE comments ADD COLUMN parent_id TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE public_links ADD COLUMN expires_at INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE public_links ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''`,
 	} {
 		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
 			return err
@@ -651,25 +656,37 @@ func (s *Store) DeleteSkill(id, userID string) error {
 
 // ---------- public links ----------
 
-func (s *Store) PublicLink(fileID string) (string, bool, error) {
-	var token string
-	var enabled int
-	err := s.db.QueryRow(`SELECT token, enabled FROM public_links WHERE file_id=?`, fileID).Scan(&token, &enabled)
-	return token, enabled != 0, err
+type PublicLinkSettings struct {
+	Token        string
+	Enabled      bool
+	ExpiresAt    int64
+	PasswordHash string
 }
 
-func (s *Store) SetPublicLink(fileID, token string, enabled bool) error {
-	_, err := s.db.Exec(`INSERT INTO public_links(file_id,token,enabled,created_at) VALUES(?,?,?,?)
-		ON CONFLICT(file_id) DO UPDATE SET enabled=excluded.enabled`, fileID, token, enabled, model.Now())
+func (s *Store) PublicLink(fileID string) (PublicLinkSettings, error) {
+	var out PublicLinkSettings
+	var enabled int
+	err := s.db.QueryRow(`SELECT token, enabled, expires_at, password_hash FROM public_links WHERE file_id=?`, fileID).
+		Scan(&out.Token, &enabled, &out.ExpiresAt, &out.PasswordHash)
+	out.Enabled = enabled != 0
+	return out, err
+}
+
+func (s *Store) SetPublicLink(fileID, token string, enabled bool, expiresAt int64, passwordHash string) error {
+	_, err := s.db.Exec(`INSERT INTO public_links(file_id,token,enabled,expires_at,password_hash,created_at) VALUES(?,?,?,?,?,?)
+		ON CONFLICT(file_id) DO UPDATE SET enabled=excluded.enabled, expires_at=excluded.expires_at, password_hash=excluded.password_hash`,
+		fileID, token, enabled, expiresAt, passwordHash, model.Now())
 	return err
 }
 
-func (s *Store) FileByPublicToken(token string) (model.File, error) {
+func (s *Store) FileByPublicToken(token string) (model.File, string, error) {
 	var f model.File
-	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,f.doc,f.version,f.thumbnail,f.template,f.created_at,f.updated_at
-		FROM files f JOIN public_links l ON l.file_id=f.id WHERE l.token=? AND l.enabled=1`, token).
-		Scan(&f.ID, &f.Name, &f.OwnerID, &f.Doc, &f.Version, &f.Thumbnail, &f.Template, &f.CreatedAt, &f.UpdatedAt)
-	return f, err
+	var passwordHash string
+	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,f.doc,f.version,f.thumbnail,f.template,f.created_at,f.updated_at,l.password_hash
+		FROM files f JOIN public_links l ON l.file_id=f.id
+		WHERE l.token=? AND l.enabled=1 AND (l.expires_at=0 OR l.expires_at>?)`, token, time.Now().UnixMilli()).
+		Scan(&f.ID, &f.Name, &f.OwnerID, &f.Doc, &f.Version, &f.Thumbnail, &f.Template, &f.CreatedAt, &f.UpdatedAt, &passwordHash)
+	return f, passwordHash, err
 }
 
 // ---------- notifications ----------

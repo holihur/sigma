@@ -21,6 +21,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 
+function toLocalDateTime(ms: number): string {
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const t = useT();
   const file = useEditor((s) => s.file);
@@ -35,6 +41,10 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   const [publicToken, setPublicToken] = useState("");
   const [publicEnabled, setPublicEnabled] = useState(false);
   const [publicBusy, setPublicBusy] = useState(false);
+  const [publicExpiresAt, setPublicExpiresAt] = useState("");
+  const [publicPassword, setPublicPassword] = useState("");
+  const [publicHasPassword, setPublicHasPassword] = useState(false);
+  const [removePublicPassword, setRemovePublicPassword] = useState(false);
 
   useEffect(() => {
     if (!open || !file) return;
@@ -53,6 +63,8 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         .then((data) => {
           setPublicToken(data.token);
           setPublicEnabled(data.enabled);
+          setPublicExpiresAt(data.expiresAt ? toLocalDateTime(data.expiresAt) : "");
+          setPublicHasPassword(data.hasPassword);
         })
         .catch(() => undefined);
     }
@@ -95,13 +107,22 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
   const publicUrl = publicToken ? `${window.location.origin}/p/${publicToken}` : "";
 
-  const togglePublic = async (enabled: boolean) => {
+  const savePublic = async (enabled = publicEnabled) => {
     setPublicBusy(true);
     try {
-      const data = await publicApi.set(file.id, enabled);
+      const data = await publicApi.set(file.id, {
+        enabled,
+        expiresAt: publicExpiresAt ? new Date(publicExpiresAt).getTime() : 0,
+        password: publicPassword,
+        removePassword: removePublicPassword,
+      });
       setPublicToken(data.token);
       setPublicEnabled(data.enabled);
-      toast.success(enabled ? t("Public prototype enabled") : t("Public link disabled"));
+      setPublicHasPassword(data.hasPassword);
+      setPublicPassword("");
+      setRemovePublicPassword(false);
+      if (!data.enabled) setPublicExpiresAt("");
+      toast.success(enabled ? t("Public link saved") : t("Public link disabled"));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -223,8 +244,37 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                   {t("Anyone with the link can view the click-through prototype, no account needed.")}
                 </div>
               </div>
-              <Switch checked={publicEnabled} onCheckedChange={togglePublic} disabled={publicBusy} />
+              <Switch checked={publicEnabled} onCheckedChange={(value) => void savePublic(value)} disabled={publicBusy} />
             </div>
+            {publicEnabled && (
+              <div className="space-y-2 border-t border-border px-3 py-2.5">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="space-y-1 text-[10px] text-muted-foreground">
+                    <span>{t("Expires")}</span>
+                    <Input type="datetime-local" value={publicExpiresAt} onChange={(e) => setPublicExpiresAt(e.target.value)} className="h-8 text-[11px]" />
+                  </label>
+                  <label className="space-y-1 text-[10px] text-muted-foreground">
+                    <span>{publicHasPassword ? t("New password (optional)") : t("Password (optional)")}</span>
+                    <Input type="password" value={publicPassword} onChange={(e) => { setPublicPassword(e.target.value); setRemovePublicPassword(false); }} placeholder={publicHasPassword ? "••••••••" : t("Leave empty for public access")} className="h-8 text-[11px]" />
+                  </label>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-muted-foreground">
+                    {publicHasPassword && !removePublicPassword ? t("Password protection is on") : t("Anyone with the link can view")}
+                  </span>
+                  <div className="flex gap-1.5">
+                    {publicHasPassword && (
+                      <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={() => { setRemovePublicPassword(true); setPublicPassword(""); }}>
+                        {t("Remove password")}
+                      </Button>
+                    )}
+                    <Button size="sm" className="h-7 text-[11px]" onClick={() => void savePublic()} disabled={publicBusy}>
+                      {t("Save link settings")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             {publicEnabled && publicUrl && (
               <div className="flex items-center gap-2 border-t border-border bg-secondary/30 px-3 py-2">
                 <Link2 className="size-3.5 shrink-0 text-muted-foreground" />
