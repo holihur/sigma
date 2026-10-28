@@ -61,6 +61,9 @@ jobs:
         working-directory: backend
         run: go test ./...
 
+      - name: Install Syft for SBOM generation
+        uses: anchore/sbom-action/download-syft@v0
+
       - name: Publish release with GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:

@@ -192,3 +192,19 @@ func index(haystack, needle string) int {
 	}
 	return -1
 }
+
+func FuzzMerge(f *testing.F) {
+	f.Add(`{"pages":[{"id":"p1","name":"P","ts":1,"rootIds":["a"],"nodes":{"a":{"id":"a","ts":1,"parentId":null}}}]}`)
+	f.Add(`{"pages":[],"tombstones":{"a":2}}`)
+	f.Fuzz(func(t *testing.T, raw string) {
+		if len(raw) > 1<<20 {
+			t.Skip()
+		}
+		var d Doc
+		if err := json.Unmarshal([]byte(raw), &d); err != nil {
+			return
+		}
+		_ = Merge(&d, &d)
+		_ = ApplyDelta(&d, &d)
+	})
+}

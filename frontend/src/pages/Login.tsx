@@ -101,7 +101,7 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen bg-background">
       <div className="absolute right-3 top-3 z-20 sm:right-5 sm:top-5">
-        <LanguageToggle className="border border-border bg-background/70 backdrop-blur" />
+        <LanguageToggle />
       </div>
       <div className="relative hidden flex-1 overflow-hidden bg-[#07111f] lg:block">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(14,165,233,0.38),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(56,189,248,0.18),transparent_55%)]" />

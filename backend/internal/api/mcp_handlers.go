@@ -51,7 +51,9 @@ func (a *API) mcpTools() []map[string]any {
 	fileID := mcpProp("string", "Sigma file id")
 	pageID := mcpProp("string", "Page id; omit to use the first page")
 	return []map[string]any{
-		mcpTool("list_files", "List design files visible to the current user.", mcpSchema(map[string]any{})),
+		mcpTool("list_files", "List design files visible to the current user. Supports limit/offset pagination.", mcpSchema(map[string]any{
+			"limit": mcpProp("number", "Page size (default 50, max 200)"), "offset": mcpProp("number", "Zero-based offset"),
+		})),
 		mcpTool("get_file", "Get file metadata and the full design document.", mcpSchema(map[string]any{"fileId": fileID}, "fileId")),
 		mcpTool("list_pages", "List pages in a design file.", mcpSchema(map[string]any{"fileId": fileID}, "fileId")),
 		mcpTool("get_page", "Get a compact page summary with layer ids, positions, text and links.", mcpSchema(map[string]any{"fileId": fileID, "pageId": pageID}, "fileId")),
@@ -219,7 +221,33 @@ func (a *API) mcpCallTool(u model.User, name string, args map[string]any) (map[s
 	switch name {
 	case "list_files":
 		files, err := a.st.ListFiles(u.ID)
-		return map[string]any{"files": files}, err
+		if err != nil {
+			return nil, err
+		}
+		limit := int(mcpNumOr(args, "limit", 50))
+		offset := int(mcpNumOr(args, "offset", 0))
+		if limit < 1 {
+			limit = 50
+		}
+		if limit > 200 {
+			limit = 200
+		}
+		if offset < 0 {
+			offset = 0
+		}
+		total := len(files)
+		if offset > total {
+			offset = total
+		}
+		end := offset + limit
+		if end > total {
+			end = total
+		}
+		result := map[string]any{"files": files[offset:end], "total": total, "limit": limit, "offset": offset}
+		if end < total {
+			result["nextOffset"] = end
+		}
+		return result, nil
 	case "get_file":
 		if a.accessRole(fileID, u) == "" {
 			return nil, fmt.Errorf("file not found")
@@ -301,6 +329,13 @@ func mcpNum(args map[string]any, key string) (float64, bool) {
 		return f, true
 	}
 	return 0, false
+}
+
+func mcpNumOr(args map[string]any, key string, fallback float64) float64 {
+	if v, ok := mcpNum(args, key); ok {
+		return v
+	}
+	return fallback
 }
 
 func mcpStr(args map[string]any, key string) string {

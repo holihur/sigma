@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Kbd } from "./controls";
 import { useT } from "@/i18n";
+import { shortcutLabel } from "@/lib/platform";
 
 const GROUPS: { title: string; rows: { keys: string[]; label: string }[] }[] = [
   {
@@ -93,9 +94,7 @@ export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenC
                   <div key={row.label} className="flex items-center justify-between rounded px-1.5 py-1 hover:bg-secondary/40">
                     <span className="text-[12px] text-foreground/90">{t(row.label)}</span>
                     <span className="flex items-center gap-1">
-                      {row.keys.map((k, i) => (
-                        <Kbd key={i}>{k}</Kbd>
-                      ))}
+                      <Kbd>{shortcutLabel(row.keys)}</Kbd>
                     </span>
                   </div>
                 ))}

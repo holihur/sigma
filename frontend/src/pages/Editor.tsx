@@ -266,12 +266,17 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!file || readOnly) return;
-    const t = setTimeout(() => void captureThumbnail(), 6000);
-    const interval = setInterval(() => void captureThumbnail(), 50000);
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+    const schedule = () => {
+      if (idle) idle(() => void captureThumbnail(), { timeout: 8000 });
+      else void captureThumbnail();
+    };
+    const t = setTimeout(schedule, 6000);
+    const interval = setInterval(schedule, 50000);
     return () => {
       clearTimeout(t);
       clearInterval(interval);
-      void captureThumbnail();
+      schedule();
     };
   }, [file?.id, readOnly, captureThumbnail]);
 
@@ -612,12 +617,29 @@ export default function EditorPage() {
 
   if (loading || !file) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background">
-        <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#38bdf8] to-[#0284c7] text-white shadow-lg">
-          <Sparkles className="size-5" />
+      <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-background">
+        <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-3">
+          <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
+            <Sparkles className="size-4 text-primary" />
+          </div>
+          <div className="h-3 w-32 animate-pulse rounded bg-muted" />
+          <div className="ml-auto h-7 w-20 animate-pulse rounded-md bg-muted" />
         </div>
-        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> {t("Opening your canvas…")}
+        <div className="flex min-h-0 flex-1">
+          <div className="hidden w-60 shrink-0 space-y-2 border-r border-border p-3 md:block">
+            {Array.from({ length: 9 }).map((_, i) => <div key={i} className="h-6 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 70}ms` }} />)}
+          </div>
+          <div className="relative flex-1 overflow-hidden bg-muted/20 p-8">
+            <div className="mx-auto h-full max-w-4xl animate-pulse rounded-xl border border-border bg-panel/60 shadow-sm" />
+            <div className="absolute inset-x-0 bottom-4 flex justify-center">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-panel/90 px-3 py-1.5 text-[12px] text-muted-foreground shadow-sm">
+                <Loader2 className="size-3.5 animate-spin" /> {t("Opening your canvas…")}
+              </div>
+            </div>
+          </div>
+          <div className="hidden w-64 shrink-0 space-y-3 border-l border-border p-3 lg:block">
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-8 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 90}ms` }} />)}
+          </div>
         </div>
       </div>
     );

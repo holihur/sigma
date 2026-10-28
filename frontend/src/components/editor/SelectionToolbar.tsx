@@ -30,12 +30,14 @@ export function SelectionToolbar({ hostRef }: { hostRef: React.RefObject<HTMLDiv
   const bounds = boundsOf(page, selection);
   const host = hostRef.current;
   const width = host?.clientWidth ?? 900;
+  const height = host?.clientHeight ?? 700;
   const x = bounds.x * viewport.zoom + viewport.x;
   const y = bounds.y * viewport.zoom + viewport.y;
   const bottom = (bounds.y + bounds.height) * viewport.zoom + viewport.y;
   const scale = bounds.width * viewport.zoom;
   const left = Math.max(8, Math.min(width - 300, x + Math.max(0, scale / 2 - 130)));
-  const top = y > 64 ? y - 44 : Math.max(56, bottom + 10);
+  const preferredTop = y > 64 ? y - 44 : Math.max(56, bottom + 10);
+  const top = Math.max(56, Math.min(height - 44, preferredTop));
   const single = selected.length === 1 ? selected[0] : null;
   const canComponent = !!single && !single.component && !single.componentId;
 

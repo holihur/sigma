@@ -10,6 +10,7 @@
 #   SIGMA_ADMIN_EMAILS      Comma-separated instance admins (update controls)
 #   SIGMA_REPO              GitHub repo (default holihur/sigma)
 #   SIGMA_RELEASE_BASE      Optional mirror base containing assets + checksums.txt
+#   --dry-run               Print the install plan without downloading or writing files
 set -euo pipefail
 
 REPO="${SIGMA_REPO:-holihur/sigma}"
@@ -17,6 +18,7 @@ VERSION="${SIGMA_VERSION:-latest}"
 PORT="${SIGMA_PORT:-9000}"
 SERVICE="${SIGMA_SERVICE:-auto}"
 ROOT=0
+DRY_RUN=0
 [ "$(id -u)" -eq 0 ] && ROOT=1
 
 while [ $# -gt 0 ]; do
@@ -26,6 +28,7 @@ while [ $# -gt 0 ]; do
     --no-service) SERVICE=no; shift ;;
     --service) SERVICE=yes; shift ;;
     --home) SIGMA_HOME="$2"; shift 2 ;;
+    --dry-run) DRY_RUN=1; shift ;;
     -h|--help)
       sed -n '2,12p' "$0" | sed 's/^# //'
       exit 0 ;;
@@ -34,7 +37,7 @@ while [ $# -gt 0 ]; do
 done
 
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1" >&2; exit 1; }; }
-need curl
+[ "$DRY_RUN" -eq 1 ] || need curl
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 case "$os" in
@@ -48,6 +51,29 @@ case "$arch" in
   *) echo "Unsupported architecture: $arch" >&2; exit 1 ;;
 esac
 asset="sigma-${os}-${arch}"
+
+if [ "$DRY_RUN" -eq 1 ]; then
+  if [ "$ROOT" -eq 1 ]; then
+    plan_home="${SIGMA_HOME:-/var/lib/sigma}"
+    plan_bin="${SIGMA_BIN_DIR:-$plan_home/bin}"
+    plan_conf="/etc/sigma"
+    plan_unit="/etc/systemd/system/sigma.service"
+  else
+    plan_home="${SIGMA_HOME:-$HOME/.sigma}"
+    plan_bin="${SIGMA_BIN_DIR:-$HOME/.local/bin}"
+    plan_conf="$plan_home"
+    plan_unit="$HOME/.config/systemd/user/sigma.service"
+  fi
+  echo "Dry run: no changes will be made."
+  echo "  release:  ${VERSION}"
+  echo "  asset:    ${asset}"
+  echo "  data:     ${plan_home}"
+  echo "  binary:   ${plan_bin}/sigma"
+  echo "  env:      ${plan_conf}/sigma.env"
+  echo "  service:  ${plan_unit} (SIGMA_SERVICE=${SERVICE})"
+  echo "  steps: resolve release → download asset + checksums.txt → verify SHA-256 → install binary/env → configure service"
+  exit 0
+fi
 
 if [ "$VERSION" = "latest" ]; then
   echo "→ Resolving latest Sigma release…"

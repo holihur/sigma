@@ -10,7 +10,7 @@
 
 </div>
 
-![Sigma editor](docs/screenshots/03-editor-mobile.png)
+<img src="docs/screenshots/03-editor-mobile.png" alt="Sigma editor" loading="lazy" decoding="async" />
 
 ## 为什么不只是另一个 Figma 克隆
 
@@ -89,7 +89,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 | shadcn/ui | Zinc 中性色、边框优先、10px 圆角、Radix 风格 | Overview + Foundations + Components |
 | Blank canvas | 从零开始 | 空画布 |
 
-![Design systems](docs/screenshots/30-design-systems.png)
+<img src="docs/screenshots/30-design-systems.png" alt="Design systems" loading="lazy" decoding="async" />
 
 ### 6. 互操作与平台能力
 
@@ -101,47 +101,47 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - **企业部署**：一键安装脚本、systemd 系统服务、Docker Compose、单二进制内嵌前端。
 - **自动更新**：默认每 10 分钟检查 GitHub Release，SHA-256 校验后原子替换并重启；可关闭或调整间隔。更新控制仅对 `SIGMA_ADMIN_EMAILS` 中的实例管理员开放。
 
-![Components](docs/screenshots/25-components.png)
+<img src="docs/screenshots/25-components.png" alt="Components" loading="lazy" decoding="async" />
 
 | 矢量编辑 | Agent 上下文与 Skills |
 | --- | --- |
-| ![Vector](docs/screenshots/26-vector.png) | ![Agent context](docs/screenshots/27-agent-context.png) |
+| <img src="docs/screenshots/26-vector.png" alt="Vector" loading="lazy" decoding="async" /> | <img src="docs/screenshots/27-agent-context.png" alt="Agent context" loading="lazy" decoding="async" /> |
 
 | MCP + PAT | Figma 导入 |
 | --- | --- |
-| ![MCP](docs/screenshots/28-mcp-pat.png) | ![Figma](docs/screenshots/29-figma-import.png) |
+| <img src="docs/screenshots/28-mcp-pat.png" alt="MCP" loading="lazy" decoding="async" /> | <img src="docs/screenshots/29-figma-import.png" alt="Figma" loading="lazy" decoding="async" /> |
 
 | 企业 OIDC 登录 | 设计系统模板 |
 | --- | --- |
-| ![OIDC](docs/screenshots/31-oidc.png) | ![Design systems](docs/screenshots/30-design-systems.png) |
+| <img src="docs/screenshots/31-oidc.png" alt="OIDC" loading="lazy" decoding="async" /> | <img src="docs/screenshots/30-design-systems.png" alt="Design systems" loading="lazy" decoding="async" /> |
 
 | AI 设置（任意服务商） | 自然语言设计 |
 | --- | --- |
-| ![AI settings](docs/screenshots/33-ai-providers.png) | ![AI chat](docs/screenshots/22-ai-chat.png) |
+| <img src="docs/screenshots/33-ai-providers.png" alt="AI settings" loading="lazy" decoding="async" /> | <img src="docs/screenshots/22-ai-chat.png" alt="AI chat" loading="lazy" decoding="async" /> |
 
 | 个人中心 | 移动端顶栏 |
 | --- | --- |
-| ![Profile](docs/screenshots/32-profile.png) | ![Mobile topbar](docs/screenshots/34-mobile-topbar.png) |
+| <img src="docs/screenshots/32-profile.png" alt="Profile" loading="lazy" decoding="async" /> | <img src="docs/screenshots/34-mobile-topbar.png" alt="Mobile topbar" loading="lazy" decoding="async" /> |
 
 | 文件面板 | 协作编辑器 |
 | --- | --- |
-| ![Dashboard](docs/screenshots/09-dashboard-thumbnails.png) | ![Editor](docs/screenshots/05-editor-dashboard.png) |
+| <img src="docs/screenshots/09-dashboard-thumbnails.png" alt="Dashboard" loading="lazy" decoding="async" /> | <img src="docs/screenshots/05-editor-dashboard.png" alt="Editor" loading="lazy" decoding="async" /> |
 
 | 分享与权限 | 公开原型 |
 | --- | --- |
-| ![Share](docs/screenshots/10-share.png) | ![Public prototype](docs/screenshots/18-public-prototype.png) |
+| <img src="docs/screenshots/10-share.png" alt="Share" loading="lazy" decoding="async" /> | <img src="docs/screenshots/18-public-prototype.png" alt="Public prototype" loading="lazy" decoding="async" /> |
 
 | 命令面板 | Auto layout |
 | --- | --- |
-| ![Command palette](docs/screenshots/41-command-palette.png) | ![Auto layout](docs/screenshots/42-auto-layout.png) |
+| <img src="docs/screenshots/41-command-palette.png" alt="Command palette" loading="lazy" decoding="async" /> | <img src="docs/screenshots/42-auto-layout.png" alt="Auto layout" loading="lazy" decoding="async" /> |
 
 | 文件夹与批量操作 | 本地样式 |
 | --- | --- |
-| ![Folders](docs/screenshots/43-folders-bulk.png) | ![Styles](docs/screenshots/44-local-styles.png) |
+| <img src="docs/screenshots/43-folders-bulk.png" alt="Folders" loading="lazy" decoding="async" /> | <img src="docs/screenshots/44-local-styles.png" alt="Styles" loading="lazy" decoding="async" /> |
 
 | 设计系统公司 Logo |
 | --- |
-| ![Template logos](docs/screenshots/45-template-logos.png) |
+| <img src="docs/screenshots/45-template-logos.png" alt="Template logos" loading="lazy" decoding="async" /> |
 
 ## 一键安装
 

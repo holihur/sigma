@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Clock,
@@ -92,6 +92,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [nav, setNav] = useState<Nav>("all");
   const [folderFilter, setFolderFilter] = useState<string | null>(null);
+  const normalizeFolder = (value: string) => value.trim().replace(/\s+/g, " ");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"grid" | "list">("grid");
   const [moveOpen, setMoveOpen] = useState(false);
@@ -99,6 +100,7 @@ export default function DashboardPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
   const [sort, setSort] = useState<"updated" | "name" | "created">("updated");
   const [newOpen, setNewOpen] = useState(false);
   const [template, setTemplate] = useState("blank");
@@ -203,14 +205,14 @@ export default function DashboardPage() {
     if (nav === "starred") list = list.filter((f) => f.starred);
     if (nav === "shared") list = list.filter((f) => f.role !== "owner");
     if (folderFilter !== null) list = list.filter((f) => (f.folder ?? "") === folderFilter);
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (q) list = list.filter((f) => f.name.toLowerCase().includes(q) || f.ownerName.toLowerCase().includes(q));
     const sorted = [...list];
     if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
     else if (sort === "created") sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     else sorted.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
     return sorted;
-  }, [files, nav, search, sort, folderFilter]);
+  }, [files, nav, deferredSearch, sort, folderFilter]);
 
   const templateMap = useMemo(() => new Map(templates.map((t) => [t.id, t])), [templates]);
 
@@ -305,7 +307,8 @@ export default function DashboardPage() {
 
   const bulkMove = async () => {
     if (!selectedFiles.length) return;
-    const folder = moveFolder.trim();
+    const typed = normalizeFolder(moveFolder);
+    const folder = folders.find(([name]) => name.toLowerCase() === typed.toLowerCase())?.[0] ?? typed;
     try {
       await Promise.all(selectedFiles.map((f) => filesApi.patch(f.id, { folder })));
       setFiles((list) => list.map((f) => (selectedIds.has(f.id) ? { ...f, folder } : f)));

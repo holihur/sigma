@@ -240,7 +240,7 @@ export function SelectionOverlay({
                 onVectorHandleStart?.(e, target!.id, selectedPoint!, h.which);
               }}
             >
-              <circle cx={h.point.x} cy={h.point.y} r={10} fill="transparent" />
+              <circle cx={h.point.x} cy={h.point.y} r={16} fill="transparent" />
               <circle cx={h.point.x} cy={h.point.y} r={4} fill="var(--card)" stroke="var(--selection)" strokeWidth={1.3} style={{ pointerEvents: "none" }} />
             </g>
           </g>
@@ -258,7 +258,7 @@ export function SelectionOverlay({
                 onVectorAnchorStart?.(e, target!.id, i);
               }}
             >
-              <circle cx={p.x} cy={p.y} r={11} fill="transparent" />
+              <circle cx={p.x} cy={p.y} r={16} fill="transparent" />
               <rect
                 x={p.x - (isActive ? 4.5 : 3.5)}
                 y={p.y - (isActive ? 4.5 : 3.5)}

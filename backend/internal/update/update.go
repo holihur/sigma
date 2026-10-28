@@ -399,7 +399,11 @@ func (m *Manager) download(ctx context.Context, url string, dst io.Writer) error
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("download returned %d", res.StatusCode)
 	}
-	_, err = io.Copy(dst, io.LimitReader(res.Body, 512<<20))
+	const maxReleaseSize = 256 << 20
+	if res.ContentLength > maxReleaseSize {
+		return fmt.Errorf("release asset is too large (%d bytes)", res.ContentLength)
+	}
+	_, err = io.Copy(dst, io.LimitReader(res.Body, maxReleaseSize))
 	return err
 }
 

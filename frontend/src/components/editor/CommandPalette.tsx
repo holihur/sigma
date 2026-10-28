@@ -13,6 +13,7 @@ import { useI18n, useT } from "@/i18n";
 import { useTheme } from "@/store/theme";
 import { boundsOf, getPage } from "@/lib/nodes";
 import { cn } from "@/lib/utils";
+import { keyLabel } from "@/lib/platform";
 
 interface Action {
   id: string;
@@ -217,7 +218,7 @@ export function CommandPalette({
                 >
                   <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary/70 text-muted-foreground">{action.icon}</span>
                   <span className="min-w-0 flex-1 truncate">{t(action.label)}</span>
-                  {action.shortcut && <span className="text-[10px] text-muted-foreground">{action.shortcut}</span>}
+                  {action.shortcut && <span className="text-[10px] text-muted-foreground">{keyLabel(action.shortcut)}</span>}
                 </button>
               </React.Fragment>
             );

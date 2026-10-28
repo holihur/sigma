@@ -12,7 +12,7 @@ export function LanguageToggle({ className, compact = false }: { className?: str
       onClick={toggle}
       title={locale === "en" ? t("Switch to Chinese") : t("Switch to English")}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+        "inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background/70 px-2 text-[11px] text-muted-foreground backdrop-blur transition-colors hover:bg-secondary hover:text-foreground",
         className,
       )}
     >

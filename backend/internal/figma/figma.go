@@ -26,7 +26,7 @@ type Client struct {
 }
 
 func NewClient() *Client {
-	return &Client{BaseURL: DefaultBaseURL, HTTP: &http.Client{Timeout: 90 * time.Second}}
+	return &Client{BaseURL: DefaultBaseURL, HTTP: &http.Client{Timeout: 45 * time.Second}}
 }
 
 var fileKeyRe = regexp.MustCompile(`(?i)/(?:file|design|proto)/([a-z0-9]+)`)
@@ -161,14 +161,14 @@ func (c *Client) Fetch(ctx context.Context, fileKey, token string) ([]byte, erro
 	req.Header.Set("User-Agent", "sigma-figma-import")
 	client := c.HTTP
 	if client == nil {
-		client = &http.Client{Timeout: 90 * time.Second}
+		client = &http.Client{Timeout: 45 * time.Second}
 	}
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(res.Body, 96<<20))
+	body, err := io.ReadAll(io.LimitReader(res.Body, 64<<20))
 	if err != nil {
 		return nil, err
 	}
