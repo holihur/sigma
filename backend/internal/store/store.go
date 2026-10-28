@@ -275,7 +275,9 @@ func (s *Store) File(id string) (model.File, error) {
 
 func (s *Store) FileMeta(id, userID string) (model.FileMeta, error) {
 	var m model.FileMeta
-	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,u.name,f.version,f.thumbnail,f.template,f.folder,f.created_at,f.updated_at,
+	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,u.name,f.version,
+		CASE WHEN f.thumbnail='' THEN '' ELSE '/api/files/'||f.id||'/thumbnail' END,
+		f.template,f.folder,f.created_at,f.updated_at,
 		CASE WHEN f.owner_id=? THEN 'owner' ELSE COALESCE(m.role,'') END,
 		EXISTS(SELECT 1 FROM file_stars st WHERE st.file_id=f.id AND st.user_id=?)
 		FROM files f JOIN users u ON u.id=f.owner_id
@@ -287,7 +289,9 @@ func (s *Store) FileMeta(id, userID string) (model.FileMeta, error) {
 }
 
 func (s *Store) ListFiles(userID string) ([]model.FileMeta, error) {
-	rows, err := s.db.Query(`SELECT f.id,f.name,f.owner_id,u.name,f.version,f.thumbnail,f.template,f.folder,f.created_at,f.updated_at,
+	rows, err := s.db.Query(`SELECT f.id,f.name,f.owner_id,u.name,f.version,
+		CASE WHEN f.thumbnail='' THEN '' ELSE '/api/files/'||f.id||'/thumbnail' END,
+		f.template,f.folder,f.created_at,f.updated_at,
 		CASE WHEN f.owner_id=? THEN 'owner' ELSE COALESCE(m.role,'') END,
 		EXISTS(SELECT 1 FROM file_stars st WHERE st.file_id=f.id AND st.user_id=?)
 		FROM files f JOIN users u ON u.id=f.owner_id

@@ -104,7 +104,7 @@ func (a *API) handlePublicFile(w http.ResponseWriter, r *http.Request) {
 		OwnerID:   f.OwnerID,
 		OwnerName: owner.Name,
 		Version:   f.Version,
-		Thumbnail: f.Thumbnail,
+		Thumbnail: publicThumbnailURL(token, f.Thumbnail),
 		Template:  f.Template,
 		Role:      "view",
 		UpdatedAt: f.UpdatedAt,

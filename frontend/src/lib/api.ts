@@ -36,6 +36,13 @@ export function getToken(): string | null {
   try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
 }
 
+/** Add the bearer token to image URLs that are loaded by the browser directly. */
+export function authedAssetUrl(path: string): string {
+  const token = getToken();
+  if (!token || !path.startsWith("/api/")) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
+}
+
 export function setToken(token: string | null) {
   try {
     if (token) localStorage.setItem(TOKEN_KEY, token);

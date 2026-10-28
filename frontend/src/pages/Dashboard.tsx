@@ -42,7 +42,7 @@ import {
   Square as SquareIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { filesApi, notificationsApi, commentsApi, membersApi } from "@/lib/api";
+import { filesApi, notificationsApi, commentsApi, membersApi, authedAssetUrl } from "@/lib/api";
 import type { FileMeta, Notification, TemplateMeta } from "@/lib/types";
 import { useAuth } from "@/store/auth";
 import { useTheme } from "@/store/theme";
@@ -1146,7 +1146,7 @@ function FileCard({
       >
         <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
           {file.thumbnail ? (
-            <img src={file.thumbnail} alt={file.name} loading="lazy" decoding="async" className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]" />
+            <img src={authedAssetUrl(file.thumbnail)} alt={file.name} loading="lazy" decoding="async" className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]" />
           ) : (
             <TemplatePreview file={file} template={template} />
           )}
@@ -1275,7 +1275,7 @@ function FileRow({
       </button>
       <button onClick={onOpen} className="size-14 shrink-0 overflow-hidden rounded-lg bg-secondary">
         {file.thumbnail ? (
-          <img src={file.thumbnail} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain p-0.5" />
+          <img src={authedAssetUrl(file.thumbnail)} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain p-0.5" />
         ) : (
           <div className="flex h-full items-center justify-center" style={{ background: `${template?.accent ?? "#0ea5e9"}18` }}>
             <TemplateIcon icon={template?.icon ?? "square"} className="size-5" />

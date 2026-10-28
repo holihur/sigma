@@ -50,12 +50,12 @@ func (a *API) handlePublicThumbnail(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	data, mime, err := decodeImageDataURL(f.Thumbnail)
+	data, mimeType, err := a.thumbnailBytes(f.ID, f.Thumbnail)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Set("Content-Type", mime)
+	w.Header().Set("Content-Type", mimeType)
 	w.Header().Set("Cache-Control", "public, max-age=300")
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 	_, _ = w.Write(data)
@@ -92,6 +92,13 @@ func (a *API) readIndexHTML() ([]byte, error) {
 		return fs.ReadFile(a.staticFS, "index.html")
 	}
 	return nil, fs.ErrNotExist
+}
+
+func publicThumbnailURL(token, raw string) string {
+	if raw == "" {
+		return ""
+	}
+	return "/api/public/" + url.PathEscape(token) + "/thumbnail"
 }
 
 func publicBaseURL(r *http.Request) string {

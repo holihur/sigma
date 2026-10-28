@@ -121,9 +121,22 @@ func (a *API) handlePatchFile(w http.ResponseWriter, r *http.Request, u model.Us
 			writeError(w, http.StatusForbidden, "View-only access")
 			return
 		}
-		if err := a.st.SetThumbnail(id, *body.Thumbnail); err != nil {
-			writeError(w, http.StatusInternalServerError, "Could not save thumbnail")
-			return
+		thumb := strings.TrimSpace(*body.Thumbnail)
+		if thumb == "" {
+			if err := a.st.SetThumbnail(id, ""); err != nil {
+				writeError(w, http.StatusInternalServerError, "Could not save thumbnail")
+				return
+			}
+		} else {
+			stored, err := a.saveThumbnailDataURL(id, thumb)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "Invalid thumbnail")
+				return
+			}
+			if err := a.st.SetThumbnail(id, stored); err != nil {
+				writeError(w, http.StatusInternalServerError, "Could not save thumbnail")
+				return
+			}
 		}
 	}
 	if body.Starred != nil {
@@ -169,6 +182,7 @@ func (a *API) handleDeleteFile(w http.ResponseWriter, r *http.Request, u model.U
 		writeError(w, http.StatusInternalServerError, "Could not delete design")
 		return
 	}
+	a.removeThumbnail(f.Thumbnail)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 

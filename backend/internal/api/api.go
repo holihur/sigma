@@ -105,6 +105,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/files", a.requireAuth(a.handleListFiles))
 	mux.HandleFunc("POST /api/files", a.requireAuth(a.handleCreateFile))
 	mux.HandleFunc("GET /api/files/{id}", a.requireAuth(a.handleGetFile))
+	mux.HandleFunc("GET /api/files/{id}/thumbnail", a.requireAuth(a.handleGetThumbnail))
 	mux.HandleFunc("PATCH /api/files/{id}", a.requireAuth(a.handlePatchFile))
 	mux.HandleFunc("DELETE /api/files/{id}", a.requireAuth(a.handleDeleteFile))
 	mux.HandleFunc("POST /api/files/{id}/duplicate", a.requireAuth(a.handleDuplicateFile))

@@ -254,8 +254,8 @@ export default function EditorPage() {
         width,
         height,
       });
-      // Thumbnails stay as compressed data URLs in the file row; document
-      // images are uploaded separately so they never bloat the document JSON.
+      // Thumbnails are uploaded as data URLs but the API stores them as files;
+      // document images are uploaded separately so they never bloat the document JSON.
       if (dataUrl.length < 400_000) {
         await filesApi.patch(st.file.id, { thumbnail: dataUrl });
       }
