@@ -16,6 +16,14 @@ function ensurePaper() {
   return paper;
 }
 
+function clearPaper() {
+  try {
+    paper.project?.activeLayer?.removeChildren();
+  } catch {
+    /* paper may not have an active project after a failed import */
+  }
+}
+
 function hex(color: any): string | null {
   if (!color) return null;
   const c = color.toCSS ? color.toCSS(true) : String(color);
@@ -45,8 +53,8 @@ function nodeSubpaths(node: SceneNode): VectorSubpath[] {
 }
 
 function subpathToPaper(sub: VectorSubpath, node: SceneNode): any {
-  const w = Math.max(node.width, 1);
-  const h = Math.max(node.height, 1);
+  const w = Math.max(node.width, 0.01);
+  const h = Math.max(node.height, 0.01);
   const segments = sub.points.map((p) => {
     const point = new paper.Point(p.x * w, p.y * h);
     const handleIn = p.in ? new paper.Point((p.in.x - p.x) * w, (p.in.y - p.y) * h) : new paper.Point(0, 0);
@@ -94,8 +102,8 @@ function itemToSubpaths(item: any, simplifyTolerance = 0): { subpaths: VectorSub
     if (simplifyTolerance > 0) path.simplify(simplifyTolerance);
   }
   const bounds = item.bounds ?? new paper.Rectangle(0, 0, 1, 1);
-  const w = Math.max(bounds.width, 1);
-  const h = Math.max(bounds.height, 1);
+  const w = Math.max(bounds.width, 0.01);
+  const h = Math.max(bounds.height, 0.01);
   const subpaths: VectorSubpath[] = [];
   for (const path of paths) {
     const points: VectorPoint[] = [];
@@ -123,6 +131,7 @@ function fillRuleOf(item: any): "nonzero" | "evenodd" {
 
 export function pathfinder(page: Page, nodes: SceneNode[], kind: PathfinderKind): SceneNode | null {
   ensurePaper();
+  clearPaper();
   const items = nodes.map((n) => nodeToPaper(page, n)).filter(Boolean);
   if (items.length === 0) return null;
   const baseNode = nodes[0];
@@ -165,6 +174,7 @@ export function pathfinder(page: Page, nodes: SceneNode[], kind: PathfinderKind)
 
 export function combineVectors(page: Page, nodes: SceneNode[]): SceneNode | null {
   ensurePaper();
+  clearPaper();
   const items = nodes.map((n) => nodeToPaper(page, n)).filter(Boolean);
   if (items.length === 0) return null;
   const paths: any[] = [];
@@ -231,8 +241,8 @@ function clipperOffset(subpaths: VectorSubpath[], node: SceneNode, delta: number
     minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
     maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
   }
-  const w = Math.max(maxX - minX, 1);
-  const h = Math.max(maxY - minY, 1);
+  const w = Math.max(maxX - minX, 0.01);
+  const h = Math.max(maxY - minY, 0.01);
   return {
     subpaths: all.map((path) => ({
       closed: true,
@@ -244,6 +254,7 @@ function clipperOffset(subpaths: VectorSubpath[], node: SceneNode, delta: number
 
 export function offsetVector(node: SceneNode, delta: number): SceneNode | null {
   ensurePaper();
+  clearPaper();
   const result = clipperOffset(vectorSubpaths(node), node, delta);
   if (!result?.subpaths.length) return null;
   const next = createNode("vector", {
@@ -257,6 +268,8 @@ export function offsetVector(node: SceneNode, delta: number): SceneNode | null {
 }
 
 export function outlineStroke(node: SceneNode): SceneNode | null {
+  ensurePaper();
+  clearPaper();
   const width = Math.max(node.strokeWidth, 0.1);
   const expanded = clipperOffset(vectorSubpaths(node), node, width / 2);
   if (!expanded?.subpaths.length) return null;
@@ -271,6 +284,7 @@ export function outlineStroke(node: SceneNode): SceneNode | null {
 
 export function simplifyVector(node: SceneNode, tolerance = 0.5): SceneNode | null {
   ensurePaper();
+  clearPaper();
   const item = nodeToPaperWithOwnParent(node);
   if (!item) return null;
   const { subpaths, bounds } = itemToSubpaths(item, tolerance);
@@ -296,6 +310,8 @@ function nodeToPaperWithOwnParent(node: SceneNode): any {
 
 export async function svgToNodes(svg: string, name = "SVG"): Promise<SceneNode[]> {
   ensurePaper();
+  clearPaper();
+  try {
   const imported = paper.project.importSVG(svg, { expandShapes: true, insert: false });
   const leaves: any[] = [];
   const walk = (item: any) => {
@@ -324,6 +340,9 @@ export async function svgToNodes(svg: string, name = "SVG"): Promise<SceneNode[]
   }
   imported.remove();
   return out;
+  } finally {
+    clearPaper();
+  }
 }
 
 export async function traceImage(src: string, target: SceneNode, name = "Traced image"): Promise<SceneNode[]> {

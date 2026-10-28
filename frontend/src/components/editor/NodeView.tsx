@@ -159,9 +159,11 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
     );
   } else if (node.type === "vector") {
     const d = vectorPathData(node);
+    const vw = Math.max(Math.abs(node.width), 0.01);
+    const vh = Math.max(Math.abs(node.height), 0.01);
     content =
       d ? (
-        <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" style={{ pointerEvents: "none" }}>
+        <svg viewBox={`0 0 ${vw} ${vh}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" style={{ pointerEvents: "none" }}>
           <path
             d={d}
             fill={vectorSubpaths(node).some((s) => s.closed) ? fill : "none"}

@@ -361,7 +361,11 @@ export function Canvas({
   const updatePenPoints = (points: VectorPoint[], parentId: string | null) => {
     const pen = penRef.current;
     if (!pen) return;
-    void parentId;
+    const state = store.getState();
+    if (parentId && !getPage(state.doc, pageId).nodes[parentId]) return;
+    // Pen points and handles are already in the parent's local coordinate
+    // space. Keep the node box local too; only normalize against that local
+    // anchor/handle bounds.
     const xs: number[] = [];
     const ys: number[] = [];
     for (const p of points) {
@@ -374,8 +378,8 @@ export function Canvas({
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
     const maxY = Math.max(...ys);
-    const width = Math.max(maxX - minX, 1);
-    const height = Math.max(maxY - minY, 1);
+    const width = Math.max(maxX - minX, 0.01);
+    const height = Math.max(maxY - minY, 0.01);
     const normPoint = (p: { x: number; y: number }) => ({ x: (p.x - minX) / width, y: (p.y - minY) / height });
     const normalized = points.map((p) => {
       const n: VectorPoint = normPoint(p);
@@ -396,16 +400,16 @@ export function Canvas({
     if (!node) return;
     if (pen.points.length < 2) {
       st.select([pen.nodeId]);
-      st.deleteSelection();
+      st.deleteSelection(false);
       st.setTool("select");
       return;
     }
     st.updateNode(pen.nodeId, {
       closed,
       fill: closed ? node.fill ?? { type: "solid", color: "#0ea5e9" } : null,
-      // Closed shapes should look like filled vectors, not a 2px stroke.
-      // Open paths keep the visible stroke so they remain discoverable.
-      stroke: closed ? null : node.stroke ?? { type: "solid", color: "#0ea5e9" },
+      // Preserve a user-selected stroke. Only the default pen preview gets a
+      // stroke for open paths; closed paths default to fill-only.
+      stroke: node.stroke ?? (closed ? null : { type: "solid", color: "#0ea5e9" }),
       name: node.name === "Vector" ? "Vector" : node.name,
     }, false);
     st.select([pen.nodeId]);
@@ -419,7 +423,8 @@ export function Canvas({
       (ev) => {
         if (suppressRef.current) return;
         const local = parentLocalPoint(page, pen.parentId, worldPoint(ev));
-        if (Math.hypot(local.x - origin.x, local.y - origin.y) < 2) return;
+        const deadzone = (ev.pointerType === "touch" ? 6 : 2) / Math.max(viewport.zoom, 0.01);
+        if (Math.hypot(local.x - origin.x, local.y - origin.y) < deadzone) return;
         moved = true;
         const out = { x: local.x, y: local.y };
         const inHandle = { x: origin.x * 2 - local.x, y: origin.y * 2 - local.y };
@@ -966,7 +971,7 @@ export function Canvas({
         const next = (d.start.subpaths ?? []).map((sub) => ({ ...sub, points: sub.points.map((p) => ({ ...p })) }));
         next[current.path].points[current.index] = ev.altKey
           ? { ...next[current.path].points[current.index], [d.which]: h }
-          : mirrorHandle(next[current.path].points[current.index], d.which, h);
+          : mirrorHandle(next[current.path].points[current.index], d.which, h, true);
         d.moved = true;
         store.getState().updateNode(d.nodeId, subpathPatch(next), false);
       },

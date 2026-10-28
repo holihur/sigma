@@ -21,6 +21,8 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 
 ### Fixed
 - Chinese locale now lazy-loads as a separate chunk before first paint — fixes #64
+- Vector editing: correct compound-point deletion, tiny-path bounds, edge smooth handles, closest-point insertion, asymmetric handle mirroring, pen zoom/touch deadzone, user stroke/fill presets and grouped pen-cancel undo — fixes #103 #104 #105 #106 #107 #108 #109 #111 #112 #113
+- Vector rendering/engine: scale path viewBox to node bounds and clear Paper.js project residue — fixes #110 #114
 - Font picker remains a bounded 8-family list; documented the non-virtualized constraint — fixes #61
 - Prototype hotspot hover now shows target and transition preview — fixes #65
 - Thumbnails are now stored as files with lazy authenticated URLs; legacy inline data URLs migrate on first read — fixes #63

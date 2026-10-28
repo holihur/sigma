@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { commentsApi, filesApi } from "@/lib/api";
 import type { Comment, Point } from "@/lib/types";
 import { boundsOf, getPage, nodeAABB } from "@/lib/nodes";
+import { allVectorPoints, subpathPatch, vectorSubpaths } from "@/lib/vector";
 import { useAuth } from "@/store/auth";
 import { useEditor } from "@/store/editor";
 import { useCollaboration } from "@/hooks/useCollaboration";
@@ -469,11 +470,18 @@ export default function EditorPage() {
           e.preventDefault();
           const vector = st.selection.length === 1 ? getPage(st.doc, st.pageId).nodes[st.selection[0]] : null;
           if (vector?.type === "vector" && st.selectedPoint != null) {
-            const points = vector.points ?? [];
-            if (points.length <= 2) {
+            const location = allVectorPoints(vector)[st.selectedPoint];
+            if (!location) {
+              st.setSelectedPoint(null);
+              return;
+            }
+            const subpaths = vectorSubpaths(vector).map((sub) => ({ ...sub, points: sub.points.map((p) => ({ ...p })) }));
+            const sub = subpaths[location.path];
+            if (!sub || sub.points.length <= 2) {
               toast.error(t("A vector needs at least two points"));
             } else {
-              st.updateNode(vector.id, { points: points.filter((_, i) => i !== st.selectedPoint) }, true);
+              sub.points = sub.points.filter((_, i) => i !== location.index);
+              st.updateNode(vector.id, subpathPatch(subpaths.filter((s) => s.points.length > 0)), true);
               st.setSelectedPoint(null);
             }
             return;

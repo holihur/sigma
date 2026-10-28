@@ -93,7 +93,7 @@ interface EditorState {
   updateNodes: (ids: string[], patch: Partial<SceneNode> | ((node: SceneNode) => Partial<SceneNode>), record?: boolean) => void;
   updateNode: (id: string, patch: Partial<SceneNode> | ((node: SceneNode) => Partial<SceneNode>), record?: boolean) => void;
   addNode: (node: SceneNode, parentId?: string | null, index?: number, record?: boolean) => void;
-  deleteSelection: () => void;
+  deleteSelection: (record?: boolean) => void;
   duplicateSelection: (offset?: number) => void;
   copySelection: () => void;
   cutSelection: () => void;
@@ -637,7 +637,7 @@ export const useEditor = create<EditorState>((set, get) => {
       }, record);
       set({ selection: [node.id] });
     },
-    deleteSelection: () => {
+    deleteSelection: (record = true) => {
       if (get().isReadOnly) return;
       const state = get();
       const page = currentPage(state);
@@ -666,7 +666,7 @@ export const useEditor = create<EditorState>((set, get) => {
           removeTree(id);
         }
         p.ts = now;
-      });
+      }, record);
       set({ selection: [], selectedPoint: null, editingId: null });
     },
     duplicateSelection: (offset = 16) => {

@@ -22,9 +22,11 @@ export function allVectorPoints(node: SceneNode): { path: number; index: number;
   return out;
 }
 
-export function vectorPathData(node: SceneNode, scale = 1000): string {
-  const X = (v: number) => (v * scale).toFixed(3);
-  const Y = (v: number) => (v * scale).toFixed(3);
+export function vectorPathData(node: SceneNode, width = node.width, height = node.height): string {
+  const w = Math.max(Math.abs(width), 0.01);
+  const h = Math.max(Math.abs(height), 0.01);
+  const X = (v: number) => (v * w).toFixed(3);
+  const Y = (v: number) => (v * h).toFixed(3);
   const point = (p: VectorPoint) => `${X(p.x)} ${Y(p.y)}`;
   let d = "";
   for (const sub of vectorSubpaths(node)) {
@@ -80,11 +82,14 @@ export function movePoint(p: VectorPoint, x: number, y: number): VectorPoint {
   };
 }
 
-export function mirrorHandle(p: VectorPoint, moved: "in" | "out", handle: VectorHandle): VectorPoint {
+export function mirrorHandle(p: VectorPoint, moved: "in" | "out", handle: VectorHandle, keepLength = false): VectorPoint {
   const other = moved === "in" ? "out" : "in";
   const dx = handle.x - p.x;
   const dy = handle.y - p.y;
-  return { ...p, [moved]: handle, [other]: { x: p.x - dx, y: p.y - dy } };
+  const len = Math.hypot(dx, dy) || 1;
+  const current = p[other];
+  const otherLen = keepLength && current ? Math.hypot(current.x - p.x, current.y - p.y) : len;
+  return { ...p, [moved]: handle, [other]: { x: p.x - (dx / len) * otherLen, y: p.y - (dy / len) * otherLen } };
 }
 
 /** Create a smooth tangent through the previous/next anchor. */
@@ -102,8 +107,8 @@ export function smoothPoint(points: VectorPoint[], index: number, closed: boolea
   ty /= len;
   const dist = Math.min(Math.hypot(p.x - prev.x, p.y - prev.y), Math.hypot(next.x - p.x, next.y - p.y));
   const h = Math.max(dist * 0.33, 0.015);
-  const out = { x: clamp01(p.x + tx * h), y: clamp01(p.y + ty * h) };
-  const inHandle = { x: clamp01(p.x - tx * h), y: clamp01(p.y - ty * h) };
+  const out = { x: p.x + tx * h, y: p.y + ty * h };
+  const inHandle = { x: p.x - tx * h, y: p.y - ty * h };
   const nextPoints = [...points];
   nextPoints[index] = { ...p, in: inHandle, out };
   return nextPoints;
@@ -142,16 +147,29 @@ export function insertPointOnVector(points: VectorPoint[], index: number, x: num
   };
   let bestT = 0.5;
   let bestDist = Infinity;
-  for (let i = 0; i <= 32; i++) {
-    const t = i / 32;
+  const distAt = (t: number) => {
     const sample = cubicAt(t);
-    const d = Math.hypot(sample.x - x, sample.y - y);
+    return Math.hypot(sample.x - x, sample.y - y);
+  };
+  for (let i = 0; i <= 100; i++) {
+    const t = i / 100;
+    const d = distAt(t);
     if (d < bestDist) {
       bestDist = d;
       bestT = t;
     }
   }
-  const t = bestT;
+  // Refine around the best sample. The cubic distance is well behaved in this
+  // small interval, so a short ternary search is enough without Newton setup.
+  let lo = Math.max(0, bestT - 0.02);
+  let hi = Math.min(1, bestT + 0.02);
+  for (let i = 0; i < 14; i++) {
+    const t1 = lo + (hi - lo) / 3;
+    const t2 = hi - (hi - lo) / 3;
+    if (distAt(t1) <= distAt(t2)) hi = t2;
+    else lo = t1;
+  }
+  const t = (lo + hi) / 2;
   const ab = lerp(p0, c1, t);
   const bc = lerp(c1, c2, t);
   const cd = lerp(c2, p1, t);
@@ -182,6 +200,7 @@ export function canConvertToVector(node: SceneNode): boolean {
 
 const K = 0.2761423749153967;
 
+// Handles follow the clockwise path order: top -> right -> bottom -> left.
 export function shapeToVector(node: SceneNode): { points: VectorPoint[]; closed: boolean } {
   if (node.type === "ellipse") {
     return {
