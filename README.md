@@ -6,7 +6,7 @@
 
 一个面向产品团队的协作式界面设计工作台：无限画布、矢量路径、组件实例、可点击原型、实时多人协作，以及可以读取项目规范、调用自定义 Skills 的 AI 设计助手。
 
-`Go` · `React 19` · `TypeScript` · `Tailwind CSS 4` · `SQLite` · `WebSocket` · `Google ADK` · `Any OpenAI-compatible LLM`
+`Go` · `React 19` · `TypeScript` · `Tailwind CSS 4` · `MongoDB` · `WebSocket` · `Google ADK` · `Any OpenAI-compatible LLM`
 
 </div>
 
@@ -20,7 +20,7 @@ Sigma 从第一天就把 **Agent** 和 **协作** 放进设计工具的核心，
 - **AI 懂你的设计系统**：上传 `Design.md`、`AGENTS.md` 和自定义 `SKILL.md`，每次请求自动注入。
 - **Agent 可以来自任何地方**：内置 BYOK（DeepSeek / OpenAI / Gemini / OpenRouter / Groq / Ollama / 自托管），也通过 MCP + PAT 让 Claude、Cursor 或自研 Agent 直接操作文件。
 - **设计和原型在同一个文件里**：从静态界面到可点击流程，不需要切换工具。
-- **数据是你的**：单二进制、SQLite、本地文件存储、可选企业 OIDC，一条命令部署。
+- **数据是你的**：单二进制、MongoDB、本地文件存储、可选企业 OIDC，一条命令部署。
 
 ## 功能全景
 
@@ -179,7 +179,7 @@ curl -fsSL https://raw.githubusercontent.com/holihur/sigma/main/install.sh \
 curl -fsSL https://raw.githubusercontent.com/holihur/sigma/main/uninstall.sh | bash
 ```
 
-> 生产环境请设置 `APP_BASE_URL`、`SIGMA_SECRET`，并在反向代理后启用 HTTPS。详细参数见 [部署文档](docs/DEPLOYMENT.md)。
+> 生产环境需要 MongoDB（`MONGO_URI` / `MONGO_DB`），并请设置 `APP_BASE_URL`、`SIGMA_SECRET`，在反向代理后启用 HTTPS。详细参数见 [部署文档](docs/DEPLOYMENT.md)。
 
 ## Docker
 
@@ -193,12 +193,14 @@ docker compose up -d --build
 docker build -t sigma .
 docker run --rm -p 9000:9000 \
   -e SIGMA_SECRET="$(openssl rand -hex 32)" \
+  -e MONGO_URI="mongodb://host.docker.internal:27017" \
+  -e MONGO_DB=sigma \
   -v sigma-data:/app/data sigma
 ```
 
 ## 本地开发
 
-要求：**Go 1.25+**、**Node.js 20+**、**pnpm 10+**。
+要求：**Go 1.25+**、**Node.js 20+**、**pnpm 10+**、本地 MongoDB（默认 `mongodb://127.0.0.1:27017`）。
 
 ```bash
 cd frontend && pnpm install && cd ..
@@ -239,7 +241,7 @@ make run     # http://localhost:9000
 | 层 | 技术 |
 | --- | --- |
 | 前端 | React 19, TypeScript, Vite 7, Tailwind CSS 4, Radix primitives, zustand, lucide-react, sonner |
-| 后端 | Go 1.25+, `net/http`, gorilla/websocket, SQLite (modernc.org/sqlite), JWT, bcrypt, Google ADK |
+| 后端 | Go 1.25+, `net/http`, gorilla/websocket, MongoDB (mongo-driver), JWT, bcrypt, Google ADK |
 | AI | 任意 OpenAI-compatible 服务商（DeepSeek 默认）、自定义 ADK `model.LLM` adapter |
 | 发布 | GoReleaser, GitHub Actions, systemd, Docker, SHA-256 self-update |
 

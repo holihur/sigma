@@ -21,7 +21,7 @@ install:
 	cd frontend && pnpm install
 
 backend:
-	cd backend && PORT=$${PORT:-9000} DB_PATH=$${DB_PATH:-data/sigma.db} go run .
+	cd backend && PORT=$${PORT:-9000} MONGO_URI=$${MONGO_URI:-mongodb://127.0.0.1:27017} MONGO_DB=$${MONGO_DB:-sigma} go run .
 
 frontend:
 	cd frontend && pnpm dev
@@ -34,7 +34,8 @@ build:
 	cd backend && go build -o ../sigma-server .
 
 run: build
-	DB_PATH=$${DB_PATH:-backend/data/sigma.db} \
+	MONGO_URI=$${MONGO_URI:-mongodb://127.0.0.1:27017} \
+	MONGO_DB=$${MONGO_DB:-sigma} \
 	UPLOAD_DIR=$${UPLOAD_DIR:-backend/data/uploads} \
 	PORT=$${PORT:-9000} \
 	SIGMA_SECRET=$${SIGMA_SECRET:-sigma-dev-secret-change-in-production} \

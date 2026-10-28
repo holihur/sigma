@@ -1,368 +1,563 @@
 package store
 
 import (
-	"database/sql"
+	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
-	_ "modernc.org/sqlite"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"sigma/internal/model"
 )
 
 type Store struct {
-	db *sql.DB
+	client *mongo.Client
+	db     *mongo.Database
 }
 
-func Open(path string) (*Store, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return nil, err
+// Open connects to MongoDB. The argument is a database name; path-like values
+// are hashed into an isolated test database so existing tests stay independent.
+func Open(name string) (*Store, error) {
+	uri := strings.TrimSpace(os.Getenv("MONGO_URI"))
+	if uri == "" {
+		uri = "mongodb://127.0.0.1:27017"
 	}
-	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode(WAL)&_pragma=busy_timeout(10000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)", path)
-	db, err := sql.Open("sqlite", dsn)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(4)
-	db.SetMaxIdleConns(4)
-	s := &Store{db: db}
-	if err := s.migrate(); err != nil {
-		db.Close()
+	if err := client.Ping(ctx, nil); err != nil {
+		_ = client.Disconnect(context.Background())
+		return nil, fmt.Errorf("connect mongo: %w", err)
+	}
+	s := &Store{client: client, db: client.Database(mongoDatabaseName(name))}
+	if err := s.ensureIndexes(ctx); err != nil {
+		_ = client.Disconnect(context.Background())
 		return nil, err
 	}
 	return s, nil
 }
 
-func (s *Store) Close() error { return s.db.Close() }
-
-func (s *Store) Ping() error {
-	var one int
-	return s.db.QueryRow(`SELECT 1`).Scan(&one)
+func (s *Store) Close() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return s.client.Disconnect(ctx)
 }
 
-func (s *Store) migrate() error {
-	schema := `
-CREATE TABLE IF NOT EXISTS users (
-	id         TEXT PRIMARY KEY,
-	name       TEXT NOT NULL,
-	email      TEXT NOT NULL UNIQUE,
-	password   TEXT NOT NULL,
-	color      TEXT NOT NULL,
-	avatar     TEXT NOT NULL DEFAULT '',
-	created_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS files (
-	id         TEXT PRIMARY KEY,
-	name       TEXT NOT NULL,
-	owner_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	doc        TEXT NOT NULL DEFAULT '{"pages":[]}',
-	version    INTEGER NOT NULL DEFAULT 1,
-	thumbnail  TEXT NOT NULL DEFAULT '',
-	template   TEXT NOT NULL DEFAULT 'blank',
-	folder     TEXT NOT NULL DEFAULT '',
-	created_at TEXT NOT NULL,
-	updated_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS file_members (
-	file_id    TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
-	user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	role       TEXT NOT NULL DEFAULT 'edit',
-	created_at TEXT NOT NULL,
-	PRIMARY KEY (file_id, user_id)
-);
-CREATE TABLE IF NOT EXISTS file_stars (
-	file_id TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
-	user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	PRIMARY KEY (file_id, user_id)
-);
-CREATE TABLE IF NOT EXISTS comments (
-	id         TEXT PRIMARY KEY,
-	file_id    TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
-	page_id    TEXT NOT NULL,
-	node_id    TEXT NOT NULL DEFAULT '',
-	parent_id  TEXT NOT NULL DEFAULT '',
-	x          REAL NOT NULL DEFAULT 0,
-	y          REAL NOT NULL DEFAULT 0,
-	text       TEXT NOT NULL,
-	author_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	resolved   INTEGER NOT NULL DEFAULT 0,
-	created_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS versions (
-	id         TEXT PRIMARY KEY,
-	file_id    TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
-	name       TEXT NOT NULL,
-	doc        TEXT NOT NULL,
-	version    INTEGER NOT NULL,
-	author_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	created_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS public_links (
-	file_id    TEXT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,
-	token         TEXT NOT NULL UNIQUE,
-	enabled       INTEGER NOT NULL DEFAULT 0,
-	expires_at    INTEGER NOT NULL DEFAULT 0,
-	password_hash TEXT NOT NULL DEFAULT '',
-	created_at    TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS ai_settings (
-	user_id      TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-	provider     TEXT NOT NULL DEFAULT 'deepseek',
-	base_url     TEXT NOT NULL DEFAULT 'https://api.deepseek.com',
-	model        TEXT NOT NULL DEFAULT 'deepseek-v4.1-flash',
-	api_key_enc  TEXT NOT NULL DEFAULT '',
-	updated_at   TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS user_identities (
-	issuer     TEXT NOT NULL,
-	subject    TEXT NOT NULL,
-	user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	email      TEXT NOT NULL DEFAULT '',
-	created_at TEXT NOT NULL,
-	PRIMARY KEY (issuer, subject)
-);
-CREATE TABLE IF NOT EXISTS personal_access_tokens (
-	id           TEXT PRIMARY KEY,
-	user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	name         TEXT NOT NULL,
-	prefix       TEXT NOT NULL,
-	token_hash   TEXT NOT NULL UNIQUE,
-	scopes       TEXT NOT NULL DEFAULT 'mcp:read mcp:write',
-	last_used_at TEXT NOT NULL DEFAULT '',
-	expires_at   TEXT NOT NULL DEFAULT '',
-	created_at   TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS ai_context (
-	user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-	design_md  TEXT NOT NULL DEFAULT '',
-	agents_md  TEXT NOT NULL DEFAULT '',
-	updated_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS ai_skills (
-	id           TEXT PRIMARY KEY,
-	user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	name         TEXT NOT NULL,
-	description  TEXT NOT NULL DEFAULT '',
-	content      TEXT NOT NULL,
-	created_at   TEXT NOT NULL,
-	updated_at   TEXT NOT NULL,
-	UNIQUE(user_id, name)
-);
-CREATE TABLE IF NOT EXISTS notifications (
-	id         TEXT PRIMARY KEY,
-	user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	file_id    TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
-	comment_id TEXT NOT NULL DEFAULT '',
-	actor_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	kind       TEXT NOT NULL DEFAULT 'comment',
-	text       TEXT NOT NULL DEFAULT '',
-	read       INTEGER NOT NULL DEFAULT 0,
-	created_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_files_owner ON files(owner_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read, created_at);
-CREATE INDEX IF NOT EXISTS idx_members_user ON file_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_comments_file ON comments(file_id);
-CREATE INDEX IF NOT EXISTS idx_versions_file ON versions(file_id);
-CREATE INDEX IF NOT EXISTS idx_pat_user ON personal_access_tokens(user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_identity_user ON user_identities(user_id);
-CREATE INDEX IF NOT EXISTS idx_ai_skills_user ON ai_skills(user_id, updated_at);
-CREATE TABLE IF NOT EXISTS audit_logs (
-	id         TEXT PRIMARY KEY,
-	file_id    TEXT NOT NULL,
-	actor_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	action     TEXT NOT NULL,
-	meta       TEXT NOT NULL DEFAULT '',
-	created_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_audit_file ON audit_logs(file_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id, created_at);
-`
-	if _, err := s.db.Exec(schema); err != nil {
-		return err
+func (s *Store) Ping() error {
+	ctx, cancel := s.ctx()
+	defer cancel()
+	return s.client.Ping(ctx, nil)
+}
+
+func (s *Store) ctx() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 8*time.Second)
+}
+
+func mongoDatabaseName(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		raw = strings.TrimSpace(os.Getenv("MONGO_DB"))
 	}
-	// Existing installations predate profile avatars and dashboard folders.
-	for _, stmt := range []string{
-		`ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE files ADD COLUMN folder TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE comments ADD COLUMN parent_id TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE public_links ADD COLUMN expires_at INTEGER NOT NULL DEFAULT 0`,
-		`ALTER TABLE public_links ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''`,
-	} {
-		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
-			return err
+	if raw == "" {
+		raw = "sigma"
+	}
+	// Tests still pass temporary filesystem paths. Hash them into isolated
+	// database names without leaking long paths.
+	if strings.ContainsAny(raw, `/\`) || strings.HasSuffix(strings.ToLower(raw), ".db") {
+		sum := sha1.Sum([]byte(raw))
+		return "sigma_test_" + hex.EncodeToString(sum[:8])
+	}
+	var b strings.Builder
+	for _, r := range raw {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('_')
+		}
+	}
+	name := strings.Trim(b.String(), "_")
+	if name == "" {
+		name = "sigma"
+	}
+	if len(name) > 60 {
+		sum := sha1.Sum([]byte(name))
+		name = "sigma_" + hex.EncodeToString(sum[:8])
+	}
+	return name
+}
+
+func (s *Store) ensureIndexes(ctx context.Context) error {
+	type indexSet struct {
+		collection string
+		models     []mongo.IndexModel
+	}
+	sets := []indexSet{
+		{"users", []mongo.IndexModel{{Keys: bson.D{{Key: "email", Value: 1}}, Options: options.Index().SetUnique(true)}}},
+		{"files", []mongo.IndexModel{{Keys: bson.D{{Key: "owner_id", Value: 1}}}, {Keys: bson.D{{Key: "updated_at", Value: -1}}}}},
+		{"file_members", []mongo.IndexModel{
+			{Keys: bson.D{{Key: "file_id", Value: 1}, {Key: "user_id", Value: 1}}, Options: options.Index().SetUnique(true)},
+			{Keys: bson.D{{Key: "user_id", Value: 1}}},
+		}},
+		{"file_stars", []mongo.IndexModel{{Keys: bson.D{{Key: "file_id", Value: 1}, {Key: "user_id", Value: 1}}, Options: options.Index().SetUnique(true)}}},
+		{"comments", []mongo.IndexModel{{Keys: bson.D{{Key: "file_id", Value: 1}, {Key: "created_at", Value: 1}}}}},
+		{"versions", []mongo.IndexModel{{Keys: bson.D{{Key: "file_id", Value: 1}, {Key: "created_at", Value: -1}}}}},
+		{"public_links", []mongo.IndexModel{{Keys: bson.D{{Key: "token", Value: 1}}, Options: options.Index().SetUnique(true)}}},
+		{"personal_access_tokens", []mongo.IndexModel{
+			{Keys: bson.D{{Key: "token_hash", Value: 1}}, Options: options.Index().SetUnique(true)},
+			{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: -1}}},
+		}},
+		{"user_identities", []mongo.IndexModel{
+			{Keys: bson.D{{Key: "issuer", Value: 1}, {Key: "subject", Value: 1}}, Options: options.Index().SetUnique(true)},
+			{Keys: bson.D{{Key: "user_id", Value: 1}}},
+		}},
+		{"ai_skills", []mongo.IndexModel{
+			{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "name", Value: 1}}, Options: options.Index().SetUnique(true)},
+			{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "updated_at", Value: -1}}},
+		}},
+		{"notifications", []mongo.IndexModel{{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "read", Value: 1}, {Key: "created_at", Value: -1}}}}},
+		{"audit_logs", []mongo.IndexModel{
+			{Keys: bson.D{{Key: "file_id", Value: 1}, {Key: "created_at", Value: -1}}},
+			{Keys: bson.D{{Key: "actor_id", Value: 1}, {Key: "created_at", Value: -1}}},
+		}},
+	}
+	for _, set := range sets {
+		if _, err := s.db.Collection(set.collection).Indexes().CreateMany(ctx, set.models); err != nil {
+			return fmt.Errorf("indexes %s: %w", set.collection, err)
 		}
 	}
 	return nil
 }
 
+type userDoc struct {
+	ID        string `bson:"_id"`
+	Name      string `bson:"name"`
+	Email     string `bson:"email"`
+	Password  string `bson:"password"`
+	Color     string `bson:"color"`
+	Avatar    string `bson:"avatar"`
+	CreatedAt string `bson:"created_at"`
+}
+
+func (d userDoc) model() model.User {
+	return model.User{ID: d.ID, Name: d.Name, Email: d.Email, Color: d.Color, Avatar: d.Avatar, CreatedAt: d.CreatedAt}
+}
+
+type fileDoc struct {
+	ID        string `bson:"_id"`
+	Name      string `bson:"name"`
+	OwnerID   string `bson:"owner_id"`
+	Doc       string `bson:"doc"`
+	Version   int    `bson:"version"`
+	Thumbnail string `bson:"thumbnail"`
+	Template  string `bson:"template"`
+	Folder    string `bson:"folder"`
+	CreatedAt string `bson:"created_at"`
+	UpdatedAt string `bson:"updated_at"`
+}
+
+func (d fileDoc) model() model.File {
+	return model.File{ID: d.ID, Name: d.Name, OwnerID: d.OwnerID, Doc: d.Doc, Version: d.Version,
+		Thumbnail: d.Thumbnail, Template: d.Template, Folder: d.Folder, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt}
+}
+
+type memberDoc struct {
+	ID        string `bson:"_id"`
+	FileID    string `bson:"file_id"`
+	UserID    string `bson:"user_id"`
+	Role      string `bson:"role"`
+	CreatedAt string `bson:"created_at"`
+}
+
+type starDoc struct {
+	ID     string `bson:"_id"`
+	FileID string `bson:"file_id"`
+	UserID string `bson:"user_id"`
+}
+
+type commentDoc struct {
+	ID        string  `bson:"_id"`
+	FileID    string  `bson:"file_id"`
+	PageID    string  `bson:"page_id"`
+	NodeID    string  `bson:"node_id"`
+	ParentID  string  `bson:"parent_id"`
+	X         float64 `bson:"x"`
+	Y         float64 `bson:"y"`
+	Text      string  `bson:"text"`
+	AuthorID  string  `bson:"author_id"`
+	Resolved  bool    `bson:"resolved"`
+	CreatedAt string  `bson:"created_at"`
+}
+
+type versionDoc struct {
+	ID        string `bson:"_id"`
+	FileID    string `bson:"file_id"`
+	Name      string `bson:"name"`
+	Doc       string `bson:"doc"`
+	Version   int    `bson:"version"`
+	AuthorID  string `bson:"author_id"`
+	CreatedAt string `bson:"created_at"`
+}
+
+type publicLinkDoc struct {
+	FileID       string `bson:"_id"`
+	Token        string `bson:"token"`
+	Enabled      bool   `bson:"enabled"`
+	ExpiresAt    int64  `bson:"expires_at"`
+	PasswordHash string `bson:"password_hash"`
+	CreatedAt    string `bson:"created_at"`
+}
+
+type patDoc struct {
+	ID         string `bson:"_id"`
+	UserID     string `bson:"user_id"`
+	Name       string `bson:"name"`
+	Prefix     string `bson:"prefix"`
+	TokenHash  string `bson:"token_hash"`
+	Scopes     string `bson:"scopes"`
+	LastUsedAt string `bson:"last_used_at"`
+	ExpiresAt  string `bson:"expires_at"`
+	CreatedAt  string `bson:"created_at"`
+}
+
+type aiSettingsDoc struct {
+	UserID    string `bson:"_id"`
+	Provider  string `bson:"provider"`
+	BaseURL   string `bson:"base_url"`
+	Model     string `bson:"model"`
+	APIKeyEnc string `bson:"api_key_enc"`
+	UpdatedAt string `bson:"updated_at"`
+}
+
+type aiContextDoc struct {
+	UserID    string `bson:"_id"`
+	DesignMD  string `bson:"design_md"`
+	AgentsMD  string `bson:"agents_md"`
+	UpdatedAt string `bson:"updated_at"`
+}
+
+type skillDoc struct {
+	ID          string `bson:"_id"`
+	UserID      string `bson:"user_id"`
+	Name        string `bson:"name"`
+	Description string `bson:"description"`
+	Content     string `bson:"content"`
+	CreatedAt   string `bson:"created_at"`
+	UpdatedAt   string `bson:"updated_at"`
+}
+
+type identityDoc struct {
+	ID        string `bson:"_id"`
+	Issuer    string `bson:"issuer"`
+	Subject   string `bson:"subject"`
+	UserID    string `bson:"user_id"`
+	Email     string `bson:"email"`
+	CreatedAt string `bson:"created_at"`
+}
+
+type notificationDoc struct {
+	ID        string `bson:"_id"`
+	UserID    string `bson:"user_id"`
+	FileID    string `bson:"file_id"`
+	CommentID string `bson:"comment_id"`
+	ActorID   string `bson:"actor_id"`
+	Kind      string `bson:"kind"`
+	Text      string `bson:"text"`
+	Read      bool   `bson:"read"`
+	CreatedAt string `bson:"created_at"`
+}
+
+type auditDoc struct {
+	ID        string `bson:"_id"`
+	FileID    string `bson:"file_id"`
+	ActorID   string `bson:"actor_id"`
+	Action    string `bson:"action"`
+	Meta      string `bson:"meta"`
+	CreatedAt string `bson:"created_at"`
+}
+
+func (s *Store) collection(name string) *mongo.Collection { return s.db.Collection(name) }
+
 // ---------- users ----------
 
 func (s *Store) CreateUser(id, name, email, passwordHash, color string) (model.User, error) {
+	ctx, cancel := s.ctx()
+	defer cancel()
 	now := model.Now()
 	email = strings.ToLower(strings.TrimSpace(email))
-	_, err := s.db.Exec(`INSERT INTO users(id,name,email,password,color,created_at) VALUES(?,?,?,?,?,?)`,
-		id, name, email, passwordHash, color, now)
-	if err != nil {
+	d := userDoc{ID: id, Name: name, Email: email, Password: passwordHash, Color: color, CreatedAt: now}
+	if _, err := s.collection("users").InsertOne(ctx, d); err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return model.User{}, fmt.Errorf("unique email: %w", err)
+		}
 		return model.User{}, err
 	}
-	return model.User{ID: id, Name: name, Email: email, Color: color, CreatedAt: now}, nil
+	return d.model(), nil
 }
 
 func (s *Store) UserByEmail(email string) (model.User, string, error) {
-	var u model.User
-	var hash string
-	err := s.db.QueryRow(`SELECT id,name,email,color,avatar,created_at,password FROM users WHERE email=?`,
-		strings.ToLower(strings.TrimSpace(email))).Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.Avatar, &u.CreatedAt, &hash)
-	return u, hash, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d userDoc
+	err := s.collection("users").FindOne(ctx, bson.M{"email": strings.ToLower(strings.TrimSpace(email))}).Decode(&d)
+	return d.model(), d.Password, err
 }
 
 func (s *Store) UserByID(id string) (model.User, error) {
-	var u model.User
-	err := s.db.QueryRow(`SELECT id,name,email,color,avatar,created_at FROM users WHERE id=?`, id).
-		Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.Avatar, &u.CreatedAt)
-	return u, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d userDoc
+	err := s.collection("users").FindOne(ctx, bson.M{"_id": id}).Decode(&d)
+	return d.model(), err
 }
 
 func (s *Store) UpdateUserProfile(id, name, color, avatar string) (model.User, error) {
-	_, err := s.db.Exec(`UPDATE users SET name=?, color=?, avatar=? WHERE id=?`, name, color, avatar, id)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("users").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"name": name, "color": color, "avatar": avatar}})
 	if err != nil {
 		return model.User{}, err
 	}
 	return s.UserByID(id)
 }
 
-// ---------- SSO identities ----------
-
 func (s *Store) UserByIdentity(issuer, subject string) (model.User, error) {
-	var u model.User
-	err := s.db.QueryRow(`SELECT u.id,u.name,u.email,u.color,u.avatar,u.created_at
-		FROM user_identities i JOIN users u ON u.id=i.user_id
-		WHERE i.issuer=? AND i.subject=?`, issuer, subject).
-		Scan(&u.ID, &u.Name, &u.Email, &u.Color, &u.Avatar, &u.CreatedAt)
-	return u, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d identityDoc
+	if err := s.collection("user_identities").FindOne(ctx, bson.M{"_id": identityID(issuer, subject)}).Decode(&d); err != nil {
+		return model.User{}, err
+	}
+	return s.UserByID(d.UserID)
 }
 
 func (s *Store) LinkIdentity(issuer, subject, userID, email string) error {
-	_, err := s.db.Exec(`INSERT INTO user_identities(issuer,subject,user_id,email,created_at)
-		VALUES(?,?,?,?,?) ON CONFLICT(issuer,subject) DO UPDATE SET email=excluded.email`,
-		issuer, subject, userID, strings.ToLower(email), model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("user_identities").UpdateOne(ctx,
+		bson.M{"_id": identityID(issuer, subject)},
+		bson.M{"$set": bson.M{"issuer": issuer, "subject": subject, "user_id": userID, "email": strings.ToLower(email), "created_at": model.Now()}},
+		options.Update().SetUpsert(true))
 	return err
 }
+
+func identityID(issuer, subject string) string { return issuer + "\x00" + subject }
 
 // ---------- files ----------
 
 func (s *Store) CreateFile(id, name, ownerID, doc, template string) (model.FileMeta, error) {
+	ctx, cancel := s.ctx()
+	defer cancel()
 	now := model.Now()
-	_, err := s.db.Exec(`INSERT INTO files(id,name,owner_id,doc,version,thumbnail,template,folder,created_at,updated_at)
-		VALUES(?,?,?,?,1,'',?,'',?,?)`, id, name, ownerID, doc, template, now, now)
-	if err != nil {
+	d := fileDoc{ID: id, Name: name, OwnerID: ownerID, Doc: doc, Version: 1, Template: template, CreatedAt: now, UpdatedAt: now}
+	if _, err := s.collection("files").InsertOne(ctx, d); err != nil {
 		return model.FileMeta{}, err
 	}
 	return s.FileMeta(id, ownerID)
 }
 
 func (s *Store) File(id string) (model.File, error) {
-	var f model.File
-	err := s.db.QueryRow(`SELECT id,name,owner_id,doc,version,thumbnail,template,folder,created_at,updated_at FROM files WHERE id=?`, id).
-		Scan(&f.ID, &f.Name, &f.OwnerID, &f.Doc, &f.Version, &f.Thumbnail, &f.Template, &f.Folder, &f.CreatedAt, &f.UpdatedAt)
-	return f, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d fileDoc
+	if err := s.collection("files").FindOne(ctx, bson.M{"_id": id}).Decode(&d); err != nil {
+		return model.File{}, err
+	}
+	return d.model(), nil
 }
 
 func (s *Store) FileMeta(id, userID string) (model.FileMeta, error) {
-	var m model.FileMeta
-	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,u.name,f.version,
-		CASE WHEN f.thumbnail='' THEN '' ELSE '/api/files/'||f.id||'/thumbnail' END,
-		f.template,f.folder,f.created_at,f.updated_at,
-		CASE WHEN f.owner_id=? THEN 'owner' ELSE COALESCE(m.role,'') END,
-		EXISTS(SELECT 1 FROM file_stars st WHERE st.file_id=f.id AND st.user_id=?)
-		FROM files f JOIN users u ON u.id=f.owner_id
-		LEFT JOIN file_members m ON m.file_id=f.id AND m.user_id=?
-		WHERE f.id=?`, userID, userID, userID, id).
-		Scan(&m.ID, &m.Name, &m.OwnerID, &m.OwnerName, &m.Version, &m.Thumbnail, &m.Template, &m.Folder,
-			&m.CreatedAt, &m.UpdatedAt, &m.Role, &m.Starred)
-	return m, err
+	f, err := s.File(id)
+	if err != nil {
+		return model.FileMeta{}, err
+	}
+	owner, _ := s.UserByID(f.OwnerID)
+	role := ""
+	if f.OwnerID == userID {
+		role = "owner"
+	} else {
+		ctx, cancel := s.ctx()
+		defer cancel()
+		var member memberDoc
+		if err := s.collection("file_members").FindOne(ctx, bson.M{"file_id": id, "user_id": userID}).Decode(&member); err == nil {
+			role = member.Role
+		}
+	}
+	ctx, cancel := s.ctx()
+	defer cancel()
+	starred, _ := s.collection("file_stars").CountDocuments(ctx, bson.M{"file_id": id, "user_id": userID})
+	return metaFromFile(f, owner.Name, role, starred > 0), nil
+}
+
+func metaFromFile(f model.File, ownerName, role string, starred bool) model.FileMeta {
+	thumb := ""
+	if f.Thumbnail != "" {
+		thumb = "/api/files/" + f.ID + "/thumbnail"
+	}
+	return model.FileMeta{ID: f.ID, Name: f.Name, OwnerID: f.OwnerID, OwnerName: ownerName, Version: f.Version,
+		Thumbnail: thumb, Template: f.Template, Folder: f.Folder, Role: role, Starred: starred,
+		CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
 }
 
 func (s *Store) ListFiles(userID string) ([]model.FileMeta, error) {
-	rows, err := s.db.Query(`SELECT f.id,f.name,f.owner_id,u.name,f.version,
-		CASE WHEN f.thumbnail='' THEN '' ELSE '/api/files/'||f.id||'/thumbnail' END,
-		f.template,f.folder,f.created_at,f.updated_at,
-		CASE WHEN f.owner_id=? THEN 'owner' ELSE COALESCE(m.role,'') END,
-		EXISTS(SELECT 1 FROM file_stars st WHERE st.file_id=f.id AND st.user_id=?)
-		FROM files f JOIN users u ON u.id=f.owner_id
-		LEFT JOIN file_members m ON m.file_id=f.id AND m.user_id=?
-		WHERE f.owner_id=? OR m.user_id IS NOT NULL
-		ORDER BY f.updated_at DESC`, userID, userID, userID, userID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	memberFileIDs, _ := s.collection("file_members").Distinct(ctx, "file_id", bson.M{"user_id": userID})
+	or := []bson.M{{"owner_id": userID}}
+	if len(memberFileIDs) > 0 {
+		or = append(or, bson.M{"_id": bson.M{"$in": memberFileIDs}})
+	}
+	cursor, err := s.collection("files").Find(ctx, bson.M{"$or": or}, options.Find().SetSort(bson.D{{Key: "updated_at", Value: -1}}))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := []model.FileMeta{}
-	for rows.Next() {
-		var m model.FileMeta
-		if err := rows.Scan(&m.ID, &m.Name, &m.OwnerID, &m.OwnerName, &m.Version, &m.Thumbnail, &m.Template, &m.Folder,
-			&m.CreatedAt, &m.UpdatedAt, &m.Role, &m.Starred); err != nil {
-			return nil, err
-		}
-		out = append(out, m)
+	defer cursor.Close(ctx)
+	files := []fileDoc{}
+	if err := cursor.All(ctx, &files); err != nil {
+		return nil, err
 	}
-	return out, rows.Err()
+	if len(files) == 0 {
+		return []model.FileMeta{}, nil
+	}
+	ownerIDs := make([]string, 0, len(files))
+	fileIDs := make([]string, 0, len(files))
+	for _, f := range files {
+		ownerIDs = append(ownerIDs, f.OwnerID)
+		fileIDs = append(fileIDs, f.ID)
+	}
+	owners := s.usersByIDs(ctx, ownerIDs)
+	roleCursor, _ := s.collection("file_members").Find(ctx, bson.M{"user_id": userID, "file_id": bson.M{"$in": fileIDs}})
+	roles := map[string]string{}
+	if roleCursor != nil {
+		var members []memberDoc
+		_ = roleCursor.All(ctx, &members)
+		for _, m := range members {
+			roles[m.FileID] = m.Role
+		}
+	}
+	starCursor, _ := s.collection("file_stars").Find(ctx, bson.M{"user_id": userID, "file_id": bson.M{"$in": fileIDs}})
+	stars := map[string]bool{}
+	if starCursor != nil {
+		var list []starDoc
+		_ = starCursor.All(ctx, &list)
+		for _, st := range list {
+			stars[st.FileID] = true
+		}
+	}
+	out := make([]model.FileMeta, 0, len(files))
+	for _, f := range files {
+		role := ""
+		if f.OwnerID == userID {
+			role = "owner"
+		} else {
+			role = roles[f.ID]
+		}
+		owner := owners[f.OwnerID]
+		out = append(out, metaFromFile(f.model(), owner.Name, role, stars[f.ID]))
+	}
+	return out, nil
+}
+
+func (s *Store) usersByIDs(ctx context.Context, ids []string) map[string]userDoc {
+	out := map[string]userDoc{}
+	if len(ids) == 0 {
+		return out
+	}
+	cursor, err := s.collection("users").Find(ctx, bson.M{"_id": bson.M{"$in": ids}})
+	if err != nil {
+		return out
+	}
+	var users []userDoc
+	_ = cursor.All(ctx, &users)
+	for _, u := range users {
+		out[u.ID] = u
+	}
+	return out
 }
 
 func (s *Store) SetFolder(id, folder string) error {
-	_, err := s.db.Exec(`UPDATE files SET folder=?, updated_at=? WHERE id=?`, folder, model.Now(), id)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("files").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"folder": folder, "updated_at": model.Now()}})
 	return err
 }
 
 func (s *Store) RenameFile(id, name string) error {
-	_, err := s.db.Exec(`UPDATE files SET name=?, updated_at=? WHERE id=?`, name, model.Now(), id)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("files").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"name": name, "updated_at": model.Now()}})
 	return err
 }
 
 func (s *Store) SetThumbnail(id, thumb string) error {
-	_, err := s.db.Exec(`UPDATE files SET thumbnail=? WHERE id=?`, thumb, id)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("files").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"thumbnail": thumb}})
 	return err
 }
 
 func (s *Store) SaveDoc(id, doc string, version int) error {
-	_, err := s.db.Exec(`UPDATE files SET doc=?, version=?, updated_at=? WHERE id=?`, doc, version, model.Now(), id)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("files").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"doc": doc, "version": version, "updated_at": model.Now()}})
 	return err
 }
 
 func (s *Store) DeleteFile(id string) error {
-	_, err := s.db.Exec(`DELETE FROM files WHERE id=?`, id)
-	return err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	if _, err := s.collection("files").DeleteOne(ctx, bson.M{"_id": id}); err != nil {
+		return err
+	}
+	for _, c := range []string{"file_members", "file_stars", "comments", "versions", "notifications", "public_links"} {
+		filter := bson.M{"file_id": id}
+		if c == "public_links" {
+			filter = bson.M{"_id": id}
+		}
+		if _, err := s.collection(c).DeleteMany(ctx, filter); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Store) SetStar(fileID, userID string, starred bool) error {
+	ctx, cancel := s.ctx()
+	defer cancel()
+	id := fileID + "\x00" + userID
 	if starred {
-		_, err := s.db.Exec(`INSERT OR IGNORE INTO file_stars(file_id,user_id) VALUES(?,?)`, fileID, userID)
+		_, err := s.collection("file_stars").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"file_id": fileID, "user_id": userID}}, options.Update().SetUpsert(true))
 		return err
 	}
-	_, err := s.db.Exec(`DELETE FROM file_stars WHERE file_id=? AND user_id=?`, fileID, userID)
+	_, err := s.collection("file_stars").DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
 
 // RoleFor returns "owner", "edit", "view" or "".
 func (s *Store) RoleFor(fileID, userID string) string {
-	var owner string
-	if err := s.db.QueryRow(`SELECT owner_id FROM files WHERE id=?`, fileID).Scan(&owner); err != nil {
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var f fileDoc
+	if err := s.collection("files").FindOne(ctx, bson.M{"_id": fileID}).Decode(&f); err != nil {
 		return ""
 	}
-	if owner == userID {
+	if f.OwnerID == userID {
 		return "owner"
 	}
-	var role string
-	err := s.db.QueryRow(`SELECT role FROM file_members WHERE file_id=? AND user_id=?`, fileID, userID).Scan(&role)
-	if err != nil {
+	var m memberDoc
+	if err := s.collection("file_members").FindOne(ctx, bson.M{"file_id": fileID, "user_id": userID}).Decode(&m); err != nil {
 		return ""
 	}
-	return role
+	return m.Role
 }
 
 // ---------- members ----------
@@ -371,125 +566,165 @@ func (s *Store) AddMember(fileID, userID, role string) error {
 	if role != "edit" && role != "view" {
 		role = "edit"
 	}
-	_, err := s.db.Exec(`INSERT INTO file_members(file_id,user_id,role,created_at) VALUES(?,?,?,?)
-		ON CONFLICT(file_id,user_id) DO UPDATE SET role=excluded.role`, fileID, userID, role, model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	id := fileID + "\x00" + userID
+	_, err := s.collection("file_members").UpdateOne(ctx, bson.M{"_id": id},
+		bson.M{"$set": bson.M{"file_id": fileID, "user_id": userID, "role": role}, "$setOnInsert": bson.M{"created_at": model.Now()}},
+		options.Update().SetUpsert(true))
 	return err
 }
 
 func (s *Store) RemoveMember(fileID, userID string) error {
-	_, err := s.db.Exec(`DELETE FROM file_members WHERE file_id=? AND user_id=?`, fileID, userID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("file_members").DeleteOne(ctx, bson.M{"_id": fileID + "\x00" + userID})
 	return err
 }
 
 func (s *Store) Members(fileID string) ([]model.Member, error) {
-	rows, err := s.db.Query(`SELECT m.user_id,u.name,u.email,u.color,u.avatar,m.role,m.created_at
-		FROM file_members m JOIN users u ON u.id=m.user_id WHERE m.file_id=? ORDER BY m.created_at ASC`, fileID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	cursor, err := s.collection("file_members").Find(ctx, bson.M{"file_id": fileID}, options.Find().SetSort(bson.D{{Key: "created_at", Value: 1}}))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := []model.Member{}
-	for rows.Next() {
-		var m model.Member
-		if err := rows.Scan(&m.UserID, &m.Name, &m.Email, &m.Color, &m.Avatar, &m.Role, &m.CreatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, m)
+	var members []memberDoc
+	if err := cursor.All(ctx, &members); err != nil {
+		return nil, err
 	}
-	return out, rows.Err()
+	ids := make([]string, 0, len(members))
+	for _, m := range members {
+		ids = append(ids, m.UserID)
+	}
+	users := s.usersByIDs(ctx, ids)
+	out := make([]model.Member, 0, len(members))
+	for _, m := range members {
+		u := users[m.UserID]
+		out = append(out, model.Member{UserID: m.UserID, Name: u.Name, Email: u.Email, Color: u.Color, Avatar: u.Avatar, Role: m.Role, CreatedAt: m.CreatedAt})
+	}
+	return out, nil
 }
 
 // ---------- comments ----------
 
 func (s *Store) Comments(fileID string) ([]model.Comment, error) {
-	rows, err := s.db.Query(`SELECT c.id,c.file_id,c.page_id,c.node_id,c.parent_id,c.x,c.y,c.text,c.author_id,u.name,u.color,u.avatar,c.resolved,c.created_at
-		FROM comments c JOIN users u ON u.id=c.author_id WHERE c.file_id=? ORDER BY c.created_at ASC`, fileID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	cursor, err := s.collection("comments").Find(ctx, bson.M{"file_id": fileID}, options.Find().SetSort(bson.D{{Key: "created_at", Value: 1}}))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := []model.Comment{}
-	for rows.Next() {
-		var c model.Comment
-		if err := rows.Scan(&c.ID, &c.FileID, &c.PageID, &c.NodeID, &c.ParentID, &c.X, &c.Y, &c.Text, &c.AuthorID,
-			&c.Author, &c.Color, &c.Avatar, &c.Resolved, &c.CreatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, c)
+	var comments []commentDoc
+	if err := cursor.All(ctx, &comments); err != nil {
+		return nil, err
 	}
-	return out, rows.Err()
+	ids := make([]string, 0, len(comments))
+	for _, c := range comments {
+		ids = append(ids, c.AuthorID)
+	}
+	users := s.usersByIDs(ctx, ids)
+	out := make([]model.Comment, 0, len(comments))
+	for _, c := range comments {
+		u := users[c.AuthorID]
+		out = append(out, model.Comment{ID: c.ID, FileID: c.FileID, PageID: c.PageID, NodeID: c.NodeID, ParentID: c.ParentID,
+			X: c.X, Y: c.Y, Text: c.Text, AuthorID: c.AuthorID, Author: u.Name, Color: u.Color, Avatar: u.Avatar,
+			Resolved: c.Resolved, CreatedAt: c.CreatedAt})
+	}
+	return out, nil
 }
 
 func (s *Store) AddComment(c model.Comment) error {
-	_, err := s.db.Exec(`INSERT INTO comments(id,file_id,page_id,node_id,parent_id,x,y,text,author_id,resolved,created_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?)`, c.ID, c.FileID, c.PageID, c.NodeID, c.ParentID, c.X, c.Y, c.Text, c.AuthorID, c.Resolved, c.CreatedAt)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("comments").InsertOne(ctx, commentDoc{ID: c.ID, FileID: c.FileID, PageID: c.PageID, NodeID: c.NodeID, ParentID: c.ParentID,
+		X: c.X, Y: c.Y, Text: c.Text, AuthorID: c.AuthorID, Resolved: c.Resolved, CreatedAt: c.CreatedAt})
 	return err
 }
 
 func (s *Store) UpdateComment(id string, resolved bool) error {
-	_, err := s.db.Exec(`UPDATE comments SET resolved=? WHERE id=?`, resolved, id)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("comments").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"resolved": resolved}})
 	return err
 }
 
 func (s *Store) DeleteComment(id string) error {
-	_, err := s.db.Exec(`DELETE FROM comments WHERE id=?`, id)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("comments").DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
 
 func (s *Store) DeleteCommentReplies(parentID string) error {
-	_, err := s.db.Exec(`DELETE FROM comments WHERE parent_id=?`, parentID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("comments").DeleteMany(ctx, bson.M{"parent_id": parentID})
 	return err
 }
 
 func (s *Store) CommentParent(id string) (string, error) {
-	var parent string
-	err := s.db.QueryRow(`SELECT parent_id FROM comments WHERE id=?`, id).Scan(&parent)
-	return parent, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var c commentDoc
+	err := s.collection("comments").FindOne(ctx, bson.M{"_id": id}).Decode(&c)
+	return c.ParentID, err
 }
 
 func (s *Store) CommentAuthor(id string) (string, error) {
-	var author string
-	err := s.db.QueryRow(`SELECT author_id FROM comments WHERE id=?`, id).Scan(&author)
-	return author, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var c commentDoc
+	err := s.collection("comments").FindOne(ctx, bson.M{"_id": id}).Decode(&c)
+	return c.AuthorID, err
 }
 
 func (s *Store) CommentFile(id string) (string, error) {
-	var fileID string
-	err := s.db.QueryRow(`SELECT file_id FROM comments WHERE id=?`, id).Scan(&fileID)
-	return fileID, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var c commentDoc
+	err := s.collection("comments").FindOne(ctx, bson.M{"_id": id}).Decode(&c)
+	return c.FileID, err
 }
 
 // ---------- versions ----------
 
 func (s *Store) AddVersion(id, fileID, name, doc string, version int, authorID string) error {
-	_, err := s.db.Exec(`INSERT INTO versions(id,file_id,name,doc,version,author_id,created_at) VALUES(?,?,?,?,?,?,?)`,
-		id, fileID, name, doc, version, authorID, model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("versions").InsertOne(ctx, versionDoc{ID: id, FileID: fileID, Name: name, Doc: doc, Version: version, AuthorID: authorID, CreatedAt: model.Now()})
 	return err
 }
 
 func (s *Store) Versions(fileID string) ([]model.VersionMeta, error) {
-	rows, err := s.db.Query(`SELECT v.id,v.file_id,v.name,v.version,v.author_id,u.name,v.created_at
-		FROM versions v JOIN users u ON u.id=v.author_id WHERE v.file_id=? ORDER BY v.created_at DESC`, fileID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	cursor, err := s.collection("versions").Find(ctx, bson.M{"file_id": fileID}, options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := []model.VersionMeta{}
-	for rows.Next() {
-		var v model.VersionMeta
-		if err := rows.Scan(&v.ID, &v.FileID, &v.Name, &v.Version, &v.AuthorID, &v.Author, &v.CreatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, v)
+	var versions []versionDoc
+	if err := cursor.All(ctx, &versions); err != nil {
+		return nil, err
 	}
-	return out, rows.Err()
+	ids := make([]string, 0, len(versions))
+	for _, v := range versions {
+		ids = append(ids, v.AuthorID)
+	}
+	users := s.usersByIDs(ctx, ids)
+	out := make([]model.VersionMeta, 0, len(versions))
+	for _, v := range versions {
+		out = append(out, model.VersionMeta{ID: v.ID, FileID: v.FileID, Name: v.Name, Version: v.Version, AuthorID: v.AuthorID, Author: users[v.AuthorID].Name, CreatedAt: v.CreatedAt})
+	}
+	return out, nil
 }
 
 func (s *Store) VersionDoc(fileID, versionID string) (string, int, error) {
-	var doc string
-	var version int
-	err := s.db.QueryRow(`SELECT doc,version FROM versions WHERE id=? AND file_id=?`, versionID, fileID).Scan(&doc, &version)
-	return doc, version, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var v versionDoc
+	err := s.collection("versions").FindOne(ctx, bson.M{"_id": versionID, "file_id": fileID}).Decode(&v)
+	return v.Doc, v.Version, err
 }
 
 // ---------- personal access tokens ----------
@@ -507,50 +742,57 @@ type PATRecord struct {
 }
 
 func (s *Store) CreatePAT(r PATRecord) error {
-	_, err := s.db.Exec(`INSERT INTO personal_access_tokens(id,user_id,name,prefix,token_hash,scopes,last_used_at,expires_at,created_at)
-		VALUES(?,?,?,?,?,?,?,?,?)`, r.ID, r.UserID, r.Name, r.Prefix, r.TokenHash, r.Scopes, r.LastUsedAt, r.ExpiresAt, r.CreatedAt)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("personal_access_tokens").InsertOne(ctx, patDoc{ID: r.ID, UserID: r.UserID, Name: r.Name, Prefix: r.Prefix, TokenHash: r.TokenHash,
+		Scopes: r.Scopes, LastUsedAt: r.LastUsedAt, ExpiresAt: r.ExpiresAt, CreatedAt: r.CreatedAt})
 	return err
 }
 
 func (s *Store) ListPATs(userID string) ([]PATRecord, error) {
-	rows, err := s.db.Query(`SELECT id,user_id,name,prefix,scopes,last_used_at,expires_at,created_at
-		FROM personal_access_tokens WHERE user_id=? ORDER BY created_at DESC`, userID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	cursor, err := s.collection("personal_access_tokens").Find(ctx, bson.M{"user_id": userID}, options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := []PATRecord{}
-	for rows.Next() {
-		var r PATRecord
-		if err := rows.Scan(&r.ID, &r.UserID, &r.Name, &r.Prefix, &r.Scopes, &r.LastUsedAt, &r.ExpiresAt, &r.CreatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, r)
+	var docs []patDoc
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, err
 	}
-	return out, rows.Err()
+	out := make([]PATRecord, 0, len(docs))
+	for _, d := range docs {
+		out = append(out, PATRecord{ID: d.ID, UserID: d.UserID, Name: d.Name, Prefix: d.Prefix, TokenHash: d.TokenHash,
+			Scopes: d.Scopes, LastUsedAt: d.LastUsedAt, ExpiresAt: d.ExpiresAt, CreatedAt: d.CreatedAt})
+	}
+	return out, nil
 }
 
 func (s *Store) PATByHash(hash string) (PATRecord, error) {
-	var r PATRecord
-	err := s.db.QueryRow(`SELECT id,user_id,name,prefix,token_hash,scopes,last_used_at,expires_at,created_at
-		FROM personal_access_tokens WHERE token_hash=?`, hash).
-		Scan(&r.ID, &r.UserID, &r.Name, &r.Prefix, &r.TokenHash, &r.Scopes, &r.LastUsedAt, &r.ExpiresAt, &r.CreatedAt)
-	return r, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d patDoc
+	err := s.collection("personal_access_tokens").FindOne(ctx, bson.M{"token_hash": hash}).Decode(&d)
+	return PATRecord{ID: d.ID, UserID: d.UserID, Name: d.Name, Prefix: d.Prefix, TokenHash: d.TokenHash,
+		Scopes: d.Scopes, LastUsedAt: d.LastUsedAt, ExpiresAt: d.ExpiresAt, CreatedAt: d.CreatedAt}, err
 }
 
 func (s *Store) TouchPAT(id string) error {
-	_, err := s.db.Exec(`UPDATE personal_access_tokens SET last_used_at=? WHERE id=?`, model.Now(), id)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("personal_access_tokens").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"last_used_at": model.Now()}})
 	return err
 }
 
 func (s *Store) DeletePAT(id, userID string) error {
-	res, err := s.db.Exec(`DELETE FROM personal_access_tokens WHERE id=? AND user_id=?`, id, userID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	res, err := s.collection("personal_access_tokens").DeleteOne(ctx, bson.M{"_id": id, "user_id": userID})
 	if err != nil {
 		return err
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
+	if res.DeletedCount == 0 {
+		return mongo.ErrNoDocuments
 	}
 	return nil
 }
@@ -567,18 +809,19 @@ type AISettingsRecord struct {
 }
 
 func (s *Store) AISettings(userID string) (AISettingsRecord, error) {
-	var r AISettingsRecord
-	err := s.db.QueryRow(`SELECT user_id,provider,base_url,model,api_key_enc,updated_at FROM ai_settings WHERE user_id=?`, userID).
-		Scan(&r.UserID, &r.Provider, &r.BaseURL, &r.Model, &r.APIKeyEnc, &r.UpdatedAt)
-	return r, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d aiSettingsDoc
+	err := s.collection("ai_settings").FindOne(ctx, bson.M{"_id": userID}).Decode(&d)
+	return AISettingsRecord{UserID: d.UserID, Provider: d.Provider, BaseURL: d.BaseURL, Model: d.Model, APIKeyEnc: d.APIKeyEnc, UpdatedAt: d.UpdatedAt}, err
 }
 
 func (s *Store) SaveAISettings(r AISettingsRecord) error {
-	_, err := s.db.Exec(`INSERT INTO ai_settings(user_id,provider,base_url,model,api_key_enc,updated_at)
-		VALUES(?,?,?,?,?,?)
-		ON CONFLICT(user_id) DO UPDATE SET provider=excluded.provider,base_url=excluded.base_url,
-		model=excluded.model,api_key_enc=excluded.api_key_enc,updated_at=excluded.updated_at`,
-		r.UserID, r.Provider, r.BaseURL, r.Model, r.APIKeyEnc, model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("ai_settings").UpdateOne(ctx, bson.M{"_id": r.UserID},
+		bson.M{"$set": bson.M{"provider": r.Provider, "base_url": r.BaseURL, "model": r.Model, "api_key_enc": r.APIKeyEnc, "updated_at": model.Now()}},
+		options.Update().SetUpsert(true))
 	return err
 }
 
@@ -592,16 +835,18 @@ type AgentContext struct {
 }
 
 func (s *Store) AIContext(userID string) (AgentContext, error) {
-	var c AgentContext
-	err := s.db.QueryRow(`SELECT user_id,design_md,agents_md,updated_at FROM ai_context WHERE user_id=?`, userID).
-		Scan(&c.UserID, &c.DesignMD, &c.AgentsMD, &c.UpdatedAt)
-	return c, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d aiContextDoc
+	err := s.collection("ai_context").FindOne(ctx, bson.M{"_id": userID}).Decode(&d)
+	return AgentContext{UserID: d.UserID, DesignMD: d.DesignMD, AgentsMD: d.AgentsMD, UpdatedAt: d.UpdatedAt}, err
 }
 
 func (s *Store) SaveAIContext(userID, designMD, agentsMD string) error {
-	_, err := s.db.Exec(`INSERT INTO ai_context(user_id,design_md,agents_md,updated_at) VALUES(?,?,?,?)
-		ON CONFLICT(user_id) DO UPDATE SET design_md=excluded.design_md, agents_md=excluded.agents_md, updated_at=excluded.updated_at`,
-		userID, designMD, agentsMD, model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("ai_context").UpdateOne(ctx, bson.M{"_id": userID},
+		bson.M{"$set": bson.M{"design_md": designMD, "agents_md": agentsMD, "updated_at": model.Now()}}, options.Update().SetUpsert(true))
 	return err
 }
 
@@ -616,44 +861,48 @@ type SkillRecord struct {
 }
 
 func (s *Store) ListSkills(userID string) ([]SkillRecord, error) {
-	rows, err := s.db.Query(`SELECT id,user_id,name,description,content,created_at,updated_at FROM ai_skills WHERE user_id=? ORDER BY name`, userID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	cursor, err := s.collection("ai_skills").Find(ctx, bson.M{"user_id": userID}, options.Find().SetSort(bson.D{{Key: "name", Value: 1}}))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := []SkillRecord{}
-	for rows.Next() {
-		var r SkillRecord
-		if err := rows.Scan(&r.ID, &r.UserID, &r.Name, &r.Description, &r.Content, &r.CreatedAt, &r.UpdatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, r)
+	var docs []skillDoc
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, err
 	}
-	return out, rows.Err()
+	out := make([]SkillRecord, 0, len(docs))
+	for _, d := range docs {
+		out = append(out, SkillRecord{ID: d.ID, UserID: d.UserID, Name: d.Name, Description: d.Description, Content: d.Content, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt})
+	}
+	return out, nil
 }
 
 func (s *Store) UpsertSkill(r SkillRecord) (SkillRecord, error) {
+	ctx, cancel := s.ctx()
+	defer cancel()
 	now := model.Now()
-	_, err := s.db.Exec(`INSERT INTO ai_skills(id,user_id,name,description,content,created_at,updated_at) VALUES(?,?,?,?,?,?,?)
-		ON CONFLICT(user_id,name) DO UPDATE SET description=excluded.description, content=excluded.content, updated_at=excluded.updated_at`,
-		r.ID, r.UserID, r.Name, r.Description, r.Content, now, now)
+	_, err := s.collection("ai_skills").UpdateOne(ctx, bson.M{"user_id": r.UserID, "name": r.Name},
+		bson.M{"$set": bson.M{"description": r.Description, "content": r.Content, "updated_at": now},
+			"$setOnInsert": bson.M{"_id": r.ID, "user_id": r.UserID, "name": r.Name, "created_at": now}},
+		options.Update().SetUpsert(true))
 	if err != nil {
 		return SkillRecord{}, err
 	}
-	var out SkillRecord
-	err = s.db.QueryRow(`SELECT id,user_id,name,description,content,created_at,updated_at FROM ai_skills WHERE user_id=? AND name=?`, r.UserID, r.Name).
-		Scan(&out.ID, &out.UserID, &out.Name, &out.Description, &out.Content, &out.CreatedAt, &out.UpdatedAt)
-	return out, err
+	var d skillDoc
+	err = s.collection("ai_skills").FindOne(ctx, bson.M{"user_id": r.UserID, "name": r.Name}).Decode(&d)
+	return SkillRecord{ID: d.ID, UserID: d.UserID, Name: d.Name, Description: d.Description, Content: d.Content, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt}, err
 }
 
 func (s *Store) DeleteSkill(id, userID string) error {
-	res, err := s.db.Exec(`DELETE FROM ai_skills WHERE id=? AND user_id=?`, id, userID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	res, err := s.collection("ai_skills").DeleteOne(ctx, bson.M{"_id": id, "user_id": userID})
 	if err != nil {
 		return err
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
+	if res.DeletedCount == 0 {
+		return mongo.ErrNoDocuments
 	}
 	return nil
 }
@@ -668,95 +917,130 @@ type PublicLinkSettings struct {
 }
 
 func (s *Store) PublicLink(fileID string) (PublicLinkSettings, error) {
-	var out PublicLinkSettings
-	var enabled int
-	err := s.db.QueryRow(`SELECT token, enabled, expires_at, password_hash FROM public_links WHERE file_id=?`, fileID).
-		Scan(&out.Token, &enabled, &out.ExpiresAt, &out.PasswordHash)
-	out.Enabled = enabled != 0
-	return out, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d publicLinkDoc
+	err := s.collection("public_links").FindOne(ctx, bson.M{"_id": fileID}).Decode(&d)
+	return PublicLinkSettings{Token: d.Token, Enabled: d.Enabled, ExpiresAt: d.ExpiresAt, PasswordHash: d.PasswordHash}, err
 }
 
 func (s *Store) SetPublicLink(fileID, token string, enabled bool, expiresAt int64, passwordHash string) error {
-	_, err := s.db.Exec(`INSERT INTO public_links(file_id,token,enabled,expires_at,password_hash,created_at) VALUES(?,?,?,?,?,?)
-		ON CONFLICT(file_id) DO UPDATE SET enabled=excluded.enabled, expires_at=excluded.expires_at, password_hash=excluded.password_hash`,
-		fileID, token, enabled, expiresAt, passwordHash, model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("public_links").UpdateOne(ctx, bson.M{"_id": fileID},
+		bson.M{"$set": bson.M{"token": token, "enabled": enabled, "expires_at": expiresAt, "password_hash": passwordHash},
+			"$setOnInsert": bson.M{"created_at": model.Now()}},
+		options.Update().SetUpsert(true))
 	return err
 }
 
 func (s *Store) FileByPublicToken(token string) (model.File, string, error) {
-	var f model.File
-	var passwordHash string
-	err := s.db.QueryRow(`SELECT f.id,f.name,f.owner_id,f.doc,f.version,f.thumbnail,f.template,f.created_at,f.updated_at,l.password_hash
-		FROM files f JOIN public_links l ON l.file_id=f.id
-		WHERE l.token=? AND l.enabled=1 AND (l.expires_at=0 OR l.expires_at>?)`, token, time.Now().UnixMilli()).
-		Scan(&f.ID, &f.Name, &f.OwnerID, &f.Doc, &f.Version, &f.Thumbnail, &f.Template, &f.CreatedAt, &f.UpdatedAt, &passwordHash)
-	return f, passwordHash, err
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var link publicLinkDoc
+	err := s.collection("public_links").FindOne(ctx, bson.M{"token": token, "enabled": true,
+		"$or": []bson.M{{"expires_at": 0}, {"expires_at": bson.M{"$gt": time.Now().UnixMilli()}}}}).Decode(&link)
+	if err != nil {
+		return model.File{}, "", err
+	}
+	f, err := s.File(link.FileID)
+	return f, link.PasswordHash, err
 }
 
 // ---------- notifications ----------
 
 func (s *Store) AccessUsers(fileID string) ([]string, error) {
-	seen := map[string]bool{}
-	out := []string{}
-	rows, err := s.db.Query(`SELECT owner_id FROM files WHERE id=? UNION SELECT user_id FROM file_members WHERE file_id=?`, fileID, fileID)
+	f, err := s.File(fileID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		if !seen[id] {
-			seen[id] = true
-			out = append(out, id)
+	seen := map[string]bool{f.OwnerID: true}
+	out := []string{f.OwnerID}
+	ctx, cancel := s.ctx()
+	defer cancel()
+	cursor, err := s.collection("file_members").Find(ctx, bson.M{"file_id": fileID})
+	if err != nil {
+		return nil, err
+	}
+	var members []memberDoc
+	if err := cursor.All(ctx, &members); err != nil {
+		return nil, err
+	}
+	for _, m := range members {
+		if !seen[m.UserID] {
+			seen[m.UserID] = true
+			out = append(out, m.UserID)
 		}
 	}
-	return out, rows.Err()
+	return out, nil
 }
 
-// AddNotificationFor creates a notification for one recipient.
 func (s *Store) AddNotificationFor(id, userID, fileID, commentID, actorID, kind, text string) error {
-	_, err := s.db.Exec(`INSERT INTO notifications(id,user_id,file_id,comment_id,actor_id,kind,text,read,created_at)
-		VALUES(?,?,?,?,?,?,?,0,?)`, id, userID, fileID, commentID, actorID, kind, text, model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("notifications").InsertOne(ctx, notificationDoc{ID: id, UserID: userID, FileID: fileID, CommentID: commentID, ActorID: actorID,
+		Kind: kind, Text: text, Read: false, CreatedAt: model.Now()})
 	return err
 }
 
 func (s *Store) Notifications(userID string) ([]model.Notification, error) {
-	rows, err := s.db.Query(`SELECT n.id,n.kind,n.file_id,f.name,n.comment_id,n.actor_id,u.name,u.color,u.avatar,n.text,n.read,n.created_at
-		FROM notifications n JOIN files f ON f.id=n.file_id JOIN users u ON u.id=n.actor_id
-		WHERE n.user_id=? ORDER BY n.created_at DESC LIMIT 50`, userID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	cursor, err := s.collection("notifications").Find(ctx, bson.M{"user_id": userID},
+		options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(50))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := []model.Notification{}
-	for rows.Next() {
-		var n model.Notification
-		var read int
-		if err := rows.Scan(&n.ID, &n.Type, &n.FileID, &n.FileName, &n.CommentID, &n.ActorID, &n.Actor, &n.Color, &n.Avatar, &n.Text, &read, &n.CreatedAt); err != nil {
-			return nil, err
-		}
-		n.Read = read != 0
-		out = append(out, n)
+	var docs []notificationDoc
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, err
 	}
-	return out, rows.Err()
+	fileIDs := make([]string, 0, len(docs))
+	actorIDs := make([]string, 0, len(docs))
+	for _, n := range docs {
+		fileIDs = append(fileIDs, n.FileID)
+		actorIDs = append(actorIDs, n.ActorID)
+	}
+	users := s.usersByIDs(ctx, actorIDs)
+	fileNames := map[string]string{}
+	if len(fileIDs) > 0 {
+		fc, _ := s.collection("files").Find(ctx, bson.M{"_id": bson.M{"$in": fileIDs}})
+		if fc != nil {
+			var files []fileDoc
+			_ = fc.All(ctx, &files)
+			for _, f := range files {
+				fileNames[f.ID] = f.Name
+			}
+		}
+	}
+	out := make([]model.Notification, 0, len(docs))
+	for _, n := range docs {
+		u := users[n.ActorID]
+		out = append(out, model.Notification{ID: n.ID, Type: n.Kind, FileID: n.FileID, FileName: fileNames[n.FileID], CommentID: n.CommentID,
+			ActorID: n.ActorID, Actor: u.Name, Color: u.Color, Avatar: u.Avatar, Text: n.Text, Read: n.Read, CreatedAt: n.CreatedAt})
+	}
+	return out, nil
 }
 
 func (s *Store) MarkNotificationsRead(userID string) error {
-	_, err := s.db.Exec(`UPDATE notifications SET read=1 WHERE user_id=? AND read=0`, userID)
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("notifications").UpdateMany(ctx, bson.M{"user_id": userID, "read": false}, bson.M{"$set": bson.M{"read": true}})
 	return err
 }
 
 func (s *Store) AddAuditLog(id, fileID, actorID, action, meta string) error {
-	_, err := s.db.Exec(`INSERT INTO audit_logs(id,file_id,actor_id,action,meta,created_at) VALUES(?,?,?,?,?,?)`, id, fileID, actorID, action, meta, model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("audit_logs").InsertOne(ctx, auditDoc{ID: id, FileID: fileID, ActorID: actorID, Action: action, Meta: meta, CreatedAt: model.Now()})
 	return err
 }
 
 func (s *Store) CleanupExpiredPATs() error {
-	_, err := s.db.Exec(`DELETE FROM personal_access_tokens WHERE expires_at != '' AND expires_at < ?`, model.Now())
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("personal_access_tokens").DeleteMany(ctx, bson.M{"expires_at": bson.M{"$ne": "", "$lt": model.Now()}})
 	return err
 }
 
-func ErrNotFound(err error) bool { return errors.Is(err, sql.ErrNoRows) }
+func ErrNotFound(err error) bool { return errors.Is(err, mongo.ErrNoDocuments) }

@@ -32,7 +32,7 @@ func env(key, fallback string) string {
 }
 
 func main() {
-	dbPath := env("DB_PATH", filepath.Join("data", "sigma.db"))
+	dbName := env("MONGO_DB", "sigma")
 	port := env("PORT", "9000")
 	secret := strings.TrimSpace(os.Getenv("SIGMA_SECRET"))
 	if secret == "" {
@@ -47,9 +47,9 @@ func main() {
 		log.Println("WARNING: running with default SIGMA_SECRET — do not use in production")
 	}
 
-	st, err := store.Open(dbPath)
+	st, err := store.Open(dbName)
 	if err != nil {
-		log.Fatalf("open database: %v", err)
+		log.Fatalf("open MongoDB database %q: %v", dbName, err)
 	}
 	defer st.Close()
 
@@ -68,7 +68,7 @@ func main() {
 		}
 	}
 
-	uploadDir := env("UPLOAD_DIR", filepath.Join(filepath.Dir(dbPath), "uploads"))
+	uploadDir := env("UPLOAD_DIR", filepath.Join("data", "uploads"))
 	a := api.New(st, am, staticDir, uploadDir, secret)
 	updater := update.NewFromEnv(version)
 	a.SetUpdater(updater)

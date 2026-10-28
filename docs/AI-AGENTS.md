@@ -24,7 +24,7 @@ Go ADK llmagent
    └─ optional skill toolset（list_skills / load_skill）
    │
    ▼
-tool call ──► design.Doc mutation ──► SQLite + WebSocket broadcast
+tool call ──► design.Doc mutation ──► MongoDB + WebSocket broadcast
    │
    ▼
 Final text + action chips + new doc version

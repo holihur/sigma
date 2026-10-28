@@ -144,7 +144,8 @@ fi
 umask 077
 cat > "$ENV_FILE" <<ENV
 PORT=${PORT}
-DB_PATH=${SIGMA_HOME}/sigma.db
+MONGO_URI=${MONGO_URI:-mongodb://127.0.0.1:27017}
+MONGO_DB=${MONGO_DB:-sigma}
 UPLOAD_DIR=${SIGMA_HOME}/uploads
 SIGMA_SECRET=${secret}
 AUTO_UPDATE=true

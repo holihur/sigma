@@ -16,14 +16,14 @@ Go net/http
   ├─ internal/doc                 document merge / delta / restore
   ├─ internal/design              canvas document model + helpers
   ├─ internal/auth                JWT, bcrypt, OIDC, PAT
-  ├─ internal/store               SQLite persistence
+  ├─ internal/store               MongoDB persistence
   ├─ internal/ws                  collaboration hub
   ├─ internal/ai                  DeepSeek OpenAI-compatible ADK model
   ├─ internal/update              GitHub release self-update
   └─ internal/static              optional embedded frontend
         │
         ▼
-SQLite + uploads/                 single-node deployment
+MongoDB + uploads/                deployment
 ```
 
 前端位于 `frontend/`：React 19、Vite 7、Tailwind CSS 4、Radix/shadcn 风格组件、zustand。构建产物可放在 `STATIC_DIR`，也可通过 `-tags embed_static` 编进二进制。
@@ -42,7 +42,7 @@ sigma/
 │       ├── doc/           merge, delta, restore
 │       ├── figma/         Figma REST converter
 │       ├── static/        optional embedded frontend
-│       ├── store/         SQLite schema + queries
+│       ├── store/         MongoDB collections + indexes
 │       ├── templates/     embedded template JSON
 │       ├── update/        release checker / self updater
 │       └── ws/            WebSocket hub
@@ -97,7 +97,7 @@ SceneNode {
 1. 每个节点带 `ts`，每次修改更新 `ts`。
 2. 删除节点写 `tombstones[nodeId]`；删除页面写 `deletedPages[pageId]`。
 3. 前端 650ms 防抖，将当前文档与上次发送版本 diff，只发送变化的页面 / 节点 / 墓碑。
-4. 后端合并 delta，递增文件版本，写 SQLite，再将权威 delta 广播给房间。
+4. 后端合并 delta，递增文件版本，写 MongoDB，再将权威 delta 广播给房间。
 5. 前端收到广播后再次合并，本地未发送修改不会被覆盖。
 6. 断线时降级为 `PUT /api/files/{id}/doc`；重连先补拉再发送本地修改。
 7. 撤销 / 重做把快照与当前文档 diff：修改节点提升 `ts`，消失节点补墓碑，避免撤销后被服务器复活。
@@ -109,7 +109,7 @@ presence（光标、选区）走独立 WebSocket 消息，约 45ms 节流，不�
 
 `frontend/src/lib/delta.ts` 的 `diffDocs` 生成只包含变化页面的 delta。WebSocket 消息类型为 `delta`，后端 `applyDelta` 调用 `doc.ApplyDelta` 并广播 `doc-delta`。
 
-持久化仍重写整份文档 JSON；目前目标是单机 SQLite，足够支撑中小团队。若需要大规模协作，可替换为操作日志 / CRDT，但 LWW 模型已经是显式边界。
+持久化仍重写整份文档 JSON；目前目标是 MongoDB，足够支撑中小团队。若需要大规模协作，可替换为操作日志 / CRDT，但 LWW 模型已经是显式边界。
 
 ## 矢量路径
 

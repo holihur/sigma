@@ -1,12 +1,12 @@
 package api
 
 import (
-	"database/sql"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"sigma/internal/auth"
+	"sigma/internal/store"
 )
 
 func (a *API) handleOIDCConfig(w http.ResponseWriter, r *http.Request) {
@@ -65,14 +65,14 @@ func (a *API) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
 	issuer = strings.TrimRight(oidcIssuerForIdentity(a), "/")
 	u, err := a.st.UserByIdentity(issuer, claims.Subject)
 	if err != nil {
-		if err != sql.ErrNoRows {
+		if !store.ErrNotFound(err) {
 			http.Redirect(w, r, auth.OIDCErrorURL(a.oidc.AppBaseURL(), err.Error()), http.StatusFound)
 			return
 		}
 		existing, _, lookupErr := a.st.UserByEmail(claims.Email)
 		if lookupErr == nil {
 			u = existing
-		} else if lookupErr == sql.ErrNoRows {
+		} else if store.ErrNotFound(lookupErr) {
 			name := strings.TrimSpace(claims.Name)
 			if name == "" {
 				name = strings.Split(claims.Email, "@")[0]

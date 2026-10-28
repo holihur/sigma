@@ -5,9 +5,12 @@ services:
     restart: unless-stopped
     ports:
       - "9000:9000"
+    depends_on:
+      - mongo
     environment:
       PORT: 9000
-      DB_PATH: /app/data/sigma.db
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: sigma
       UPLOAD_DIR: /app/data/uploads
       STATIC_DIR: /app/web
       SIGMA_SECRET: ${SIGMA_SECRET:?SIGMA_SECRET is required - generate with openssl rand -hex 32}
@@ -16,5 +19,13 @@ services:
     volumes:
       - sigma-data:/app/data
 
+  mongo:
+    image: mongo:7
+    container_name: sigma-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+
 volumes:
   sigma-data:
+  mongo-data:

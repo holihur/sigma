@@ -23,7 +23,7 @@ WORKDIR /app
 COPY --from=api /out/sigma /app/sigma
 COPY --from=web /app/frontend/dist /app/web
 ENV STATIC_DIR=/app/web \
-    DB_PATH=/app/data/sigma.db \
+    MONGO_DB=sigma \
     PORT=9000
 VOLUME ["/app/data"]
 EXPOSE 9000

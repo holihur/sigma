@@ -5,8 +5,9 @@
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `PORT` | `9000` | HTTP 端口 |
-| `DB_PATH` | `data/sigma.db` | SQLite 文件 |
-| `UPLOAD_DIR` | 数据库同级 `uploads/` | 图片存储目录 |
+| `MONGO_URI` | `mongodb://127.0.0.1:27017` | MongoDB 连接串 |
+| `MONGO_DB` | `sigma` | MongoDB 数据库名 |
+| `UPLOAD_DIR` | `data/uploads` | 图片存储目录 |
 | `STATIC_DIR` | 自动探测 | 前端静态目录；release 二进制可内嵌前端 |
 | `SIGMA_SECRET` | 开发默认值 | JWT 签名 + BYOK Key 加密；生产必须固定且保密 |
 | `APP_BASE_URL` | `http://localhost:9000` | OIDC 回调 / 前端跳转基地址 |
@@ -25,6 +26,15 @@
 | `SIGMA_ALLOW_DEV_UPDATE` | 空 | 允许 dev 构建自更新（默认拒绝，防止覆盖开发二进制） |
 | `FIGMA_API_BASE` | `https://api.figma.com` | Figma API 地址 |
 | `VITE_API_PROXY` | `http://localhost:9000` | 仅 Vite 开发代理 |
+
+## 前置：MongoDB
+
+Sigma 运行时只支持 MongoDB（7+）。安装前先准备：
+
+```bash
+export MONGO_URI="mongodb://127.0.0.1:27017"
+export MONGO_DB="sigma"
+```
 
 ## 一键安装
 
@@ -184,42 +194,36 @@ make release-snapshot
 
 ## 备份与恢复
 
-备份以下内容即可：
+备份以下内容：
 
 ```text
-sigma.db
-sigma.db-wal
-sigma.db-shm
+MongoDB 数据库（默认 MONGO_DB=sigma）
 uploads/
 ai_sessions/  # 若启用 AI 会话持久化
 ```
 
-SQLite 使用 WAL。在线备份建议：
+MongoDB 备份建议使用 mongodump：
 
 ```bash
-# 在线热备份（不锁库）
-sqlite3 sigma.db ".backup '/backup/sigma-$(date +%F).db'"
-cp -r uploads /backup/uploads-$(date +%F)
-# 校验
-sqlite3 /backup/sigma-$(date +%F).db "PRAGMA integrity_check;"
+mongodump --uri="$MONGO_URI" --db="${MONGO_DB:-sigma}" --out="/backup/mongo-$(date +%F)"
+cp -r uploads "/backup/uploads-$(date +%F)"
 ```
 
 恢复：
 
 ```bash
 systemctl stop sigma
-cp /backup/sigma-2026-10-28.db sigma.db
+mongorestore --uri="$MONGO_URI" --db="${MONGO_DB:-sigma}" --drop "/backup/mongo-2026-10-28"
 cp -r /backup/uploads-2026-10-28 uploads
-chown -R sigma:sigma sigma.db uploads
+chown -R sigma:sigma uploads
 systemctl start sigma
-# 健康检查
 curl -fsSL http://localhost:9000/api/health
 ```
 
 定时备份示例（cron 每日 03:00）：
 
 ```bash
-0 3 * * * sqlite3 /var/lib/sigma/sigma.db ".backup '/backup/sigma-$(date +\%F).db'" && find /backup -name "sigma-*.db" -mtime +7 -delete
+0 3 * * * mongodump --uri="$MONGO_URI" --db="${MONGO_DB:-sigma}" --archive="/backup/sigma-$(date +\%F).archive" --gzip && find /backup -name "sigma-*.archive" -mtime +7 -delete
 ```
 
 > 重要：`SIGMA_SECRET` 必须与备份一同安全保管（`\`/etc/sigma/sigma.env\``），否则加密的 AI Key 无法解密。

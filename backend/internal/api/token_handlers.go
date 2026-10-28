@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"net/http"
 	"strings"
 	"time"
@@ -99,7 +98,7 @@ func (a *API) handleCreatePAT(w http.ResponseWriter, r *http.Request, u model.Us
 func (a *API) handleDeletePAT(w http.ResponseWriter, r *http.Request, u model.User) {
 	id := r.PathValue("id")
 	if err := a.st.DeletePAT(id, u.ID); err != nil {
-		if err == sql.ErrNoRows {
+		if store.ErrNotFound(err) {
 			writeError(w, http.StatusNotFound, "Token not found")
 			return
 		}
