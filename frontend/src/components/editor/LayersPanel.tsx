@@ -233,7 +233,7 @@ export function LayersPanel() {
                 "group flex h-7 cursor-pointer items-center gap-1.5 rounded px-2 text-[12px] text-muted-foreground hover:bg-secondary/70",
                 p.id === pageId && "bg-secondary text-foreground",
               )}
-              onClick={() => setPage(p.id)}
+              onClick={() => void setPage(p.id).catch(() => undefined)}
               onDoubleClick={() => startPageRename(p)}
             >
               {pageRenaming === p.id ? (

@@ -51,8 +51,12 @@ export function CommentsPanel({
   const pageName = (id: string) => doc.pages.find((p) => p.id === id)?.name ?? "Page";
   const canDelete = (comment: Comment) => comment.authorId === user?.id || file?.role === "owner";
 
-  const focus = (comment: Comment) => {
-    if (comment.pageId !== pageId) setPage(comment.pageId);
+  const focus = async (comment: Comment) => {
+    try {
+      if (comment.pageId !== pageId) await setPage(comment.pageId);
+    } catch {
+      return;
+    }
     if (comment.nodeId) select([comment.nodeId]);
     onSelect(comment);
   };

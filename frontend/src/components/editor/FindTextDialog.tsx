@@ -26,6 +26,7 @@ export function FindTextDialog({
 }) {
   const t = useT();
   const doc = useEditor((s) => s.doc);
+  const ensureAllPages = useEditor((s) => s.ensureAllPages);
   const [query, setQuery] = useState("");
   const [replace, setReplace] = useState("");
   const [active, setActive] = useState(0);
@@ -34,9 +35,10 @@ export function FindTextDialog({
   useEffect(() => {
     if (open) {
       setActive(0);
+      void ensureAllPages();
       setTimeout(() => document.getElementById("sigma-find-input")?.focus(), 40);
     }
-  }, [open]);
+  }, [open, ensureAllPages]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

@@ -35,6 +35,7 @@ export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; pub
   const [history, setHistory] = useState<Location[]>([]);
   const [anim, setAnim] = useState<{ transition: Transition; nonce: number } | null>(null);
   const [hoveredHotspot, setHoveredHotspot] = useState<string | null>(null);
+  const ensureAllPages = useEditor((s) => s.ensureAllPages);
   const [showHotspots, setShowHotspots] = useState(false);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const stageRef = useRef<HTMLDivElement>(null);
@@ -50,6 +51,10 @@ export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; pub
       ),
     [doc],
   );
+
+  useEffect(() => {
+    if (open) void ensureAllPages();
+  }, [open, ensureAllPages]);
 
   useEffect(() => {
     if (!open) {

@@ -8,6 +8,10 @@ import { useEditor } from "@/store/editor";
 import { useAuth } from "@/store/auth";
 import { uid } from "@/lib/utils";
 
+function loadedDoc(doc: SigmaDoc, loaded: Set<string>): SigmaDoc {
+  return { ...doc, pages: doc.pages.filter((p) => loaded.has(p.id)) };
+}
+
 interface WsMessage {
   type: "welcome" | "presence" | "doc" | "doc-delta" | "comment" | "error";
   users?: PresenceUser[];
@@ -56,7 +60,7 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
     const st = useEditor.getState();
     if (!st.file || st.isReadOnly || !st.dirty) return;
     const fileId = st.file.id;
-    const snapshot = st.doc;
+    const snapshot = loadedDoc(st.doc, st.loadedPages);
     const base = baseDocRef.current;
     const delta = base ? diffDocs(base, snapshot) : null;
     if (base && !delta) {
@@ -69,9 +73,9 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
     const syncSeq = useEditor.getState().syncSeq;
     const persisted = async () => {
       try {
-        const res = await filesApi.putDoc(fileId, snapshot);
-        baseDocRef.current = res.doc;
-        useEditor.getState().applyRemoteDoc(res.doc, res.version);
+        const res = await filesApi.putPartialDoc(fileId, snapshot);
+        baseDocRef.current = mergeDocs(baseDocRef.current, res.doc);
+        useEditor.getState().applyRemoteDelta(res.doc, res.version);
       } catch {
         useEditor.getState().failSync();
       }
@@ -116,9 +120,11 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
         // Catch up on anything that changed while we were offline before
         // broadcasting local edits back to the room.
         try {
-          const latest = await filesApi.getDoc(fileId);
-          baseDocRef.current = latest.doc;
-          useEditor.getState().applyRemoteDoc(latest.doc, latest.version);
+          const before = useEditor.getState();
+          const latest = await filesApi.getPages(fileId, [...before.loadedPages]);
+          useEditor.getState().applyRemoteDelta(latest.doc, latest.version);
+          const current = useEditor.getState();
+          baseDocRef.current = loadedDoc(before.dirty ? before.doc : current.doc, current.loadedPages);
         } catch {
           /* the socket may still be usable even if the catch-up fetch failed */
         }
@@ -136,8 +142,8 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
         if (msg.type === "welcome" || msg.type === "presence") {
           useEditor.getState().setCollaborators(msg.users ?? []);
         } else if (msg.type === "doc" && msg.doc && typeof msg.version === "number") {
-          baseDocRef.current = msg.doc;
           useEditor.getState().applyRemoteDoc(msg.doc, msg.version);
+          baseDocRef.current = loadedDoc(msg.doc, useEditor.getState().loadedPages);
         } else if (msg.type === "doc-delta" && msg.delta && typeof msg.version === "number") {
           if (baseDocRef.current) baseDocRef.current = mergeDocs(baseDocRef.current, msg.delta);
           useEditor.getState().applyRemoteDelta(msg.delta, msg.version);
@@ -203,13 +209,14 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
       const st = useEditor.getState();
       if (!st.dirty || !st.file || st.isReadOnly) return;
       const token = getToken();
-      void fetch(`${apiRoot()}/files/${st.file.id}/doc`, {
+      const snapshot = loadedDoc(st.doc, st.loadedPages);
+      void fetch(`${apiRoot()}/files/${st.file.id}/partial-doc`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ doc: st.doc }),
+        body: JSON.stringify({ doc: snapshot }),
         keepalive: true,
       }).catch(() => undefined);
     };

@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-r
 import { Loader2, Maximize, Minus, Plus, Sparkles, AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
 import { commentsApi, filesApi } from "@/lib/api";
-import type { Comment, Point } from "@/lib/types";
+import type { Comment, Point, SigmaDoc } from "@/lib/types";
 import { boundsOf, getPage, nodeAABB } from "@/lib/nodes";
 import { allVectorPoints, subpathPatch, vectorSubpaths } from "@/lib/vector";
 import { useAuth } from "@/store/auth";
@@ -68,6 +68,7 @@ export default function EditorPage() {
   const doc = useEditor((s) => s.doc);
   const pageId = useEditor((s) => s.pageId);
   const loading = useEditor((s) => s.loading);
+  const pageLoading = useEditor((s) => s.pageLoading);
   const readOnly = useEditor((s) => s.isReadOnly);
   const tool = useEditor((s) => s.tool);
   const viewport = useEditor((s) => s.viewport);
@@ -145,10 +146,23 @@ export default function EditorPage() {
     useEditor.getState().reset();
     useEditor.setState({ loading: true });
     filesApi
-      .get(id)
-      .then(({ file, doc }) => {
+      .manifest(id)
+      .then(async ({ file, version, pages, styles }) => {
+        const first = pages[0];
+        if (!first) throw new Error("This design has no pages");
+        const latest = await filesApi.getPage(id, first.id);
         if (cancelled) return;
-        useEditor.getState().load(file, doc, file.version);
+        const doc: SigmaDoc = {
+          pages: pages.map((p) =>
+            p.id === first.id
+              ? latest.page
+              : { id: p.id, name: p.name, ts: p.ts, nodes: {}, rootIds: [] },
+          ),
+          styles,
+          tombstones: {},
+          deletedPages: {},
+        };
+        useEditor.getState().load(file, doc, Math.max(version, latest.version), [first.id]);
         document.title = `${file.name} — Sigma`;
       })
       .catch((e) => {
@@ -719,6 +733,11 @@ export default function EditorPage() {
             }}
             onCreateComment={handleCreateComment}
           />
+          {pageLoading && (
+            <div className="pointer-events-none absolute left-1/2 top-3 z-50 -translate-x-1/2 rounded-full border border-border bg-panel/95 px-3 py-1.5 text-[11px] text-muted-foreground shadow-lg backdrop-blur">
+              <span className="flex items-center gap-1.5"><Loader2 className="size-3 animate-spin" /> {t("Loading page…")}</span>
+            </div>
+          )}
           <Toolbar readOnly={readOnly} onOpenComponents={() => setComponentsOpen(true)} />
           <SelectionToolbar hostRef={hostRef} />
           <ZoomControl hostRef={hostRef} onFit={fit} />

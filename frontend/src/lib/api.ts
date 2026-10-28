@@ -10,9 +10,12 @@ import type {
   Notification,
   OIDCConfig,
   OIDCExchange,
+  Page,
+  PageSummary,
   PersonalAccessToken,
   CreatedPersonalAccessToken,
   SigmaDoc,
+  StyleLibrary,
   TemplateMeta,
   UpdateStatus,
   User,
@@ -129,6 +132,18 @@ export const filesApi = {
   duplicate: (id: string) =>
     api<{ file: FileMeta }>(`/files/${id}/duplicate`, { method: "POST" }),
   getDoc: (id: string) => api<{ doc: SigmaDoc; version: number }>(`/files/${id}/doc`),
+  manifest: (id: string) =>
+    api<{ file: FileMeta; version: number; pages: PageSummary[]; styles?: StyleLibrary }>(`/files/${id}/manifest`),
+  getPages: (id: string, ids: string[] = []) =>
+    api<{ doc: SigmaDoc; version: number }>(`/files/${id}/pages${ids.length ? `?ids=${encodeURIComponent(ids.join(","))}` : ""}`),
+  getPage: (id: string, pageId: string) =>
+    api<{ page: Page; version: number }>(`/files/${id}/pages/${encodeURIComponent(pageId)}`),
+  renamePage: (id: string, pageId: string, name: string) =>
+    api<{ page: PageSummary; version: number }>(`/files/${id}/pages/${encodeURIComponent(pageId)}`, { method: "PATCH", body: { name } }),
+  deletePage: (id: string, pageId: string) =>
+    api<{ ok: true; version: number }>(`/files/${id}/pages/${encodeURIComponent(pageId)}`, { method: "DELETE" }),
+  putPartialDoc: (id: string, doc: SigmaDoc) =>
+    api<{ doc: SigmaDoc; version: number }>(`/files/${id}/partial-doc`, { method: "PUT", body: { doc } }),
   putDoc: (id: string, doc: SigmaDoc) =>
     api<{ doc: SigmaDoc; version: number }>(`/files/${id}/doc`, { method: "PUT", body: { doc } }),
 };

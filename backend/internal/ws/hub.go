@@ -231,6 +231,10 @@ func (h *Hub) BroadcastComment(fileID string, comment any) {
 	}
 }
 
+func (h *Hub) BroadcastDelta(fileID string, delta json.RawMessage, version int) {
+	h.broadcastDelta(fileID, delta, version)
+}
+
 func (h *Hub) broadcastDelta(fileID string, delta json.RawMessage, version int) {
 	h.mu.Lock()
 	r := h.rooms[fileID]
@@ -331,14 +335,16 @@ func (c *client) readPump() {
 			if len(msg.Doc) == 0 {
 				continue
 			}
-			merged, version, err := c.hub.save(c.fileID, c.user.ID, msg.Doc)
+			// Treat full snapshots as deltas too, so lazy clients never receive a
+			// whole document back over the socket.
+			applied, version, err := c.hub.delta(c.fileID, c.user.ID, msg.Doc)
 			if err != nil {
 				log.Printf("ws save %s: %v", c.fileID, err)
 				errPayload, _ := json.Marshal(outbound{Type: "error", Message: "Could not save changes"})
 				c.enqueue(errPayload)
 				continue
 			}
-			c.hub.broadcastDoc(c.fileID, merged, version)
+			c.hub.broadcastDelta(c.fileID, applied, version)
 		case "delta":
 			if c.user.Role != "owner" && c.user.Role != "edit" {
 				continue

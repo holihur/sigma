@@ -110,7 +110,7 @@ func (a *API) handlePublicFile(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: f.UpdatedAt,
 		CreatedAt: f.CreatedAt,
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"file": meta, "doc": json.RawMessage(f.Doc)})
+	writeJSONCompressed(w, r, http.StatusOK, map[string]any{"file": meta, "doc": json.RawMessage(f.Doc)})
 }
 
 func (a *API) handleListNotifications(w http.ResponseWriter, r *http.Request, u model.User) {

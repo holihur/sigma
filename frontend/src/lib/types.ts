@@ -117,6 +117,12 @@ export interface Page {
   ts: number;
 }
 
+export interface PageSummary {
+  id: string;
+  name: string;
+  ts: number;
+}
+
 export interface ColorStyle {
   id: string;
   name: string;

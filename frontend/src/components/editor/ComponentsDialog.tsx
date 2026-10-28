@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Component as ComponentIcon, Plus, RefreshCw, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor } from "@/store/editor";
@@ -22,7 +22,12 @@ export function ComponentsDialog({ open, onOpenChange }: { open: boolean; onOpen
   const createComponent = useEditor((s) => s.createComponent);
   const insertInstance = useEditor((s) => s.insertInstance);
   const syncInstances = useEditor((s) => s.syncInstances);
+  const ensureAllPages = useEditor((s) => s.ensureAllPages);
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (open) void ensureAllPages();
+  }, [open, ensureAllPages]);
 
   const components = doc.pages.flatMap((page) =>
     Object.values(page.nodes)

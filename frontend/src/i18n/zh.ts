@@ -21,6 +21,7 @@ const zh: Record<string, string> = {
   "Edit": "编辑",
   "Search": "搜索",
   "Loading…": "加载中…",
+  "Loading page…": "正在加载页面…",
   "All designs": "全部设计",
   "Starred": "已收藏",
   "Shared with me": "共享给我",

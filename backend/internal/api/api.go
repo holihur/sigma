@@ -109,6 +109,12 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("PATCH /api/files/{id}", a.requireAuth(a.handlePatchFile))
 	mux.HandleFunc("DELETE /api/files/{id}", a.requireAuth(a.handleDeleteFile))
 	mux.HandleFunc("POST /api/files/{id}/duplicate", a.requireAuth(a.handleDuplicateFile))
+	mux.HandleFunc("GET /api/files/{id}/manifest", a.requireAuth(a.handleGetManifest))
+	mux.HandleFunc("GET /api/files/{id}/pages", a.requireAuth(a.handleGetPages))
+	mux.HandleFunc("GET /api/files/{id}/pages/{pageId}", a.requireAuth(a.handleGetPage))
+	mux.HandleFunc("DELETE /api/files/{id}/pages/{pageId}", a.requireAuth(a.handleDeletePage))
+	mux.HandleFunc("PATCH /api/files/{id}/pages/{pageId}", a.requireAuth(a.handleRenamePage))
+	mux.HandleFunc("PUT /api/files/{id}/partial-doc", a.requireAuth(a.handlePutPartialDoc))
 	mux.HandleFunc("GET /api/files/{id}/doc", a.requireAuth(a.handleGetDoc))
 	mux.HandleFunc("PUT /api/files/{id}/doc", a.requireAuth(a.handlePutDoc))
 	mux.HandleFunc("GET /api/files/{id}/versions", a.requireAuth(a.handleListVersions))
@@ -432,6 +438,30 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 			log.Printf("encode response: %v", err)
 		}
 	}
+}
+
+// writeJSONCompressed is used for document payloads. JSON page data compresses
+// extremely well and this keeps large page downloads off the slow path.
+func writeJSONCompressed(w http.ResponseWriter, r *http.Request, status int, v any) {
+	body, err := json.Marshal(v)
+	if err != nil {
+		log.Printf("encode response: %v", err)
+		writeError(w, http.StatusInternalServerError, "Could not encode response")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Add("Vary", "Accept-Encoding")
+	if len(body) > 1024 && acceptsGzip(r) {
+		w.Header().Set("Content-Encoding", "gzip")
+		w.WriteHeader(status)
+		gw := gzipPool.Get().(*gzip.Writer)
+		gw.Reset(w)
+		defer func() { gw.Close(); gzipPool.Put(gw) }()
+		_, _ = gw.Write(body)
+		return
+	}
+	w.WriteHeader(status)
+	_, _ = w.Write(body)
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {

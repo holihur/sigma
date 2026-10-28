@@ -31,10 +31,13 @@ import {
   topLevelSelection,
 } from "@/lib/nodes";
 import { clamp, uid } from "@/lib/utils";
+import { filesApi } from "@/lib/api";
 
 type Clipboard = { roots: string[]; nodes: Record<string, SceneNode>; pageId: string; origins: Record<string, Point> };
 
 let nudgeHistoryAt = 0;
+let pagesLoad: Promise<void> | null = null;
+let pageRequest = 0;
 
 const HISTORY_LIMIT = 120;
 const NUDGE_GROUP_MS = 500;
@@ -72,11 +75,14 @@ interface EditorState {
   previewFrameId: string | null;
   isReadOnly: boolean;
   loading: boolean;
+  pageLoading: boolean;
+  loadedPages: Set<string>;
 
-  load: (file: FileMeta, doc: SigmaDoc, version: number) => void;
+  load: (file: FileMeta, doc: SigmaDoc, version: number, loadedPageIds?: string[]) => void;
   reset: () => void;
   setFileMeta: (file: FileMeta) => void;
-  setPage: (id: string) => void;
+  setPage: (id: string) => Promise<void>;
+  ensureAllPages: () => Promise<void>;
   setTool: (tool: Tool) => void;
   setViewport: (vp: Viewport) => void;
   zoomAt: (factor: number, screen: Point, size: { width: number; height: number }) => void;
@@ -192,6 +198,10 @@ function normalizeDoc(doc: SigmaDoc): SigmaDoc {
   out.styles.texts = out.styles.texts ?? [];
   for (const page of out.pages) reflowPage(page);
   return out;
+}
+
+function normalizePage(page: Page): Page {
+  return normalizeDoc({ pages: [page], tombstones: {}, deletedPages: {}, styles: { colors: [], texts: [] } }).pages[0];
 }
 
 function alignOffset(space: number, size: number, align: string): number {
@@ -415,9 +425,13 @@ export const useEditor = create<EditorState>((set, get) => {
     previewFrameId: null,
     isReadOnly: false,
     loading: true,
+    pageLoading: false,
+    loadedPages: new Set<string>(),
 
-    load: (file, doc, version) => {
+    load: (file, doc, version, loadedPageIds) => {
       nudgeHistoryAt = 0;
+      pagesLoad = null;
+      pageRequest = 0;
       const normalized = normalizeDoc(doc);
       set({
         file,
@@ -444,11 +458,15 @@ export const useEditor = create<EditorState>((set, get) => {
         previewFrameId: null,
         isReadOnly: file.role === "view",
         loading: false,
+        pageLoading: false,
+        loadedPages: new Set(loadedPageIds ?? normalized.pages.map((p) => p.id)),
         tool: "select",
       });
     },
     reset: () => {
       nudgeHistoryAt = 0;
+      pagesLoad = null;
+      pageRequest = 0;
       set({
         file: null,
         doc: structuredClone(emptyDoc),
@@ -462,14 +480,76 @@ export const useEditor = create<EditorState>((set, get) => {
         dirty: false,
         saving: false,
         loading: true,
+        pageLoading: false,
+        loadedPages: new Set<string>(),
         isReadOnly: false,
         previewOpen: false,
       });
     },
     setFileMeta: (file) => set({ file, isReadOnly: file.role === "view" }),
-    setPage: (id) => {
-      if (!get().doc.pages.some((p) => p.id === id)) return;
-      set({ pageId: id, selection: [], selectedPoint: null, editingId: null, hoveredId: null });
+    setPage: async (id) => {
+      const state = get();
+      const page = state.doc.pages.find((p) => p.id === id);
+      if (!page) return;
+      if (state.loadedPages.has(id)) {
+        set({ pageId: id, selection: [], selectedPoint: null, editingId: null, hoveredId: null });
+        return;
+      }
+      if (!state.file) return;
+      const fileId = state.file.id;
+      const request = ++pageRequest;
+      set({ pageLoading: true });
+      try {
+        const latest = await filesApi.getPage(fileId, id);
+        const current = get();
+        if (request !== pageRequest || current.file?.id !== fileId) return;
+        const loaded = normalizePage(latest.page);
+        const doc = { ...current.doc, pages: current.doc.pages.map((p) => (p.id === id ? loaded : p)) };
+        set({
+          doc,
+          pageId: id,
+          version: Math.max(current.version, latest.version),
+          loadedPages: new Set([...current.loadedPages, id]),
+          selection: [],
+          selectedPoint: null,
+          editingId: null,
+          hoveredId: null,
+          pageLoading: false,
+        });
+      } catch (err) {
+        if (request === pageRequest) set({ pageLoading: false });
+        throw err;
+      }
+    },
+    ensureAllPages: async () => {
+      const state = get();
+      if (!state.file) return;
+      const missing = state.doc.pages.filter((p) => !state.loadedPages.has(p.id)).map((p) => p.id);
+      if (missing.length === 0) return;
+      const fileId = state.file.id;
+      if (!pagesLoad) {
+        pagesLoad = (async () => {
+          const latest = await filesApi.getPages(fileId);
+          const current = get();
+          if (current.file?.id !== fileId) return;
+          const fetched = new Map(latest.doc.pages.map((p) => [p.id, normalizePage(p)]));
+          const missingIds = new Set(missing);
+          const pages = current.doc.pages
+            .filter((p) => !missingIds.has(p.id) || fetched.has(p.id))
+            .map((p) => (missingIds.has(p.id) ? fetched.get(p.id)! : p));
+          for (const [id, page] of fetched) {
+            if (!pages.some((p) => p.id === id)) pages.push(page);
+          }
+          set({
+            doc: { ...current.doc, pages, styles: latest.doc.styles ?? current.doc.styles },
+            version: Math.max(current.version, latest.version),
+            loadedPages: new Set(pages.map((p) => p.id)),
+          });
+        })().finally(() => {
+          pagesLoad = null;
+        });
+      }
+      await pagesLoad;
     },
     setTool: (tool) => set({ tool, selectedPoint: null, editingId: null }),
     setViewport: (vp) => set({ viewport: vp }),
@@ -1488,13 +1568,49 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     setPageName: (id, name) => {
       if (get().isReadOnly) return;
-      mutate((_page, doc) => {
-        const p = doc.pages.find((x) => x.id === id);
-        if (p) {
-          p.name = name;
-          p.ts = Date.now();
-        }
+      const state = get();
+      if (state.loadedPages.has(id)) {
+        mutate((_page, doc) => {
+          const p = doc.pages.find((x) => x.id === id);
+          if (p) {
+            p.name = name;
+            p.ts = Date.now();
+          }
+        });
+        return;
+      }
+      if (!state.file) return;
+      const previous = state.doc.pages.find((p) => p.id === id);
+      if (!previous) return;
+      const optimisticTS = Date.now();
+      set({
+        doc: {
+          ...state.doc,
+          pages: state.doc.pages.map((p) => (p.id === id ? { ...p, name, ts: optimisticTS } : p)),
+        },
       });
+      void filesApi.renamePage(state.file.id, id, name)
+        .then((res) => {
+          const current = get();
+          if (current.file?.id !== state.file?.id) return;
+          set({
+            version: Math.max(current.version, res.version),
+            doc: {
+              ...current.doc,
+              pages: current.doc.pages.map((p) => (p.id === id ? { ...p, name: res.page.name, ts: res.page.ts } : p)),
+            },
+          });
+        })
+        .catch(() => {
+          const current = get();
+          if (current.file?.id !== state.file?.id) return;
+          set({
+            doc: {
+              ...current.doc,
+              pages: current.doc.pages.map((p) => (p.id === id ? previous : p)),
+            },
+          });
+        });
     },
     addPage: (name) => {
       if (get().isReadOnly) return;
@@ -1511,6 +1627,7 @@ export const useEditor = create<EditorState>((set, get) => {
         doc: next,
         pageId: newPage.id,
         selection: [],
+        loadedPages: new Set([...get().loadedPages, newPage.id]),
         past: [...get().past, get().doc].slice(-HISTORY_LIMIT),
         future: [],
         dirty: true,
@@ -1520,8 +1637,20 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     deletePage: (id) => {
       if (get().isReadOnly) return;
-      const { doc, pageId } = get();
+      const state = get();
+      const { doc, pageId } = state;
       if (doc.pages.length <= 1) return;
+      if (!state.loadedPages.has(id) && state.file) {
+        const pages = doc.pages.filter((p) => p.id !== id);
+        set({
+          doc: { ...doc, pages, deletedPages: { ...(doc.deletedPages ?? {}), [id]: Date.now() } },
+          loadedPages: new Set([...state.loadedPages].filter((pid) => pid !== id)),
+        });
+        void filesApi.deletePage(state.file.id, id)
+          .then((res) => set({ version: Math.max(get().version, res.version) }))
+          .catch(() => set({ doc, loadedPages: state.loadedPages }));
+        return;
+      }
       const pages = doc.pages.filter((p) => p.id !== id);
       const nextPage = pageId === id ? pages[Math.max(0, doc.pages.findIndex((p) => p.id === id) - 1)].id : pageId;
       const now = Date.now();
@@ -1530,6 +1659,7 @@ export const useEditor = create<EditorState>((set, get) => {
         doc: { ...doc, pages, deletedPages: { ...(doc.deletedPages ?? {}), [id]: now } },
         pageId: nextPage,
         selection: [],
+        loadedPages: new Set([...get().loadedPages].filter((pid) => pid !== id)),
         past: [...get().past, doc].slice(-HISTORY_LIMIT),
         future: [],
         dirty: true,
@@ -1560,7 +1690,11 @@ export const useEditor = create<EditorState>((set, get) => {
     failSync: () => set({ saving: false, syncStatus: "offline" }),
     applyRemoteDoc: (doc, version) => {
       const state = get();
-      const merged = mergeDocs(state.doc, normalizeDoc(doc));
+      const normalized = normalizeDoc(doc);
+      // A lazy client only consumes pages it has already downloaded. Missing
+      // pages stay as manifest stubs and are fetched on demand.
+      const incoming = normalized.pages.filter((p) => state.loadedPages.has(p.id));
+      const merged = mergeDocs(state.doc, { ...normalized, pages: incoming });
       const pageIds = new Set(merged.pages.map((p) => p.id));
       const pageId = pageIds.has(state.pageId) ? state.pageId : merged.pages[0].id;
       const page = getPage(merged, pageId);
@@ -1598,6 +1732,8 @@ export const useEditor = create<EditorState>((set, get) => {
         doc: normalized,
         pageId: nextPageId,
         version,
+        loadedPages: new Set(normalized.pages.map((p) => p.id)),
+        pageLoading: false,
         selection: get().selection.filter((id) => nextPage.nodes[id]),
         past: [...get().past, get().doc].slice(-HISTORY_LIMIT),
         future: [],

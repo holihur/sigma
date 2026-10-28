@@ -78,7 +78,7 @@ func (a *API) handleGetFile(w http.ResponseWriter, r *http.Request, u model.User
 		writeError(w, http.StatusNotFound, "Design not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"file": meta, "doc": json.RawMessage(f.Doc)})
+	writeJSONCompressed(w, r, http.StatusOK, map[string]any{"file": meta, "doc": json.RawMessage(f.Doc)})
 }
 
 func (a *API) handlePatchFile(w http.ResponseWriter, r *http.Request, u model.User) {
@@ -221,7 +221,7 @@ func (a *API) handleGetDoc(w http.ResponseWriter, r *http.Request, u model.User)
 		writeError(w, http.StatusNotFound, "Design not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"doc": json.RawMessage(f.Doc), "version": f.Version})
+	writeJSONCompressed(w, r, http.StatusOK, map[string]any{"doc": json.RawMessage(f.Doc), "version": f.Version})
 }
 
 func (a *API) handlePutDoc(w http.ResponseWriter, r *http.Request, u model.User) {
@@ -243,9 +243,14 @@ func (a *API) handlePutDoc(w http.ResponseWriter, r *http.Request, u model.User)
 		writeError(w, http.StatusBadRequest, "Could not save document")
 		return
 	}
-	// Keep collaborators in sync when a client falls back to HTTP.
-	a.hub.BroadcastDoc(id, merged, version)
-	writeJSON(w, http.StatusOK, map[string]any{"doc": merged, "version": version})
+	// Keep collaborators in sync with the touched subset, not the full doc.
+	var inc, full doc.Doc
+	if json.Unmarshal(body.Doc, &inc) == nil && json.Unmarshal(merged, &full) == nil {
+		if applied, err := json.Marshal(doc.DeltaResult(&full, &inc)); err == nil {
+			a.hub.BroadcastDelta(id, applied, version)
+		}
+	}
+	writeJSONCompressed(w, r, http.StatusOK, map[string]any{"doc": merged, "version": version})
 }
 
 // mergeAndSave merges incoming into the stored document with per-node LWW
