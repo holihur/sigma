@@ -201,6 +201,7 @@ const zh: Record<string, string> = {
   "Target": "目标",
   "URL": "URL",
   "Animation": "动画",
+  "Interaction preview": "交互预览",
   "Instant": "立即",
   "Dissolve": "溶解",
   "Slide left": "向左滑动",

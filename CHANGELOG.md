@@ -20,6 +20,7 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 - SQLite concurrency 1→4 + WAL — fixes #31 #46
 
 ### Fixed
+- Prototype hotspot hover now shows target and transition preview — fixes #65
 - Thumbnails are now stored as files with lazy authenticated URLs; legacy inline data URLs migrate on first read — fixes #63
 - Undo history now keeps 120 steps and groups sustained nudges without merging across other edits — fixes #62
 - Public prototype links now serve dynamic title/description/OGP/Twitter metadata and a public thumbnail image — fixes #55

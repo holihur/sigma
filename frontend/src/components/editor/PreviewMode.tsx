@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   ExternalLink,
   MousePointerClick,
   Play,
@@ -33,6 +34,7 @@ export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; pub
   const [location, setLocation] = useState<Location | null>(null);
   const [history, setHistory] = useState<Location[]>([]);
   const [anim, setAnim] = useState<{ transition: Transition; nonce: number } | null>(null);
+  const [hoveredHotspot, setHoveredHotspot] = useState<string | null>(null);
   const [showHotspots, setShowHotspots] = useState(false);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const stageRef = useRef<HTMLDivElement>(null);
@@ -148,6 +150,25 @@ export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; pub
   const top = stageSize.height / 2 - (frameBounds.height * scale) / 2 - frameBounds.y * scale;
 
   const hotspots = collectHotspots(page!, frame);
+  const hovered = hotspots.find(({ node }) => node.id === hoveredHotspot);
+  const hoveredTransition = hovered?.node.link?.transition ?? "instant";
+  const hoveredTransitionName =
+    hoveredTransition === "dissolve" ? t("Dissolve") : hoveredTransition === "slide-left" ? t("Slide left") : hoveredTransition === "slide-up" ? t("Slide up") : t("Instant");
+  const hoveredPreviewClass =
+    hoveredTransition === "dissolve"
+      ? "animate-fade"
+      : hoveredTransition === "slide-left"
+        ? "preview-slide-left"
+        : hoveredTransition === "slide-up"
+          ? "preview-slide-up"
+          : "";
+  const hoveredTarget = hovered?.node.link
+    ? hovered.node.link.action === "back"
+      ? t("Back")
+      : hovered.node.link.action === "url"
+        ? hovered.node.link.url ?? t("Open URL")
+        : frameName(doc.pages, hovered.node.link)
+    : "";
   const animClass =
     anim?.transition === "dissolve"
       ? "animate-fade"
@@ -262,11 +283,32 @@ export function PreviewMode({ onClose, publicMode }: { onClose?: () => void; pub
                     }
                   }
                 }}
+                onMouseEnter={() => setHoveredHotspot(node.id)}
+                onMouseLeave={() => setHoveredHotspot((id) => (id === node.id ? null : id))}
+                onFocus={() => setHoveredHotspot(node.id)}
+                onBlur={() => setHoveredHotspot((id) => (id === node.id ? null : id))}
                 title={node.link?.action === "url" ? node.link.url : `Go to ${frameName(doc.pages, node.link)}`}
               />
             ))}
           </div>
         </div>
+
+        {hovered && (
+          <div className="pointer-events-none absolute bottom-14 right-3 z-20 w-44 rounded-xl border border-white/10 bg-black/75 p-2.5 shadow-2xl backdrop-blur sm:bottom-16 sm:right-4">
+            <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/40">
+              <MousePointerClick className="size-3" /> {t("Interaction preview")}
+            </div>
+            <div className="mt-1 truncate text-[11px] font-medium text-white/85">{hoveredTarget}</div>
+            <div className="mt-2 flex items-center justify-between text-[10px] text-white/50">
+              <span>{hoveredTransitionName}</span>
+              <ArrowRight className="size-3" />
+            </div>
+            <div className="relative mt-2 h-12 overflow-hidden rounded-md border border-white/10 bg-white/5">
+              <div key={`${hovered.node.id}-${hoveredTransition}`} className={cn("absolute inset-1.5 rounded bg-[#38bdf8]/45", hoveredPreviewClass)} />
+              <div className="absolute inset-1.5 rounded border border-dashed border-white/15" />
+            </div>
+          </div>
+        )}
 
         <div className="pointer-events-none absolute bottom-3 left-1/2 max-w-[92vw] -translate-x-1/2 truncate rounded-full border border-white/10 bg-black/50 px-3 py-1 text-[10px] text-white/60 backdrop-blur sm:bottom-4 sm:text-[11px]">
           {frame.name} · {Math.round(scale * 100)}% · {hotspots.length} hotspot{hotspots.length === 1 ? "" : "s"}
