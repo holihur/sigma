@@ -246,7 +246,10 @@ func (p *Page) Add(node *Node, parentID string, index int) {
 	now := Now()
 	node.TS = now
 	if parentID != "" {
-		if parent := p.Nodes[parentID]; parent != nil {
+		if parentID == node.ID || isAncestor(p, node.ID, parentID) {
+			// Prevent cycles: cannot parent under self or descendant.
+			parentID = ""
+		} else if parent := p.Nodes[parentID]; parent != nil {
 			node.ParentID = &parentID
 			if index < 0 || index > len(parent.Children) {
 				index = len(parent.Children)
@@ -568,6 +571,19 @@ func (d *Doc) Summary(pageID string) map[string]any {
 		"nodes":   nodes,
 		"count":   len(p.Nodes),
 	}
+}
+
+func isAncestor(p *Page, ancestorID, descendantID string) bool {
+	cur := p.Nodes[descendantID]
+	guard := 0
+	for cur != nil && cur.ParentID != nil && guard < 100 {
+		if *cur.ParentID == ancestorID {
+			return true
+		}
+		cur = p.Nodes[*cur.ParentID]
+		guard++
+	}
+	return false
 }
 
 func insertAt(s []string, i int, v string) []string {

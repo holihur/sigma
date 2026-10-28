@@ -145,11 +145,21 @@ func (a *API) Handler() http.Handler {
 
 func parseAdminEmails(raw string) map[string]bool {
 	out := map[string]bool{}
+	count := 0
+	empty := 0
 	for _, email := range strings.Split(raw, ",") {
 		email = strings.ToLower(strings.TrimSpace(email))
-		if email != "" {
-			out[email] = true
+		if email == "" {
+			if strings.Contains(raw, ",") {
+				empty++
+			}
+			continue
 		}
+		out[email] = true
+		count++
+	}
+	if raw != "" {
+		log.Printf("admin allowlist: %d admin(s), %d empty entries ignored (SIGMA_ADMIN_EMAILS)", count, empty)
 	}
 	return out
 }

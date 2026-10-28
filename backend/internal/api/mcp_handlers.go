@@ -556,14 +556,29 @@ func (a *API) mcpMutate(fileID, pageID, tool string, args map[string]any) (map[s
 		targetID := mcpStr(args, "targetFrameId")
 		targetName := mcpStr(args, "targetFrameName")
 		transition := mcpStr(args, "transition")
+		urlStr := mcpStr(args, "url")
 		if transition == "" {
 			transition = "instant"
+		}
+		if urlStr != "" {
+			lower := strings.ToLower(strings.TrimSpace(urlStr))
+			if strings.HasPrefix(lower, "javascript:") || strings.HasPrefix(lower, "data:") || strings.HasPrefix(lower, "vbscript:") {
+				return nil, fmt.Errorf("invalid url scheme: only http, https and mailto are allowed")
+			}
+			if lower != "" && !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://") && !strings.HasPrefix(lower, "mailto:") && !strings.HasPrefix(lower, "#") && !strings.HasPrefix(lower, "/") {
+				return nil, fmt.Errorf("invalid url scheme: only http, https and mailto are allowed")
+			}
 		}
 		var targetPage, targetFrame string
 		out, err = a.agentMutate(fileID, pageID, func(doc *design.Doc, page *design.Page) error {
 			n := page.Node(nodeID)
 			if n == nil {
 				return fmt.Errorf("node %s not found", nodeID)
+			}
+			if urlStr != "" {
+				n.Link = &design.Link{Action: "url", URL: strings.TrimSpace(urlStr), Transition: transition}
+				n.TS = design.Now()
+				return nil
 			}
 			var tp *design.Page
 			var tf *design.Node

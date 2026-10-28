@@ -127,6 +127,7 @@ func seedDemo(st *store.Store, am *auth.Manager) error {
 	for i, s := range seeds {
 		docJSON, ok := templates.Load(s.tmpl)
 		if !ok {
+			log.Printf("template %q not found, skipping demo seed %q", s.tmpl, s.name)
 			continue
 		}
 		id := "f_demo_" + s.tmpl
