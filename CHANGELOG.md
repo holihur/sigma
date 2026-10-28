@@ -20,6 +20,7 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 - SQLite concurrency 1→4 + WAL — fixes #31 #46
 
 ### Fixed
+- Public prototype links now serve dynamic title/description/OGP/Twitter metadata and a public thumbnail image — fixes #55
 - Comment placement now snaps to nearby layer edges with visible guides — fixes #57
 - Text editing now shares the rendered line-height/font metrics and auto-grows inside the same vertical-alignment container — fixes #58
 - Dashboard empty state now guides new users through template, canvas and sharing steps — fixes #49

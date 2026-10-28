@@ -118,6 +118,8 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/files/{id}/public-link", a.requireAuth(a.handleGetPublicLink))
 	mux.HandleFunc("POST /api/files/{id}/public-link", a.requireAuth(a.handleSetPublicLink))
 	mux.HandleFunc("GET /api/public/{token}", a.handlePublicFile)
+	mux.HandleFunc("GET /api/public/{token}/thumbnail", a.handlePublicThumbnail)
+	mux.HandleFunc("GET /p/{token}", a.handlePublicPrototypeHTML)
 	mux.HandleFunc("GET /api/notifications", a.requireAuth(a.handleListNotifications))
 	mux.HandleFunc("POST /api/notifications/read", a.requireAuth(a.handleReadNotifications))
 	mux.HandleFunc("GET /api/files/{id}/comments", a.requireAuth(a.handleListComments))
