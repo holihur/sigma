@@ -20,6 +20,7 @@ All notable changes to Sigma are documented in this file. Format follows [Keep a
 - SQLite concurrency 1→4 + WAL — fixes #31 #46
 
 ### Fixed
+- WCAG AA contrast for primary text, primary buttons, selection handles/labels and focus rings in light/dark themes — fixes #47
 - `pruneTombstones` GC 30d (was no-op) — fixes #32
 - `gzip` pool reuse — fixes #37
 - WebSocket broadcast copy-then-unlock — fixes #38

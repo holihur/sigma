@@ -217,7 +217,7 @@ export function CommentsPanel({
               )}
 
               <div className="mt-1.5 flex items-center gap-1 pl-1.5">
-                <span className="mr-auto flex size-5 items-center justify-center rounded-full bg-primary/15 text-[9px] font-semibold text-primary">
+                <span className="mr-auto flex size-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-semibold text-primary">
                   {index + 1}
                 </span>
                 {replies.length > 0 && (

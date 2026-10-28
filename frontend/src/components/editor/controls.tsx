@@ -82,7 +82,7 @@ export function NumberField({
   return (
     <div
       className={cn(
-        "flex h-8 items-center gap-1.5 rounded-md border border-input bg-transparent px-2 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20",
+        "flex h-8 items-center gap-1.5 rounded-md border border-input bg-transparent px-2 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/90",
         disabled && "opacity-50",
         className,
       )}
@@ -172,7 +172,7 @@ export function HexInput({
         e.stopPropagation();
       }}
       className={cn(
-        "h-8 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-[12px] uppercase outline-none focus:border-ring focus:ring-2 focus:ring-ring/20",
+        "h-8 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-[12px] uppercase outline-none focus:border-ring focus:ring-2 focus:ring-ring/90",
         className,
       )}
       spellCheck={false}

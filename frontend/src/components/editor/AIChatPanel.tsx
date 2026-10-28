@@ -217,7 +217,7 @@ export function AIChatPanel({
       </div>
 
       <div className="shrink-0 border-t border-panel-border p-2.5">
-        <div className="rounded-xl border border-input bg-background/60 p-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+        <div className="rounded-xl border border-input bg-background/60 p-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/90">
           <textarea
             ref={textRef}
             value={input}

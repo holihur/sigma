@@ -80,7 +80,7 @@ export function Toolbar({ readOnly, onOpenComponents }: { readOnly: boolean; onO
                     onClick={() => setTool(item.tool)}
                     className={cn(
                       "relative flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-30",
-                      tool === item.tool && "bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary",
+                      tool === item.tool && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
                     )}
                   >
                     {item.icon}

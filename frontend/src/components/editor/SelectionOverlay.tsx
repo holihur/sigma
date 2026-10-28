@@ -337,7 +337,7 @@ export function SelectionOverlay({
 
       {!editing && selectionBounds && (
         <div
-          className="absolute -translate-x-1/2 rounded-[3px] px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm"
+          className="absolute -translate-x-1/2 rounded-[3px] px-1.5 py-0.5 text-[10px] font-medium text-selection-foreground shadow-sm"
           style={{
             left: (selectionBounds.x + selectionBounds.width / 2) * viewport.zoom + viewport.x,
             top: (selectionBounds.y + selectionBounds.height) * viewport.zoom + viewport.y + 10,
