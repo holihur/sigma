@@ -157,7 +157,7 @@ export function SelectionOverlay({
           <HoverOutline page={page} node={hovered} toScreen={toScreen} />
         )}
 
-        {corners && !editing && (
+        {corners && !editing && tool === "select" && (
           <polygon
             points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
             fill="none"
@@ -166,7 +166,7 @@ export function SelectionOverlay({
           />
         )}
 
-        {!corners && box && !editing && (
+        {!corners && box && !editing && tool === "select" && (
           <rect
             x={box.x}
             y={box.y}
