@@ -10,6 +10,29 @@ import (
 	"sigma/internal/templates"
 )
 
+const authCookieName = "sigma_session"
+
+func setAuthCookie(w http.ResponseWriter, r *http.Request, token string) {
+	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+	http.SetCookie(w, &http.Cookie{
+		Name: authCookieName, Value: token, Path: "/", MaxAge: 24 * 60 * 60,
+		HttpOnly: true, Secure: secure, SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func clearAuthCookie(w http.ResponseWriter, r *http.Request) {
+	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+	http.SetCookie(w, &http.Cookie{
+		Name: authCookieName, Value: "", Path: "/", MaxAge: -1,
+		HttpOnly: true, Secure: secure, SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func (a *API) handleLogout(w http.ResponseWriter, r *http.Request) {
+	clearAuthCookie(w, r)
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
 var avatarColors = []string{"#7c5cff", "#f97316", "#06b6d4", "#ec4899", "#22c55e", "#eab308", "#ef4444", "#3b82f6"}
 
 func colorFor(email string) string {
@@ -64,6 +87,7 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token, _ := a.auth.Token(u.ID)
+	setAuthCookie(w, r, token)
 	writeJSON(w, http.StatusCreated, map[string]any{"token": token, "user": u})
 }
 
@@ -81,7 +105,12 @@ func (a *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Incorrect email or password")
 		return
 	}
+	if a.st.PasswordDisabled(u.ID) {
+		writeError(w, http.StatusForbidden, "This account uses SSO. Sign in with your identity provider.")
+		return
+	}
 	token, _ := a.auth.Token(u.ID)
+	setAuthCookie(w, r, token)
 	writeJSON(w, http.StatusOK, map[string]any{"token": token, "user": u})
 }
 

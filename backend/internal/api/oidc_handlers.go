@@ -88,6 +88,10 @@ func (a *API) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, auth.OIDCErrorURL(a.oidc.AppBaseURL(), "Could not create SSO account"), http.StatusFound)
 				return
 			}
+			if err := a.st.SetPasswordDisabled(u.ID, true); err != nil {
+				http.Redirect(w, r, auth.OIDCErrorURL(a.oidc.AppBaseURL(), "Could not create SSO account"), http.StatusFound)
+				return
+			}
 		} else {
 			http.Redirect(w, r, auth.OIDCErrorURL(a.oidc.AppBaseURL(), lookupErr.Error()), http.StatusFound)
 			return
@@ -142,5 +146,6 @@ func (a *API) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Could not create session")
 		return
 	}
+	setAuthCookie(w, r, token)
 	writeJSON(w, http.StatusOK, map[string]any{"token": token, "user": u, "returnTo": returnTo})
 }

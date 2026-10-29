@@ -23,6 +23,7 @@ import type {
 } from "./types";
 
 const TOKEN_KEY = "sigma.token";
+let memoryToken: string | null = null;
 
 function getApiBase(): string {
   const env = (import.meta as unknown as { env?: Record<string, string> }).env;
@@ -51,7 +52,7 @@ export function appUrl(path: string): string {
 }
 
 export function getToken(): string | null {
-  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  return memoryToken;
 }
 
 /** Add the bearer token to image URLs that are loaded by the browser directly. */
@@ -62,10 +63,10 @@ export function authedAssetUrl(path: string): string {
 }
 
 export function setToken(token: string | null) {
-  try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch { /* quota */ }
+  memoryToken = token;
+  // Remove tokens written by older builds. Authentication now uses an
+  // HttpOnly session cookie; only the current tab keeps a bearer fallback.
+  try { localStorage.removeItem(TOKEN_KEY); } catch { /* private mode */ }
 }
 
 export class ApiError extends Error {
@@ -105,9 +106,9 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     }
   }
   if (!res.ok) {
-    if (res.status === 401 && token) {
+    if (res.status === 401) {
       setToken(null);
-      window.dispatchEvent(new CustomEvent("sigma:unauthorized"));
+      if (!path.startsWith("/auth/")) window.dispatchEvent(new CustomEvent("sigma:unauthorized"));
     }
     const message = (data as { error?: string } | null)?.error ?? `Request failed (${res.status})`;
     throw new ApiError(message, res.status);
@@ -126,6 +127,7 @@ export const authApi = {
       body: { name, email, password },
     }),
   me: () => api<{ user: User }>("/auth/me"),
+  logout: () => api<{ ok: true }>("/auth/logout", { method: "POST" }),
   updateProfile: (body: { name: string; color: string; avatar: string }) =>
     api<{ user: User }>("/users/me", { method: "PATCH", body }),
   oidcConfig: () => api<OIDCConfig>("/auth/oidc/config"),

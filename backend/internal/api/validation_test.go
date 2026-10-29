@@ -56,3 +56,35 @@ func TestCreateCommentRejectsNonFiniteOrDistantCoordinates(t *testing.T) {
 		t.Fatalf("expected 201 for valid comment, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestLoginSetsHttpOnlySessionCookie(t *testing.T) {
+	a, _ := newPageTestAPI(t)
+	hash, err := a.auth.HashPassword("correct-horse-battery")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.st.CreateUser("u_cookie", "Cookie", "cookie@example.com", hash, "#0ea5e9"); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader(
+		`{"email":"cookie@example.com","password":"correct-horse-battery"}`,
+	))
+	rec := httptest.NewRecorder()
+	a.handleLogin(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("login status %d: %s", rec.Code, rec.Body.String())
+	}
+	cookies := rec.Result().Cookies()
+	if len(cookies) == 0 || cookies[0].Name != authCookieName || !cookies[0].HttpOnly {
+		t.Fatalf("expected HttpOnly %s cookie, got %#v", authCookieName, cookies)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+	req.AddCookie(cookies[0])
+	rec = httptest.NewRecorder()
+	a.requireAuth(a.handleMe)(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("cookie auth status %d: %s", rec.Code, rec.Body.String())
+	}
+}

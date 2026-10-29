@@ -100,6 +100,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/auth/oidc/callback", a.handleOIDCCallback)
 	mux.HandleFunc("POST /api/auth/oidc/exchange", a.handleOIDCExchange)
 	mux.HandleFunc("GET /api/auth/me", a.requireAuth(a.handleMe))
+	mux.HandleFunc("POST /api/auth/logout", a.handleLogout)
 	mux.HandleFunc("PATCH /api/users/me", a.requireAuth(a.handleUpdateMe))
 
 	mux.HandleFunc("GET /api/files", a.requireAuth(a.handleListFiles))
@@ -194,8 +195,21 @@ func (a *API) requireAuth(next AuthedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+		cookieAuth := false
 		if token == "" {
 			token = r.URL.Query().Get("token")
+		}
+		if token == "" {
+			if c, err := r.Cookie(authCookieName); err == nil {
+				token = c.Value
+				cookieAuth = true
+			}
+		}
+		if cookieAuth && r.Method != http.MethodGet && r.Method != http.MethodHead {
+			if origin := r.Header.Get("Origin"); origin != "" && !allowedOrigin(origin) {
+				writeError(w, http.StatusForbidden, "Invalid request origin")
+				return
+			}
 		}
 		uid, err := a.auth.Parse(token)
 		if err != nil {

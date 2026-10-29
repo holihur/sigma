@@ -36,25 +36,19 @@ interface AuthState {
   setUser: (user: User) => void;
 }
 
-const bootToken = getToken();
-const bootUser = bootToken ? readCachedUser() : null;
+const bootUser = readCachedUser();
 
 export const useAuth = create<AuthState>((set) => ({
   user: bootUser,
-  token: bootToken,
-  // With a cached profile, paint the workspace immediately and revalidate in
-  // the background. The API still rejects an expired token.
-  loading: !!bootToken && !bootUser,
+  token: getToken(),
+  loading: true,
   init: async () => {
-    const token = getToken();
-    if (!token) {
-      set({ loading: false, user: null, token: null });
-      return;
-    }
+    // The session lives in an HttpOnly cookie, so always revalidate it. A
+    // cached profile only avoids a blank header while this request is in flight.
     try {
       const { user } = await authApi.me();
       writeCachedUser(user);
-      set({ user, token, loading: false });
+      set({ user, token: getToken(), loading: false });
     } catch {
       setToken(null);
       writeCachedUser(null);
@@ -86,6 +80,7 @@ export const useAuth = create<AuthState>((set) => ({
     set({ user });
   },
   logout: () => {
+    void authApi.logout().catch(() => undefined);
     setToken(null);
     writeCachedUser(null);
     set({ user: null, token: null });

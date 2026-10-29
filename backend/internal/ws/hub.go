@@ -117,6 +117,11 @@ func NewHub(access AccessFunc, save DocFunc, delta DeltaFunc) *Hub {
 func (h *Hub) Handle(w http.ResponseWriter, r *http.Request) {
 	fileID := r.URL.Query().Get("fileId")
 	token := r.URL.Query().Get("token")
+	if token == "" {
+		if c, err := r.Cookie("sigma_session"); err == nil {
+			token = c.Value
+		}
+	}
 	clientID := r.URL.Query().Get("clientId")
 	if clientID == "" {
 		clientID = "anon"

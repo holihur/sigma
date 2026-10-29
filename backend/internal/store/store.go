@@ -139,13 +139,14 @@ func (s *Store) ensureIndexes(ctx context.Context) error {
 }
 
 type userDoc struct {
-	ID        string `bson:"_id"`
-	Name      string `bson:"name"`
-	Email     string `bson:"email"`
-	Password  string `bson:"password"`
-	Color     string `bson:"color"`
-	Avatar    string `bson:"avatar"`
-	CreatedAt string `bson:"created_at"`
+	ID               string `bson:"_id"`
+	Name             string `bson:"name"`
+	Email            string `bson:"email"`
+	Password         string `bson:"password"`
+	PasswordDisabled bool   `bson:"password_disabled,omitempty"`
+	Color            string `bson:"color"`
+	Avatar           string `bson:"avatar"`
+	CreatedAt        string `bson:"created_at"`
 }
 
 func (d userDoc) model() model.User {
@@ -302,6 +303,23 @@ func (s *Store) CreateUser(id, name, email, passwordHash, color string) (model.U
 		return model.User{}, err
 	}
 	return d.model(), nil
+}
+
+func (s *Store) PasswordDisabled(userID string) bool {
+	ctx, cancel := s.ctx()
+	defer cancel()
+	var d userDoc
+	if err := s.collection("users").FindOne(ctx, bson.M{"_id": userID}).Decode(&d); err != nil {
+		return false
+	}
+	return d.PasswordDisabled
+}
+
+func (s *Store) SetPasswordDisabled(userID string, disabled bool) error {
+	ctx, cancel := s.ctx()
+	defer cancel()
+	_, err := s.collection("users").UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": bson.M{"password_disabled": disabled}})
+	return err
 }
 
 func (s *Store) UserByEmail(email string) (model.User, string, error) {
