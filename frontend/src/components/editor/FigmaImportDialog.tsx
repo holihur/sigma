@@ -58,6 +58,9 @@ export function FigmaImportDialog({
         res = await figmaApi.importJSON(json, name.trim() || fileName.replace(/\.(sigma\.)?json$/i, "") || t("Imported design"));
       }
       toast.success(t("Imported {count} layers across {pages} pages", { count: res.nodes, pages: res.pages }));
+      if (res.warnings?.length) {
+        toast.warning(t("Some Figma features were simplified: {list}", { list: res.warnings.join("; ") }), { duration: 10000 });
+      }
       onImported(res.file);
       reset();
       onOpenChange(false);
