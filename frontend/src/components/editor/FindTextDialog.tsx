@@ -31,6 +31,8 @@ export function FindTextDialog({
   const [replace, setReplace] = useState("");
   const [active, setActive] = useState(0);
   const [scope, setScope] = useState<"page" | "file">("file");
+  const [caseSensitive, setCaseSensitive] = useState(false);
+  const [wholeWord, setWholeWord] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -40,19 +42,20 @@ export function FindTextDialog({
     }
   }, [open, ensureAllPages]);
 
+  const matcher = useMemo(() => makeMatcher(query, caseSensitive, wholeWord), [query, caseSensitive, wholeWord]);
+
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
+    if (!matcher) return [];
     const current = useEditor.getState().pageId;
     const pages = scope === "file" ? doc.pages : doc.pages.filter((p) => p.id === current);
     return pages.flatMap((page) =>
       Object.values(page.nodes)
-        .filter((node) => node.type === "text" && node.text.toLowerCase().includes(q))
+        .filter((node) => node.type === "text" && matcher.test(node.text))
         .map((node) => ({ page, node })),
     );
-  }, [doc, query, scope]);
+  }, [doc, matcher, scope]);
 
-  useEffect(() => setActive(0), [query, scope]);
+  useEffect(() => setActive(0), [query, scope, caseSensitive, wholeWord]);
 
   const reveal = async (index: number) => {
     const hit = results[index];
@@ -81,7 +84,9 @@ export function FindTextDialog({
     if (st.pageId !== hit.page.id) {
       try { await st.setPage(hit.page.id); } catch { return; }
     }
-    st.updateNode(hit.node.id, { text: hit.node.text.replace(new RegExp(escapeRegExp(query), "i"), replace) }, true);
+    const re = makeMatcher(query, caseSensitive, wholeWord);
+    if (!re) return;
+    st.updateNode(hit.node.id, { text: hit.node.text.replace(re, replace) }, true);
   };
 
   const replaceAll = async () => {
@@ -90,14 +95,19 @@ export function FindTextDialog({
     try { await st.ensureAllPages(); } catch { return; }
     let count = 0;
     const currentDoc = useEditor.getState().doc;
+    const single = makeMatcher(query, caseSensitive, wholeWord);
+    if (!single) return;
+    const global = new RegExp(single.source, single.flags + "g");
     for (const page of currentDoc.pages) {
       if (scope === "page" && page.id !== st.pageId) continue;
       if (st.pageId !== page.id) {
         try { await st.setPage(page.id); } catch { continue; }
       }
       for (const node of Object.values(page.nodes)) {
-        if (node.type !== "text" || !node.text.toLowerCase().includes(query.toLowerCase())) continue;
-        st.updateNode(node.id, { text: node.text.replace(new RegExp(escapeRegExp(query), "gi"), replace) }, true);
+        global.lastIndex = 0;
+        if (node.type !== "text" || !global.test(node.text)) continue;
+        global.lastIndex = 0;
+        st.updateNode(node.id, { text: node.text.replace(global, replace) }, true);
         count++;
       }
     }
@@ -141,6 +151,10 @@ export function FindTextDialog({
           <button className={cn("rounded px-2 py-1 hover:bg-secondary", scope === "page" && "bg-secondary text-foreground")} onClick={() => setScope("page")}>{t("Current page")}</button>
           <span className="ml-auto">{t("{count} results", { count: results.length })}</span>
         </div>
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <button title={t("Match case")} className={cn("rounded border px-2 py-1 hover:bg-secondary", caseSensitive ? "border-primary bg-primary/10 text-primary" : "border-border")} onClick={() => setCaseSensitive((v) => !v)}>Aa</button>
+          <button title={t("Whole word")} className={cn("rounded border px-2 py-1 hover:bg-secondary", wholeWord ? "border-primary bg-primary/10 text-primary" : "border-border")} onClick={() => setWholeWord((v) => !v)}>{t("Whole word")}</button>
+        </div>
         <div className="max-h-[42vh] overflow-y-auto rounded-lg border border-border">
           {!query ? (
             <div className="px-4 py-10 text-center text-[12px] text-muted-foreground">{t("Type to search text layers.")}</div>
@@ -158,7 +172,7 @@ export function FindTextDialog({
               >
                 <Replace className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12px]">{highlight(hit.node.text, query)}</span>
+                  <span className="block truncate text-[12px]">{highlight(hit.node.text, query, caseSensitive, wholeWord)}</span>
                   <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{hit.page.name} · {hit.node.name}</span>
                 </span>
               </button>
@@ -174,16 +188,24 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function highlight(text: string, query: string) {
+function makeMatcher(query: string, caseSensitive: boolean, wholeWord: boolean): RegExp | null {
   const q = query.trim();
-  if (!q) return text;
-  const index = text.toLowerCase().indexOf(q.toLowerCase());
-  if (index < 0) return text;
+  if (!q) return null;
+  const source = wholeWord ? `\\b${escapeRegExp(q)}\\b` : escapeRegExp(q);
+  return new RegExp(source, caseSensitive ? "" : "i");
+}
+
+function highlight(text: string, query: string, caseSensitive: boolean, wholeWord: boolean) {
+  const re = makeMatcher(query, caseSensitive, wholeWord);
+  if (!re) return text;
+  const match = re.exec(text);
+  if (!match) return text;
+  const index = match.index;
   return (
     <>
       {text.slice(0, index)}
-      <mark className="rounded bg-primary/20 px-0.5 text-foreground">{text.slice(index, index + q.length)}</mark>
-      {text.slice(index + q.length)}
+      <mark className="rounded bg-primary/20 px-0.5 text-foreground">{match[0]}</mark>
+      {text.slice(index + match[0].length)}
     </>
   );
 }
