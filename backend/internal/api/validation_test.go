@@ -88,3 +88,20 @@ func TestLoginSetsHttpOnlySessionCookie(t *testing.T) {
 		t.Fatalf("cookie auth status %d: %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestListFilesPagination(t *testing.T) {
+	a, _ := newPageTestAPI(t)
+	u, _ := a.st.UserByID("u_pages")
+	for i := 0; i < 5; i++ {
+		if _, err := a.st.CreateFile("f_page_"+string(rune('a'+i)), "Design "+string(rune('A'+i)), u.ID, twoPageDoc, "blank"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	page, total, err := a.st.ListFilesPage(u.ID, 3, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if total != 6 || len(page) != 3 {
+		t.Fatalf("pagination total=%d len=%d", total, len(page))
+	}
+}
