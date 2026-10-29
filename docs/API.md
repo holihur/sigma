@@ -2,7 +2,7 @@
 
 Base URL：`http://localhost:9000/api`
 
-除公开端点外，使用：
+除公开端点外，浏览器使用登录时下发的 `sigma_session` HttpOnly / SameSite=Lax Cookie；脚本与 MCP 也可使用：
 
 ```http
 Authorization: Bearer <JWT>
@@ -21,8 +21,9 @@ MCP 也接受 `Authorization: Bearer sigma_pat_...`。
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `POST` | `/auth/register` | `{name,email,password}` → `{token,user}` |
-| `POST` | `/auth/login` | `{email,password}` → `{token,user}` |
-| `GET` | `/auth/me` | 当前用户 |
+| `POST` | `/auth/login` | `{email,password}` → `{token,user}`，并设置 HttpOnly 会话 Cookie |
+| `POST` | `/auth/logout` | 清除会话 Cookie |
+| `GET` | `/auth/me` | 当前用户（Cookie 或 Bearer） |
 | `PATCH` | `/users/me` | `{name,color,avatar}` 更新个人资料；头像必须是 `/api/uploads/...` |
 | `GET` | `/auth/oidc/config` | `{enabled,label}`，公开 |
 | `GET` | `/auth/oidc/login?returnTo=/` | 跳转 OIDC Provider，公开 |
@@ -40,7 +41,12 @@ OIDC 使用 Authorization Code + PKCE + nonce。回调成功后前端用一次�
 | `GET/PATCH/DELETE` | `/files/{id}` | 详情 / 重命名、缩略图、收藏、文件夹 / 删除 |
 | `POST` | `/files/{id}/duplicate` | 复制文件 |
 | `GET/PUT` | `/files/{id}/doc` | 读取 / 合并保存文档 |
+| `GET` | `/files/{id}/manifest` | 页面清单（id/name/ts）、文件元数据和样式，不含节点 |
+| `GET` | `/files/{id}/pages?ids=` | 按 id 批量读取页面；省略 ids 返回全部 |
+| `GET/PATCH/DELETE` | `/files/{id}/pages/{pageId}` | 读取单页 / 重命名 / 删除 |
+| `PUT` | `/files/{id}/partial-doc` | 只合并客户端已加载的页面 |
 | `GET/POST` | `/files/{id}/versions` | 版本列表 / 创建快照 |
+| `GET` | `/files/{id}/versions/{versionId}` | 版本完整文档（用于 Diff 预览） |
 | `POST` | `/files/{id}/versions/{versionId}/restore` | 恢复版本并广播 |
 | `GET/POST` | `/files/{id}/comments` | 评论列表 / 新建 |
 | `PATCH/DELETE` | `/comments/{id}` | 解决 / 删除评论 |
@@ -187,9 +193,11 @@ Claude Desktop / Cursor 配置：
 GET /api/ws?fileId=<id>&token=<JWT>&clientId=<random>
 ```
 
+鉴权也可使用登录 Cookie；浏览器刷新后无需把 JWT 写入 localStorage。
+
 消息：
 
-- `presence`：光标、选区、在线用户。
+- `presence`：光标、选区、正在编辑的文本节点、在线用户。
 - `delta`：节点 / 页面 / 墓碑增量。
 - `doc-delta`：服务端权威增量广播。
 - `comment`：新评论通知。
