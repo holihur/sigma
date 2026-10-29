@@ -184,6 +184,7 @@ export function Canvas({
   const draftRef = useRef<HTMLTextAreaElement>(null);
   const penRef = useRef<{ nodeId: string; points: VectorPoint[]; parentId: string | null; history: boolean } | null>(null);
   const lastPenClick = useRef<{ time: number; screen: Point } | null>(null);
+  const [penTick, setPenTick] = useState(0);
   const lastCursorSent = useRef(0);
   const hoverFrame = useRef<number | null>(null);
 
@@ -440,6 +441,7 @@ export function Canvas({
     const pen = penRef.current;
     penRef.current = null;
     lastPenClick.current = null;
+    setPenTick((v) => v + 1);
     if (!pen) return;
     const st = store.getState();
     const node = getPage(st.doc, pageId).nodes[pen.nodeId];
@@ -476,11 +478,13 @@ export function Canvas({
         const inHandle = { x: origin.x * 2 - local.x, y: origin.y * 2 - local.y };
         pen.points[index] = { ...pen.points[index], in: inHandle, out };
         updatePenPoints(pen.points, pen.parentId);
+        setPenTick((v) => v + 1);
       },
       (ev) => {
         if (!moved) {
           pen.points[index] = { x: origin.x, y: origin.y };
           updatePenPoints(pen.points, pen.parentId);
+          setPenTick((v) => v + 1);
           return;
         }
         if (ev.altKey) {
@@ -541,6 +545,7 @@ export function Canvas({
     const local = parentLocalPoint(page, pen.parentId, world);
     pen.points.push({ x: local.x, y: local.y });
     updatePenPoints(pen.points, pen.parentId);
+    setPenTick((v) => v + 1);
     beginPenHandle(pen, pen.points.length - 1, local);
   };
 
@@ -1371,6 +1376,49 @@ export function Canvas({
         onVectorHandleStart={onVectorHandleStart}
         selectedPoint={selectedPoint}
       />
+
+      {/* pen floating toolbar — follows last anchor, avoids fixed right panel */}
+      {penRef.current && tool === "vector" && lastPenClick.current && penTick >= 0 && (() => {
+        const p = lastPenClick.current!.screen;
+        const rect = containerRef.current?.getBoundingClientRect();
+        const vw = rect?.width ?? 0;
+        const vh = rect?.height ?? 0;
+        let x = p.x + 14;
+        let y = p.y + 14;
+        // keep inside viewport
+        if (x + 200 > vw) x = p.x - 200 - 10;
+        if (y + 80 > vh) y = p.y - 80 - 10;
+        if (x < 8) x = 8;
+        if (y < 8) y = 8;
+        return (
+          <div
+            className="absolute z-40 flex items-center gap-1 rounded-full border border-border bg-panel/95 px-1.5 py-1 shadow-xl backdrop-blur"
+            style={{ left: x, top: y }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => finishPen(true)}
+              className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              闭合 Z
+            </button>
+            <button
+              onClick={() => finishPen(false)}
+              className="rounded-full px-2.5 py-1 text-[11px] hover:bg-secondary"
+            >
+              完成 ↵
+            </button>
+            <span className="mx-1 h-4 w-px bg-border" />
+            <button
+              onClick={() => finishPen(false)}
+              className="rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+              title="按 Esc 取消"
+            >
+              取消 Esc
+            </button>
+          </div>
+        );
+      })()}
 
       {/* comment pins */}
       {unresolved.map((comment, index) => {
