@@ -4,7 +4,7 @@ Thanks for helping make Sigma better!
 
 ## Development
 
-**Requirements**: Go 1.27+, Node 26+, pnpm 12+, MongoDB 7+
+**Requirements**: Go 1.27+, Node 26+, pnpm 10+ (use `corepack enable` if your pnpm is older), MongoDB 7+
 
 ```bash
 mise install          # installs Go, Node, pnpm per mise.toml
