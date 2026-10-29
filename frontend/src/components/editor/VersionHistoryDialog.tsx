@@ -27,11 +27,13 @@ export function VersionHistoryDialog({
   const t = useT();
   const file = useEditor((s) => s.file);
   const readOnly = useEditor((s) => s.isReadOnly);
+  const dirty = useEditor((s) => s.dirty);
   const applyRestoredDoc = useEditor((s) => s.applyRestoredDoc);
   const [versions, setVersions] = useState<VersionMeta[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<string | null>(null);
 
   const load = async () => {
     if (!file) return;
@@ -65,11 +67,19 @@ export function VersionHistoryDialog({
   };
 
   const restore = async (version: VersionMeta) => {
+    if (pendingRestore !== version.id) {
+      setPendingRestore(version.id);
+      return;
+    }
     setRestoring(version.id);
     try {
+      if (dirty) {
+        await versionsApi.create(file.id, `Autosave before restoring ${version.name}`);
+      }
       const data = await versionsApi.restore(file.id, version.id);
       applyRestoredDoc(data.doc, data.version);
       toast.success(`Restored “${version.name}”`);
+      setPendingRestore(null);
       await load();
       onOpenChange(false);
     } catch (e) {
@@ -129,15 +139,22 @@ export function VersionHistoryDialog({
                   </div>
                 </div>
                 <Badge variant="outline">v{v.version}</Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!!restoring || readOnly}
-                  onClick={() => restore(v)}
-                >
-                  {restoring === v.id ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
-                  {t("Restore")}
-                </Button>
+                {pendingRestore === v.id ? (
+                  <>
+                    <Button variant="ghost" size="sm" disabled={!!restoring} onClick={() => setPendingRestore(null)}>
+                      {t("Cancel")}
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={!!restoring || readOnly} onClick={() => restore(v)}>
+                      {restoring === v.id ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
+                      {t("Confirm restore")}
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="outline" size="sm" disabled={!!restoring || readOnly} onClick={() => restore(v)}>
+                    <RotateCcw className="size-3.5" />
+                    {t("Restore")}
+                  </Button>
+                )}
               </div>
             ))
           )}
