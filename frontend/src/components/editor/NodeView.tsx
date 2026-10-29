@@ -37,7 +37,7 @@ export function NodeView({ node, ctx }: { node: SceneNode; ctx: NodeViewContext 
   const strokeColor = node.stroke ? paintToCss(node.stroke) : "transparent";
   const shadows: string[] = [];
   if (node.shadow) shadows.push(shadowToCss(node.shadow)!);
-  if (node.strokeWidth > 0 && node.stroke) shadows.push(`inset 0 0 0 ${node.strokeWidth}px ${strokeColor}`);
+  if (node.strokeWidth > 0 && node.stroke && node.type !== "vector" && node.type !== "line") shadows.push(`inset 0 0 0 ${node.strokeWidth}px ${strokeColor}`);
 
   const layoutParent = node.parentId ? page.nodes[node.parentId] : null;
   const inAutoLayout = !!layoutParent && layoutParent.type === "frame" && (layoutParent.layout === "horizontal" || layoutParent.layout === "vertical");
