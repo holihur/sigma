@@ -28,6 +28,7 @@ type uploadBucket struct {
 	count int
 	reset time.Time
 }
+
 func allowUpload(userID string) bool {
 	v, _ := uploadBuckets.LoadOrStore(userID, &uploadBucket{reset: time.Now().Add(time.Hour)})
 	b := v.(*uploadBucket)

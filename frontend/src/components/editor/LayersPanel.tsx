@@ -110,12 +110,20 @@ export function LayersPanel() {
   };
   walk(page.rootIds, 0);
 
+  const searchIndex = React.useMemo(
+    () => Object.values(page.nodes).map((node) => ({
+      id: node.id,
+      hay: `${node.name}\n${node.type}`.toLowerCase(),
+    })),
+    [page.nodes],
+  );
+
   const searchVisible = new Set<string>();
   if (query) {
-    for (const node of Object.values(page.nodes) as SceneNode[]) {
-      if (!node.name.toLowerCase().includes(query) && !node.type.toLowerCase().includes(query)) continue;
-      searchVisible.add(node.id);
-      for (const ancestor of ancestorsOf(page, node.id)) searchVisible.add(ancestor.id);
+    for (const entry of searchIndex) {
+      if (!entry.hay.includes(query)) continue;
+      searchVisible.add(entry.id);
+      for (const ancestor of ancestorsOf(page, entry.id)) searchVisible.add(ancestor.id);
     }
   }
   const visibleRows = query ? rows.filter(({ node }) => searchVisible.has(node.id)) : rows;
