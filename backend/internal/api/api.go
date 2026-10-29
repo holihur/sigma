@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -120,6 +121,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/files/{id}/doc", a.requireAuth(a.handlePutDoc))
 	mux.HandleFunc("GET /api/files/{id}/versions", a.requireAuth(a.handleListVersions))
 	mux.HandleFunc("POST /api/files/{id}/versions", a.requireAuth(a.handleCreateVersion))
+	mux.HandleFunc("GET /api/files/{id}/versions/{versionId}", a.requireAuth(a.handleGetVersionDoc))
 	mux.HandleFunc("POST /api/files/{id}/versions/{versionId}/restore", a.requireAuth(a.handleRestoreVersion))
 	mux.HandleFunc("POST /api/uploads", a.requireAuth(a.handleUpload))
 	mux.HandleFunc("GET /api/uploads/{name}", a.handleUploadFile)
@@ -353,11 +355,27 @@ func withLogging(next http.Handler) http.Handler {
 			return
 		}
 		start := time.Now()
+		requestID := strings.TrimSpace(r.Header.Get("X-Request-Id"))
+		if requestID == "" {
+			requestID = newID("req")
+		}
+		w.Header().Set("X-Request-Id", requestID)
 		rec := &statusRecorder{ResponseWriter: w, status: 200}
 		next.ServeHTTP(rec, r)
-		if rec.status >= 400 {
-			log.Printf("%s %s -> %d (%s)", r.Method, r.URL.Path, rec.status, time.Since(start).Round(time.Millisecond))
+		duration := time.Since(start)
+		level := slog.LevelInfo
+		if rec.status >= 500 {
+			level = slog.LevelError
+		} else if rec.status >= 400 {
+			level = slog.LevelWarn
 		}
+		slog.Log(r.Context(), level, "http_request",
+			"request_id", requestID,
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", rec.status,
+			"duration_ms", duration.Milliseconds(),
+		)
 	})
 }
 
@@ -476,6 +494,11 @@ func writeJSONCompressed(w http.ResponseWriter, r *http.Request, status int, v a
 	}
 	w.WriteHeader(status)
 	_, _ = w.Write(body)
+}
+
+func writeServerError(w http.ResponseWriter, status int, err error, message string) {
+	log.Printf("%s: %v", message, err)
+	writeError(w, status, message)
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {

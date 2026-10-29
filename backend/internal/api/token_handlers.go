@@ -25,7 +25,7 @@ func patView(r store.PATRecord) map[string]any {
 func (a *API) handleListPATs(w http.ResponseWriter, r *http.Request, u model.User) {
 	list, err := a.st.ListPATs(u.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	out := make([]map[string]any, 0, len(list))
@@ -89,7 +89,7 @@ func (a *API) handleCreatePAT(w http.ResponseWriter, r *http.Request, u model.Us
 		Scopes: auth.ScopeString(scopes), ExpiresAt: expires, CreatedAt: model.Now(),
 	}
 	if err := a.st.CreatePAT(rec); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"token": raw, "pat": patView(rec)})
@@ -102,7 +102,7 @@ func (a *API) handleDeletePAT(w http.ResponseWriter, r *http.Request, u model.Us
 			writeError(w, http.StatusNotFound, "Token not found")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})

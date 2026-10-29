@@ -40,7 +40,7 @@ func cleanSkillName(s string) string {
 func (a *API) handleAIContext(w http.ResponseWriter, r *http.Request, u model.User) {
 	c, err := a.st.AIContext(u.ID)
 	if err != nil && !store.ErrNotFound(err) {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"designMd": c.DesignMD, "agentsMd": c.AgentsMD, "updatedAt": c.UpdatedAt})
@@ -60,7 +60,7 @@ func (a *API) handleSaveAIContext(w http.ResponseWriter, r *http.Request, u mode
 		return
 	}
 	if err := a.st.SaveAIContext(u.ID, body.DesignMD, body.AgentsMD); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
@@ -76,7 +76,7 @@ func skillView(r store.SkillRecord) map[string]any {
 func (a *API) handleListSkills(w http.ResponseWriter, r *http.Request, u model.User) {
 	list, err := a.st.ListSkills(u.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	out := make([]map[string]any, 0, len(list))
@@ -167,7 +167,7 @@ func (a *API) handleUploadSkill(w http.ResponseWriter, r *http.Request, u model.
 	}
 	out, err := a.st.UpsertSkill(rec)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"skill": skillView(out)})
@@ -179,7 +179,7 @@ func (a *API) handleDeleteSkill(w http.ResponseWriter, r *http.Request, u model.
 			writeError(w, http.StatusNotFound, "Skill not found")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})

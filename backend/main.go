@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -32,6 +33,7 @@ func env(key, fallback string) string {
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
 	dbName := env("MONGO_DB", "sigma")
 	port := env("PORT", "9000")
 	secret := strings.TrimSpace(os.Getenv("SIGMA_SECRET"))

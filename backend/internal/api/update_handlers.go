@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -25,7 +26,8 @@ func (a *API) handleUpdateCheck(w http.ResponseWriter, r *http.Request, _ model.
 	}
 	st, err := a.updater.Check(r.Context())
 	if err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error(), "status": st})
+		log.Printf("update check: %v", err)
+		writeJSON(w, http.StatusBadGateway, map[string]any{"error": "Could not check for updates", "status": st})
 		return
 	}
 	writeJSON(w, http.StatusOK, st)
@@ -42,7 +44,7 @@ func (a *API) handleUpdateApply(w http.ResponseWriter, r *http.Request, _ model.
 		return
 	}
 	if err := a.updater.Apply(r.Context()); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "version": st.LatestVersion, "restarting": true})

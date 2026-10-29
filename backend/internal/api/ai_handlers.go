@@ -72,7 +72,7 @@ func settingsResponse(rec store.AISettingsRecord, key string) aiSettingsResponse
 func (a *API) handleAISettings(w http.ResponseWriter, r *http.Request, u appmodel.User) {
 	rec, key, err := a.loadAISettings(u.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	writeJSON(w, http.StatusOK, settingsResponse(rec, key))
@@ -92,7 +92,7 @@ func (a *API) handleSetAISettings(w http.ResponseWriter, r *http.Request, u appm
 	}
 	rec, _, err := a.loadAISettings(u.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	if strings.TrimSpace(body.Provider) != "" {
@@ -146,7 +146,7 @@ func (a *API) handleListAIModels(w http.ResponseWriter, r *http.Request, u appmo
 	}
 	rec, storedKey, err := a.loadAISettings(u.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	baseURL := strings.TrimSpace(body.BaseURL)
@@ -165,7 +165,7 @@ func (a *API) handleListAIModels(w http.ResponseWriter, r *http.Request, u appmo
 	defer cancel()
 	models, err := ai.ListModels(ctx, baseURL, key)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeServerError(w, http.StatusBadGateway, err, "Upstream service error")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"models": models})
@@ -174,7 +174,7 @@ func (a *API) handleListAIModels(w http.ResponseWriter, r *http.Request, u appmo
 func (a *API) handleTestAI(w http.ResponseWriter, r *http.Request, u appmodel.User) {
 	rec, key, err := a.loadAISettings(u.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	if key == "" {
@@ -206,7 +206,7 @@ func (a *API) handleTestAI(w http.ResponseWriter, r *http.Request, u appmodel.Us
 		}
 	}
 	if runErr != nil {
-		writeError(w, http.StatusBadGateway, runErr.Error())
+		writeServerError(w, http.StatusBadGateway, runErr, "AI provider error")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -308,7 +308,7 @@ func (a *API) handleAIChat(w http.ResponseWriter, r *http.Request, u appmodel.Us
 	}
 	rec, key, err := a.loadAISettings(u.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	if key == "" {
@@ -371,7 +371,7 @@ Selected node ids: %s`, f.Name, page.Name, page.ID, strings.Join(selected, ", ")
 	if len(skillRecords) > 0 {
 		ts, tsErr := skilltoolset.New(r.Context(), skilltoolset.Config{Source: &dbSkillSource{records: skillRecords}})
 		if tsErr != nil {
-			writeError(w, http.StatusInternalServerError, "Could not load custom skills: "+tsErr.Error())
+			writeServerError(w, http.StatusInternalServerError, tsErr, "Could not load custom skills")
 			return
 		}
 		toolsets = append(toolsets, ts)
@@ -417,7 +417,7 @@ Selected node ids: %s`, f.Name, page.Name, page.ID, strings.Join(selected, ", ")
 		}
 	}
 	if runErr != nil {
-		writeError(w, http.StatusBadGateway, runErr.Error())
+		writeServerError(w, http.StatusBadGateway, runErr, "AI provider error")
 		return
 	}
 	reply := strings.TrimSpace(strings.Join(replyParts, "\n"))

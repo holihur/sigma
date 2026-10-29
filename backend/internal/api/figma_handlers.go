@@ -39,12 +39,12 @@ func (a *API) handleFigmaImport(w http.ResponseWriter, r *http.Request, u model.
 	}
 	data, err := a.figma().Fetch(r.Context(), key, body.Token)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeServerError(w, http.StatusBadGateway, err, "Upstream service error")
 		return
 	}
 	doc, name, err := figma.ConvertFile(data)
 	if err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "Could not convert Figma file: "+err.Error())
+		writeServerError(w, http.StatusUnprocessableEntity, err, "Could not convert Figma file")
 		return
 	}
 	if strings.TrimSpace(body.Name) != "" {
@@ -55,15 +55,30 @@ func (a *API) handleFigmaImport(w http.ResponseWriter, r *http.Request, u model.
 	}
 	raw, err := doc.Marshal()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	meta, err := a.st.CreateFile(newID("f"), name, u.ID, string(raw), "figma")
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"file": meta, "pages": len(doc.Pages), "nodes": countNodes(doc)})
+	warnings := figmaWarnings(data)
+	writeJSON(w, http.StatusCreated, map[string]any{"file": meta, "pages": len(doc.Pages), "nodes": countNodes(doc), "warnings": warnings})
+}
+
+func figmaWarnings(raw []byte) []string {
+	warnings := []string{}
+	if bytes.Contains(raw, []byte(`"layoutMode"`)) {
+		warnings = append(warnings, "Auto layout was converted to absolute positioning")
+	}
+	if bytes.Contains(raw, []byte(`"componentPropertyDefinitions"`)) || bytes.Contains(raw, []byte(`"componentSetId"`)) {
+		warnings = append(warnings, "Component variants and properties were flattened")
+	}
+	if bytes.Contains(raw, []byte(`"effects"`)) {
+		warnings = append(warnings, "Some visual effects may be simplified")
+	}
+	return warnings
 }
 
 func countNodes(doc *design.Doc) int {
@@ -112,7 +127,7 @@ func (a *API) handleFigmaImportJSON(w http.ResponseWriter, r *http.Request, u mo
 		}
 	}
 	if err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "Could not import JSON: "+err.Error())
+		writeServerError(w, http.StatusUnprocessableEntity, err, "Could not import JSON")
 		return
 	}
 	if len(doc.Pages) == 0 {
@@ -127,15 +142,16 @@ func (a *API) handleFigmaImportJSON(w http.ResponseWriter, r *http.Request, u mo
 	}
 	raw, err := doc.Marshal()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	meta, err := a.st.CreateFile(newID("f"), name, u.ID, string(raw), "figma")
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"file": meta, "pages": len(doc.Pages), "nodes": countNodes(doc)})
+	warnings := figmaWarnings(body)
+	writeJSON(w, http.StatusCreated, map[string]any{"file": meta, "pages": len(doc.Pages), "nodes": countNodes(doc), "warnings": warnings})
 }
 
 func (a *API) handleFigmaExport(w http.ResponseWriter, r *http.Request, u model.User) {
@@ -159,7 +175,7 @@ func (a *API) handleFigmaExport(w http.ResponseWriter, r *http.Request, u model.
 		"doc":    json.RawMessage(f.Doc),
 	})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServerError(w, http.StatusInternalServerError, err, "Internal server error")
 		return
 	}
 	filename := safeFilename(f.Name) + ".sigma.json"
