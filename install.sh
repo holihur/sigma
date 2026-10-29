@@ -10,6 +10,7 @@
 #   SIGMA_ADMIN_EMAILS      Comma-separated instance admins (update controls)
 #   SIGMA_REPO              GitHub repo (default holihur/sigma)
 #   SIGMA_RELEASE_BASE      Optional mirror base containing assets + checksums.txt
+#   SIGMA_MINISIGN_PUBKEY   Optional minisign public key; verifies checksums.txt.minisig
 #   --dry-run               Print the install plan without downloading or writing files
 set -euo pipefail
 
@@ -96,6 +97,11 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 curl -fL --connect-timeout 10 --max-time 300 --retry 3 --retry-delay 2 --progress-bar "${base}/${asset}" -o "${tmp}/${asset}"
 curl -fL --connect-timeout 10 --max-time 60 --retry 3 --retry-delay 2 "${base}/checksums.txt" -o "${tmp}/checksums.txt"
+if [ -n "${SIGMA_MINISIGN_PUBKEY:-}" ]; then
+  need minisign
+  curl -fL --connect-timeout 10 --max-time 60 --retry 3 --retry-delay 2 "${base}/checksums.txt.minisig" -o "${tmp}/checksums.txt.minisig"
+  minisign -Vm "${tmp}/checksums.txt" -P "${SIGMA_MINISIGN_PUBKEY}" -x "${tmp}/checksums.txt.minisig"
+fi
 expected="$(awk -v a="$asset" '$NF==a || $NF=="*"a {print $1}' "${tmp}/checksums.txt" | head -1)"
 [ -n "$expected" ] || { echo "No checksum found for ${asset}" >&2; exit 1; }
 if command -v sha256sum >/dev/null 2>&1; then
