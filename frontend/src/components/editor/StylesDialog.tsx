@@ -84,7 +84,7 @@ export function StylesDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                     <div className="text-[9px] text-muted-foreground">{style.color}</div>
                   </div>
                   <button className="rounded px-1.5 py-0.5 text-[10px] text-primary hover:bg-primary/10" onClick={() => applyColorStyle(style.id)}>{t("Apply")}</button>
-                  <button className="text-muted-foreground hover:text-destructive" onClick={() => removeColorStyle(style.id)}><Trash2 className="size-3.5" /></button>
+                  <button className="text-muted-foreground hover:text-destructive" onClick={() => { if (window.confirm(t("Delete this color style?"))) removeColorStyle(style.id); }}><Trash2 className="size-3.5" /></button>
                 </div>
               ))}
             </div>
@@ -108,7 +108,7 @@ export function StylesDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                     <div className="text-[9px] text-muted-foreground">{style.fontFamily} · {style.fontSize}</div>
                   </div>
                   <button className="rounded px-1.5 py-0.5 text-[10px] text-primary hover:bg-primary/10" onClick={() => applyTextStyle(style.id)}>{t("Apply")}</button>
-                  <button className="text-muted-foreground hover:text-destructive" onClick={() => removeTextStyle(style.id)}><Trash2 className="size-3.5" /></button>
+                  <button className="text-muted-foreground hover:text-destructive" onClick={() => { if (window.confirm(t("Delete this text style?"))) removeTextStyle(style.id); }}><Trash2 className="size-3.5" /></button>
                 </div>
               ))}
             </div>
