@@ -59,6 +59,20 @@ func (a *API) handleCreateVersion(w http.ResponseWriter, r *http.Request, u mode
 	writeJSON(w, http.StatusCreated, map[string]any{"versions": versions})
 }
 
+func (a *API) handleGetVersionDoc(w http.ResponseWriter, r *http.Request, u model.User) {
+	id := r.PathValue("id")
+	if a.accessRole(id, u) == "" {
+		writeError(w, http.StatusNotFound, "Design not found")
+		return
+	}
+	versionDoc, version, err := a.st.VersionDoc(id, r.PathValue("versionId"))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Version not found")
+		return
+	}
+	writeJSONCompressed(w, r, http.StatusOK, map[string]any{"doc": json.RawMessage(versionDoc), "version": version})
+}
+
 func (a *API) handleRestoreVersion(w http.ResponseWriter, r *http.Request, u model.User) {
 	id := r.PathValue("id")
 	versionID := r.PathValue("versionId")

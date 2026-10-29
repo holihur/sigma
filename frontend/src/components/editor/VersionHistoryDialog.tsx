@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { History, Loader2, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { versionsApi } from "@/lib/api";
-import type { VersionMeta } from "@/lib/types";
+import type { SigmaDoc, VersionMeta } from "@/lib/types";
 import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
 import { formatRelative } from "@/lib/utils";
@@ -17,6 +17,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
+function compareDocs(current: SigmaDoc, target: SigmaDoc) {
+  const flatten = (doc: SigmaDoc) => {
+    const map = new Map<string, string>();
+    for (const page of doc.pages) {
+      for (const [id, node] of Object.entries(page.nodes)) map.set(`${page.id}:${id}`, JSON.stringify(node));
+    }
+    return map;
+  };
+  const before = flatten(target);
+  const after = flatten(current);
+  let added = 0;
+  let removed = 0;
+  let changed = 0;
+  for (const [id, value] of after) {
+    if (!before.has(id)) added++;
+    else if (before.get(id) !== value) changed++;
+  }
+  for (const id of before.keys()) if (!after.has(id)) removed++;
+  return { added, removed, changed };
+}
+
 export function VersionHistoryDialog({
   open,
   onOpenChange,
@@ -29,11 +50,14 @@ export function VersionHistoryDialog({
   const readOnly = useEditor((s) => s.isReadOnly);
   const dirty = useEditor((s) => s.dirty);
   const applyRestoredDoc = useEditor((s) => s.applyRestoredDoc);
+  const ensureAllPages = useEditor((s) => s.ensureAllPages);
   const [versions, setVersions] = useState<VersionMeta[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
   const [pendingRestore, setPendingRestore] = useState<string | null>(null);
+  const [diff, setDiff] = useState<{ versionId: string; added: number; removed: number; changed: number } | null>(null);
+  const [diffBusy, setDiffBusy] = useState<string | null>(null);
 
   const load = async () => {
     if (!file) return;
@@ -63,6 +87,24 @@ export function VersionHistoryDialog({
       toast.success(t("Version saved"));
     } catch (e) {
       toast.error((e as Error).message);
+    }
+  };
+
+  const previewDiff = async (version: VersionMeta) => {
+    if (diff?.versionId === version.id) {
+      setDiff(null);
+      return;
+    }
+    setDiffBusy(version.id);
+    try {
+      await ensureAllPages();
+      const data = await versionsApi.get(file.id, version.id);
+      const current = useEditor.getState().doc;
+      setDiff({ versionId: version.id, ...compareDocs(current, data.doc) });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDiffBusy(null);
     }
   };
 
@@ -128,7 +170,8 @@ export function VersionHistoryDialog({
             </div>
           ) : (
             versions.map((v) => (
-              <div key={v.id} className="flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0">
+              <div key={v.id} className="border-b border-border px-3 py-2.5 last:border-b-0">
+                <div className="flex items-center gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary">
                   <History className="size-3.5 text-muted-foreground" />
                 </div>
@@ -139,6 +182,10 @@ export function VersionHistoryDialog({
                   </div>
                 </div>
                 <Badge variant="outline">v{v.version}</Badge>
+                <Button variant="ghost" size="sm" disabled={!!diffBusy || !!restoring} onClick={() => void previewDiff(v)}>
+                  {diffBusy === v.id ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                  {diff?.versionId === v.id ? t("Hide changes") : t("Preview changes")}
+                </Button>
                 {pendingRestore === v.id ? (
                   <>
                     <Button variant="ghost" size="sm" disabled={!!restoring} onClick={() => setPendingRestore(null)}>
@@ -154,6 +201,15 @@ export function VersionHistoryDialog({
                     <RotateCcw className="size-3.5" />
                     {t("Restore")}
                   </Button>
+                )}
+                </div>
+                {diff?.versionId === v.id && (
+                  <div className="mt-2 rounded-md bg-secondary/50 px-2.5 py-1.5 text-[10px] text-muted-foreground">
+                    <span className="text-emerald-500">+{diff.added}</span>{" "}
+                    <span className="text-destructive">-{diff.removed}</span>{" "}
+                    <span className="text-amber-500">~{diff.changed}</span>{" "}
+                    {t("changed layers compared with the current document")}
+                  </div>
                 )}
               </div>
             ))
