@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -145,6 +146,11 @@ func (a *API) handleCreateComment(w http.ResponseWriter, r *http.Request, u mode
 	}
 	if body.PageID == "" {
 		writeError(w, http.StatusBadRequest, "Missing page")
+		return
+	}
+	if math.IsNaN(body.X) || math.IsInf(body.X, 0) || math.IsNaN(body.Y) || math.IsInf(body.Y, 0) ||
+		math.Abs(body.X) > 1e6 || math.Abs(body.Y) > 1e6 {
+		writeError(w, http.StatusBadRequest, "Invalid comment position")
 		return
 	}
 	if body.ParentID != "" {
