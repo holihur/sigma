@@ -1,11 +1,14 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
+	"math"
 	"net/http"
 	"strings"
 	"time"
 
+	"sigma/internal/design"
 	"sigma/internal/doc"
 	"sigma/internal/model"
 	"sigma/internal/templates"
@@ -319,6 +322,11 @@ func validateDocLimits(d *doc.Doc) error {
 		if len(p.RootIDs) > 1000 {
 			return docError("too many root nodes")
 		}
+		for id, raw := range p.Nodes {
+			if err := validateNodeGeometry(raw); err != nil {
+				return docError("invalid node " + id + ": " + err.Error())
+			}
+		}
 	}
 	if total > 3000 {
 		return docError("too many nodes (max 3000)")
@@ -327,6 +335,57 @@ func validateDocLimits(d *doc.Doc) error {
 		// Allow empty pages but not completely empty doc
 	}
 	return nil
+}
+
+func validateNodeGeometry(raw json.RawMessage) error {
+	// Avoid unmarshalling every node on normal saves. Vector geometry is the
+	// only payload where normalized coordinates can be attacker-controlled.
+	if !bytes.Contains(raw, []byte(`"points"`)) && !bytes.Contains(raw, []byte(`"subpaths"`)) {
+		return nil
+	}
+	var n design.Node
+	if err := json.Unmarshal(raw, &n); err != nil {
+		return err
+	}
+	if !finite(n.X) || !finite(n.Y) || !finite(n.Width) || !finite(n.Height) {
+		return docError("non-finite geometry")
+	}
+	if n.Width < 0 || n.Height < 0 || math.Abs(n.X) > 1e6 || math.Abs(n.Y) > 1e6 {
+		return docError("geometry out of range")
+	}
+	for _, p := range n.Points {
+		if err := validateVectorPoint(p); err != nil {
+			return err
+		}
+	}
+	for _, sub := range n.Subpaths {
+		for _, p := range sub.Points {
+			if err := validateVectorPoint(p); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateVectorPoint(p design.VectorPoint) error {
+	if !normalized(p.X) || !normalized(p.Y) {
+		return docError("vector point outside 0..1")
+	}
+	for _, h := range []*design.VectorHandle{p.In, p.Out} {
+		if h != nil && (!normalized(h.X) || !normalized(h.Y)) {
+			return docError("vector handle outside 0..1")
+		}
+	}
+	return nil
+}
+
+func normalized(v float64) bool {
+	return finite(v) && v >= 0 && v <= 1
+}
+
+func finite(v float64) bool {
+	return !math.IsNaN(v) && !math.IsInf(v, 0)
 }
 
 type docError string
