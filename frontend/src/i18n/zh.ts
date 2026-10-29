@@ -690,6 +690,9 @@ const zh: Record<string, string> = {
   "You can also paste any model ID manually; Refresh reads the provider's current /models list.": "也可以手动粘贴模型 ID；刷新会读取服务商当前的 /models 列表。",
   "{count} replies": "{count} 条回复",
   "{count} results": "{count} 个结果",
+
+  "Hug width is on; auto layout may override this width.": "已启用适应宽度；自动布局可能会覆盖此宽度。",
+  "Hug height is on; auto layout may override this height.": "已启用适应高度；自动布局可能会覆盖此高度。",
 };
 
 export default zh;

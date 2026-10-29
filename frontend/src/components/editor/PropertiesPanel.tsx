@@ -141,6 +141,15 @@ function DesignTab({
   const isFrame = node.type === "frame";
   const isGroup = node.type === "group";
   const bounds = isGroup ? nodeAABB(page, node) : null;
+  const resize = (patch: Partial<SceneNode>) => {
+    if (patch.width !== undefined && node.layoutHugWidth) {
+      toast.warning(t("Hug width is on; auto layout may override this width."));
+    }
+    if (patch.height !== undefined && node.layoutHugHeight) {
+      toast.warning(t("Hug height is on; auto layout may override this height."));
+    }
+    live(patch);
+  };
 
   return (
     <div className={cn(readOnly && "pointer-events-none opacity-60")}>
@@ -170,7 +179,7 @@ function DesignTab({
             min={1}
             onFocus={begin}
             disabled={isGroup}
-            onChange={(value) => (isGroup ? undefined : live({ width: value }))}
+            onChange={(value) => (isGroup ? undefined : resize({ width: value }))}
           />
           <NumberField
             icon="H"
@@ -178,7 +187,7 @@ function DesignTab({
             min={isGroup ? 0 : 1}
             onFocus={begin}
             disabled={isGroup}
-            onChange={(value) => (isGroup ? undefined : live({ height: value }))}
+            onChange={(value) => (isGroup ? undefined : resize({ height: value }))}
           />
           <NumberField
             icon="∠"
