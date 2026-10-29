@@ -35,6 +35,21 @@ export function apiRoot(): string {
   return getApiBase();
 }
 
+/** Build an absolute URL for an app route while respecting Vite's base path. */
+export function appUrl(path: string): string {
+  const env = (import.meta as unknown as { env?: Record<string, string> }).env;
+  let base = env?.BASE_URL || "/";
+  if (/^https?:\/\//i.test(base)) {
+    try {
+      base = new URL(base).pathname;
+    } catch {
+      base = "/";
+    }
+  }
+  if (!base.startsWith("/")) base = `/${base}`;
+  return `${window.location.origin}${base.replace(/\/?$/, "/")}${path.replace(/^\//, "")}`;
+}
+
 export function getToken(): string | null {
   try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
 }

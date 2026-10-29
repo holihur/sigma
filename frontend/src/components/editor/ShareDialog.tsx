@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Check, Copy, ExternalLink, Globe2, Link2, Mail, Shield, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { membersApi, publicApi } from "@/lib/api";
+import { appUrl, membersApi, publicApi } from "@/lib/api";
 import type { Member } from "@/lib/types";
 import { useEditor } from "@/store/editor";
 import { useAuth } from "@/store/auth";
@@ -105,7 +105,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     setTimeout(() => setCopied(false), 1800);
   };
 
-  const publicUrl = publicToken ? `${window.location.origin}/p/${publicToken}` : "";
+  const publicUrl = publicToken ? appUrl(`p/${publicToken}`) : "";
 
   const savePublic = async (enabled = publicEnabled) => {
     setPublicBusy(true);
