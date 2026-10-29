@@ -693,6 +693,18 @@ const zh: Record<string, string> = {
 
   "Hug width is on; auto layout may override this width.": "已启用适应宽度；自动布局可能会覆盖此宽度。",
   "Hug height is on; auto layout may override this height.": "已启用适应高度；自动布局可能会覆盖此高度。",
+
+  "Hide replies": "收起回复",
+  "Show all {count} replies": "显示全部 {count} 条回复",
+
+  "Preview changes": "预览变更",
+  "Hide changes": "隐藏变更",
+  "changed layers compared with the current document": "个图层与当前文档不同",
+  "Some Figma features were simplified: {list}": "部分 Figma 特性已简化：{list}",
+
+  "{name} is also editing this text. Concurrent edits may conflict.": "{name} 也在编辑这段文本，并发修改可能冲突。",
+
+  "Load more designs": "加载更多设计",
 };
 
 export default zh;

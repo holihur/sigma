@@ -90,6 +90,8 @@ export default function DashboardPage() {
   const [files, setFiles] = useState<FileMeta[]>([]);
   const [templates, setTemplates] = useState<TemplateMeta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [nav, setNav] = useState<Nav>("all");
   const [folderFilter, setFolderFilter] = useState<string | null>(null);
@@ -125,6 +127,7 @@ export default function DashboardPage() {
     try {
       const [filesRes, templatesRes] = await Promise.all([filesApi.list(), filesApi.templates()]);
       setFiles(filesRes.files);
+      setTotal(filesRes.total);
       setTemplates(templatesRes.templates);
       setError(null);
     } catch (e) {
@@ -133,6 +136,23 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await filesApi.list(200, files.length);
+      setFiles((prev) => {
+        const seen = new Set(prev.map((f) => f.id));
+        return [...prev, ...res.files.filter((f) => !seen.has(f.id))];
+      });
+      setTotal(res.total);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [files.length, loadingMore]);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -206,11 +226,11 @@ export default function DashboardPage() {
 
   const counts = useMemo(
     () => ({
-      all: files.length,
+      all: total || files.length,
       starred: files.filter((f) => f.starred).length,
       shared: files.filter((f) => f.role !== "owner").length,
     }),
-    [files],
+    [files, total],
   );
 
   const folders = useMemo(() => {
@@ -741,9 +761,17 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {!loading && !error && files.length < total && (
+            <div className="pb-4 text-center">
+              <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => void loadMore()}>
+                {loadingMore ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                {t("Load more designs")}
+              </Button>
+            </div>
+          )}
           {!loading && !error && visible.length > 0 && (
             <div className="pb-10 text-center text-[10px] text-muted-foreground">
-              {t("{count} designs · Press N for a new canvas", { count: visible.length })}
+              {t("{count} designs · Press N for a new canvas", { count: total || visible.length })}
             </div>
           )}
         </div>

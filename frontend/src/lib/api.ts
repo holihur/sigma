@@ -138,7 +138,8 @@ export const authApi = {
 // ---------- files ----------
 
 export const filesApi = {
-  list: () => api<{ files: FileMeta[] }>("/files"),
+  list: (limit = 200, offset = 0) =>
+    api<{ files: FileMeta[]; total: number; hasMore: boolean }>(`/files?limit=${limit}&offset=${offset}`),
   templates: () => api<{ templates: TemplateMeta[] }>("/templates"),
   get: (id: string) => api<{ file: FileMeta; doc: SigmaDoc }>(`/files/${id}`),
   create: (name: string, template: string, folder = "") =>
@@ -185,6 +186,8 @@ export const versionsApi = {
   list: (fileId: string) => api<{ versions: VersionMeta[] }>(`/files/${fileId}/versions`),
   create: (fileId: string, name: string) =>
     api<{ versions: VersionMeta[] }>(`/files/${fileId}/versions`, { method: "POST", body: { name } }),
+  get: (fileId: string, versionId: string) =>
+    api<{ doc: SigmaDoc; version: number }>(`/files/${fileId}/versions/${versionId}`),
   restore: (fileId: string, versionId: string) =>
     api<{ doc: SigmaDoc; version: number }>(`/files/${fileId}/versions/${versionId}/restore`, {
       method: "POST",

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,12 +16,22 @@ import (
 )
 
 func (a *API) handleListFiles(w http.ResponseWriter, r *http.Request, u model.User) {
-	files, err := a.st.ListFiles(u.ID)
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	files, total, err := a.st.ListFilesPage(u.ID, limit, offset)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Could not load designs")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"files": files})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"files": files, "total": total, "hasMore": offset+len(files) < total,
+	})
 }
 
 func (a *API) handleCreateFile(w http.ResponseWriter, r *http.Request, u model.User) {

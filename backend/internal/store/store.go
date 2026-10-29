@@ -426,25 +426,38 @@ func metaFromFile(f model.File, ownerName, role string, starred bool) model.File
 		CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
 }
 
-func (s *Store) ListFiles(userID string) ([]model.FileMeta, error) {
-	ctx, cancel := s.ctx()
-	defer cancel()
+func (s *Store) fileFilter(ctx context.Context, userID string) bson.M {
 	memberFileIDs, _ := s.collection("file_members").Distinct(ctx, "file_id", bson.M{"user_id": userID})
 	or := []bson.M{{"owner_id": userID}}
 	if len(memberFileIDs) > 0 {
 		or = append(or, bson.M{"_id": bson.M{"$in": memberFileIDs}})
 	}
-	cursor, err := s.collection("files").Find(ctx, bson.M{"$or": or}, options.Find().SetSort(bson.D{{Key: "updated_at", Value: -1}}))
+	return bson.M{"$or": or}
+}
+
+func (s *Store) listFiles(userID string, limit, offset int) ([]model.FileMeta, int, error) {
+	ctx, cancel := s.ctx()
+	defer cancel()
+	filter := s.fileFilter(ctx, userID)
+	total, err := s.collection("files").CountDocuments(ctx, filter)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+	find := options.Find().SetSort(bson.D{{Key: "updated_at", Value: -1}})
+	if limit > 0 {
+		find = find.SetLimit(int64(limit)).SetSkip(int64(offset))
+	}
+	cursor, err := s.collection("files").Find(ctx, filter, find)
+	if err != nil {
+		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 	files := []fileDoc{}
 	if err := cursor.All(ctx, &files); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if len(files) == 0 {
-		return []model.FileMeta{}, nil
+		return []model.FileMeta{}, int(total), nil
 	}
 	ownerIDs := make([]string, 0, len(files))
 	fileIDs := make([]string, 0, len(files))
@@ -482,7 +495,16 @@ func (s *Store) ListFiles(userID string) ([]model.FileMeta, error) {
 		owner := owners[f.OwnerID]
 		out = append(out, metaFromFile(f.model(), owner.Name, role, stars[f.ID]))
 	}
-	return out, nil
+	return out, int(total), nil
+}
+
+func (s *Store) ListFiles(userID string) ([]model.FileMeta, error) {
+	out, _, err := s.listFiles(userID, 0, 0)
+	return out, err
+}
+
+func (s *Store) ListFilesPage(userID string, limit, offset int) ([]model.FileMeta, int, error) {
+	return s.listFiles(userID, limit, offset)
 }
 
 func (s *Store) usersByIDs(ctx context.Context, ids []string) map[string]userDoc {
