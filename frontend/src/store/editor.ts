@@ -256,6 +256,14 @@ function reflowNode(page: Page, id: string, seen: Set<string>) {
 }
 
 function reflowPage(page: Page) {
+  let hasAutoLayout = false;
+  for (const node of Object.values(page.nodes)) {
+    if (node.type === "frame" && (node.layout === "horizontal" || node.layout === "vertical")) {
+      hasAutoLayout = true;
+      break;
+    }
+  }
+  if (!hasAutoLayout) return;
   const seen = new Set<string>();
   for (const id of [...page.rootIds]) reflowNode(page, id, seen);
   for (const id of Object.keys(page.nodes)) reflowNode(page, id, seen);
@@ -381,7 +389,15 @@ export const useEditor = create<EditorState>((set, get) => {
 
   const mutate = (fn: (page: Page, doc: SigmaDoc) => void, record = true) => {
     const state = get();
-    const next = structuredClone(state.doc);
+    // Copy-on-write only the active page. Other pages and unchanged nodes stay
+    // shared with the previous snapshot, which keeps history cheap.
+    const next: SigmaDoc = {
+      ...state.doc,
+      pages: state.doc.pages.map((p) => (p.id === state.pageId ? structuredClone(p) : p)),
+      tombstones: { ...(state.doc.tombstones ?? {}) },
+      deletedPages: { ...(state.doc.deletedPages ?? {}) },
+      styles: state.doc.styles ? structuredClone(state.doc.styles) : state.doc.styles,
+    };
     const page = getPage(next, state.pageId);
     fn(page, next);
     reflowPage(page);
