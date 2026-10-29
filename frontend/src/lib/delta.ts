@@ -25,13 +25,15 @@ export function diffDocs(base: SigmaDoc | null, next: SigmaDoc): SigmaDoc | null
     const upserts: Record<string, SceneNode> = {};
     for (const [id, node] of Object.entries(page.nodes)) {
       const old = previous.nodes[id];
-      if (!old || old.ts !== node.ts || JSON.stringify(old) !== JSON.stringify(node)) {
+      if (!old || old.ts !== node.ts) {
         upserts[id] = node;
       }
     }
-    for (const id of Object.keys(previous.nodes)) {
+    for (const [id, old] of Object.entries(previous.nodes)) {
       if (page.nodes[id]) continue;
-      tombstones[id] = Math.max(topTombstones[id] ?? 0, baseTombstones[id] ?? 0, now);
+      // Use the deleted node's own timestamp so a stale delete can never
+      // outlive a newer node that happens to reuse the same id.
+      tombstones[id] = Math.max(topTombstones[id] ?? 0, baseTombstones[id] ?? 0, old.ts || now);
     }
     const orderChanged = previous.rootIds.join("|") !== page.rootIds.join("|");
     const metaChanged = orderChanged || previous.name !== page.name || previous.ts !== page.ts;
