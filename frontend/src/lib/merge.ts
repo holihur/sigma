@@ -1,7 +1,18 @@
 import type { Page, SceneNode, SigmaDoc } from "./types";
 
+function clonePage(page: Page): Page {
+  return { ...page, nodes: { ...page.nodes }, rootIds: [...page.rootIds] };
+}
+
+/** Copy-on-write document clone: node objects are only replaced when needed. */
 function cloneDoc(doc: SigmaDoc): SigmaDoc {
-  return structuredClone(doc);
+  return {
+    ...doc,
+    pages: doc.pages.map(clonePage),
+    tombstones: { ...(doc.tombstones ?? {}) },
+    deletedPages: { ...(doc.deletedPages ?? {}) },
+    styles: doc.styles ? structuredClone(doc.styles) : doc.styles,
+  };
 }
 
 function pageById(doc: SigmaDoc, id: string): Page | undefined {
@@ -31,7 +42,7 @@ export function mergeDocs(base: SigmaDoc | null, incoming: SigmaDoc | null): Sig
   for (const ip of incoming.pages) {
     const at = index.get(ip.id);
     if (at === undefined) {
-      out.pages.push(cloneDoc({ pages: [ip] }).pages[0]);
+      out.pages.push(structuredClone(ip));
       index.set(ip.id, out.pages.length - 1);
       continue;
     }
@@ -79,9 +90,11 @@ export function mergeDocs(base: SigmaDoc | null, incoming: SigmaDoc | null): Sig
     for (const [id] of orphans) roots.push(id);
     page.rootIds = roots;
 
-    for (const node of Object.values(page.nodes) as SceneNode[]) {
-      if (node.children?.length) {
-        node.children = node.children.filter((kid) => page.nodes[kid]);
+    for (const [id, node] of Object.entries(page.nodes)) {
+      if (!node.children?.length) continue;
+      const children = node.children.filter((kid) => page.nodes[kid]);
+      if (children.length !== node.children.length) {
+        page.nodes[id] = { ...node, children };
       }
     }
   }
