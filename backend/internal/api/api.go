@@ -208,7 +208,7 @@ func (a *API) requireAuth(next AuthedHandler) http.HandlerFunc {
 			}
 		}
 		if cookieAuth && r.Method != http.MethodGet && r.Method != http.MethodHead {
-			if origin := r.Header.Get("Origin"); origin != "" && !allowedOrigin(origin) {
+			if origin := r.Header.Get("Origin"); origin != "" && !allowedOrigin(r, origin) {
 				writeError(w, http.StatusForbidden, "Invalid request origin")
 				return
 			}
@@ -227,20 +227,42 @@ func (a *API) requireAuth(next AuthedHandler) http.HandlerFunc {
 	}
 }
 
-func allowedOrigin(origin string) bool {
+func allowedOrigin(r *http.Request, origin string) bool {
+	origin = strings.TrimRight(strings.TrimSpace(origin), "/")
+	if origin == "" {
+		return true
+	}
+
+	// Always trust the origin the browser actually used to reach this request.
+	// This is essential for LAN/IP access and reverse proxies where the public
+	// host is not localhost or APP_BASE_URL.
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	if proto := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Proto"), ",")[0]); proto != "" {
+		scheme = proto
+	}
+	host := r.Host
+	if forwarded := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Host"), ",")[0]); forwarded != "" {
+		host = forwarded
+	}
+	if strings.EqualFold(origin, scheme+"://"+host) {
+		return true
+	}
+
 	allowed := strings.TrimSpace(os.Getenv("APP_ALLOWED_ORIGINS"))
 	if allowed == "" || allowed == "*" {
 		base := strings.TrimSpace(os.Getenv("APP_BASE_URL"))
 		if base != "" {
-			if u, err := parseOrigin(base); err == nil && u == origin {
+			if u, err := parseOrigin(base); err == nil && strings.EqualFold(u, origin) {
 				return true
 			}
 		}
-		// In production without explicit whitelist, only allow same-origin (no Origin header) or base
-		return origin == "" || strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1")
+		return strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1")
 	}
 	for _, o := range strings.Split(allowed, ",") {
-		if strings.TrimSpace(o) == origin {
+		if strings.EqualFold(strings.TrimRight(strings.TrimSpace(o), "/"), origin) {
 			return true
 		}
 	}
@@ -262,7 +284,7 @@ func parseOrigin(raw string) (string, error) {
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if origin != "" && allowedOrigin(origin) {
+		if origin != "" && allowedOrigin(r, origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")

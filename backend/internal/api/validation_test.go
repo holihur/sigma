@@ -105,3 +105,17 @@ func TestListFilesPagination(t *testing.T) {
 		t.Fatalf("pagination total=%d len=%d", total, len(page))
 	}
 }
+
+func TestAllowedOriginAcceptsRequestHost(t *testing.T) {
+	t.Setenv("APP_ALLOWED_ORIGINS", "")
+	t.Setenv("APP_BASE_URL", "")
+	req := httptest.NewRequest(http.MethodPut, "http://192.168.1.10:9000/api/files/f/partial-doc", nil)
+	req.Host = "192.168.1.10:9000"
+	req.Header.Set("Origin", "http://192.168.1.10:9000")
+	if !allowedOrigin(req, req.Header.Get("Origin")) {
+		t.Fatal("same-host LAN origin must be accepted")
+	}
+	if allowedOrigin(req, "https://evil.example") {
+		t.Fatal("unrelated origin must be rejected")
+	}
+}
