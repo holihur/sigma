@@ -47,10 +47,16 @@ export function AIChatPanel({
   const listRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
+  const sessionKey = file ? `sigma.ai.session.${file.id}.${pageId}` : null;
+
   useEffect(() => {
-    setSessionId(null);
+    let stored: string | null = null;
+    if (sessionKey) {
+      try { stored = localStorage.getItem(sessionKey); } catch { /* private mode */ }
+    }
+    setSessionId(stored);
     setMessages([]);
-  }, [file?.id]);
+  }, [sessionKey]);
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +90,9 @@ export function AIChatPanel({
         selection,
       });
       setSessionId(res.sessionId);
+      if (sessionKey) {
+        try { localStorage.setItem(sessionKey, res.sessionId); } catch { /* private mode */ }
+      }
       // Let the user undo the whole AI turn locally; undo/redo replays through
       // the same tombstone-aware sync used by manual edits.
       useEditor.getState().pushHistory();
