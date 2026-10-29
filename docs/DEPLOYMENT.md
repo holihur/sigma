@@ -154,6 +154,10 @@ APP_BASE_URL=https://sigma.example.com
 SIGMA_ADMIN_EMAILS="you@company.com,ops@company.com"
 ```
 
+## 注册与邮件验证
+
+Sigma 不内置 SMTP。密码注册适合私有/内网实例；公开实例建议启用 OIDC，或在反向代理层限制 `/api/auth/register`。OIDC 账号会禁用密码登录。
+
 ## OIDC
 
 1. 在 Provider（Keycloak、Auth0、Okta、Google Workspace、Entra ID 等）创建 Web Client。
