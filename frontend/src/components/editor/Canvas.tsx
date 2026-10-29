@@ -529,7 +529,11 @@ export function Canvas({
       const first = node.points[0];
       const m = nodeMatrix(page, node.id);
       const firstScreen = toScreen(applyMatrix(m, { x: first.x * node.width, y: first.y * node.height }));
-      if (pen.points.length >= 2 && Math.hypot(screen.x - firstScreen.x, screen.y - firstScreen.y) < 12) {
+      // Keep the close target usable at every zoom level: at low zoom the
+      // old fixed 12px target was too forgiving (world-space misses), while at
+      // high zoom it became hard to hit. Bound the screen-space threshold.
+      const closeThreshold = clamp(12 * viewport.zoom, 6, 24);
+      if (pen.points.length >= 2 && Math.hypot(screen.x - firstScreen.x, screen.y - firstScreen.y) < closeThreshold) {
         finishPen(true);
         return;
       }
