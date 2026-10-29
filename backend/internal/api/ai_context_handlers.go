@@ -91,8 +91,8 @@ func (a *API) handleUploadSkill(w http.ResponseWriter, r *http.Request, u model.
 		Filename string `json:"filename"`
 		Content  string `json:"content"`
 	}
-	if err := readJSON(r, &body); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request")
+	if err := readJSONLimit(r, &body, maxSkillBytes+(64<<10)); err != nil {
+		writeError(w, http.StatusRequestEntityTooLarge, "SKILL.md must be under 512 KB")
 		return
 	}
 	if len(body.Content) > maxSkillBytes {

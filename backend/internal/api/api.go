@@ -469,9 +469,12 @@ func writeError(w http.ResponseWriter, status int, message string) {
 }
 
 func readJSON(r *http.Request, dst any) error {
+	return readJSONLimit(r, dst, 8<<20)
+}
+
+func readJSONLimit(r *http.Request, dst any, limit int64) error {
 	defer r.Body.Close()
-	// General limit 8MB; Figma import handlers use their own 96MB limit
-	dec := json.NewDecoder(io.LimitReader(r.Body, 8<<20))
+	dec := json.NewDecoder(io.LimitReader(r.Body, limit))
 	if err := dec.Decode(dst); err != nil {
 		return err
 	}
