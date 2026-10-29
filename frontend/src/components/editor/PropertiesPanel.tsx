@@ -42,7 +42,7 @@ import { allVectorPoints, canConvertToVector, cornerPoint, removePoint, shapeToV
 import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
-import { cn, clamp, downloadDataUrl, round } from "@/lib/utils";
+import { cn, clamp, downloadDataUrl, round, rememberObjectFit } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -346,7 +346,7 @@ function ConstraintsSection({
         </label>
       )}
       <div className="grid grid-cols-2 gap-2">
-        <Select value={node.constraintH ?? "left"} onValueChange={(v) => onChange({ constraintH: v as SceneNode["constraintH"] })}>
+        <Select disabled={inAutoLayout && node.layoutPositioning !== "absolute"} value={node.constraintH ?? "left"} onValueChange={(v) => onChange({ constraintH: v as SceneNode["constraintH"] })}>
           <SelectTrigger className="h-8"><MoveHorizontal className="size-3.5 text-muted-foreground" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="left">{t("Left")}</SelectItem>
@@ -356,7 +356,7 @@ function ConstraintsSection({
             <SelectItem value="scale">{t("Scale")}</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={node.constraintV ?? "top"} onValueChange={(v) => onChange({ constraintV: v as SceneNode["constraintV"] })}>
+        <Select disabled={inAutoLayout && node.layoutPositioning !== "absolute"} value={node.constraintV ?? "top"} onValueChange={(v) => onChange({ constraintV: v as SceneNode["constraintV"] })}>
           <SelectTrigger className="h-8"><MoveVertical className="size-3.5 text-muted-foreground" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="top">{t("Top")}</SelectItem>
@@ -1087,7 +1087,7 @@ function ImageSection({ node, onChange }: { node: SceneNode; onChange: (patch: P
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <span className="w-14 text-[11px] text-muted-foreground">{t("Fit")}</span>
-          <Select value={node.objectFit} onValueChange={(v) => onChange({ objectFit: v as SceneNode["objectFit"] })}>
+          <Select value={node.objectFit} onValueChange={(v) => { const fit = v as SceneNode["objectFit"]; rememberObjectFit(fit); onChange({ objectFit: fit }); }}>
             <SelectTrigger className="h-8 flex-1">
               <SelectValue />
             </SelectTrigger>

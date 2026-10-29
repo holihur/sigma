@@ -57,7 +57,7 @@ import { useEditor } from "@/store/editor";
 import { useT } from "@/i18n";
 import { uploadImage } from "@/lib/api";
 import { allVectorPoints, insertPointOnVector, mirrorHandle, movePoint, subpathPatch, vectorSubpaths } from "@/lib/vector";
-import { clamp, cn, downloadDataUrl, isEditableTarget, uid } from "@/lib/utils";
+import { clamp, cn, downloadDataUrl, isEditableTarget, rememberedObjectFit, uid } from "@/lib/utils";
 import { NodeView } from "./NodeView";
 import { SelectionOverlay, type ResizeHandle } from "./SelectionOverlay";
 
@@ -1186,7 +1186,7 @@ export function Canvas({
       const img = await loadImage(src);
       if (pending.replaceId) {
         store.getState().pushHistory();
-        store.getState().updateNode(pending.replaceId, { src, objectFit: "cover" }, false);
+        store.getState().updateNode(pending.replaceId, { src, objectFit: rememberedObjectFit() }, false);
       } else {
         store.getState().pushHistory();
         const parent = frameAt(page, pending.point);
@@ -1205,6 +1205,7 @@ export function Canvas({
           width,
           height,
           src,
+          objectFit: rememberedObjectFit(),
           name: file.name.replace(/\.[^.]+$/, "") || "Image",
         });
         store.getState().addNode(node, parent?.id ?? null, undefined, false);

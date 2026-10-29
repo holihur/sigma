@@ -36,6 +36,7 @@ export function CommentsPanel({
   const [scope, setScope] = useState<"page" | "all">("page");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState("");
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
 
   const roots = useMemo(() => {
     return comments
@@ -179,6 +180,8 @@ export function CommentsPanel({
 
         {roots.map((comment, index) => {
           const replies = repliesOf(comment.id);
+          const expanded = expandedThreads.has(comment.id);
+          const shownReplies = replies.length > 2 && !expanded ? replies.slice(-2) : replies;
           return (
             <div
               key={comment.id}
@@ -211,9 +214,22 @@ export function CommentsPanel({
                 <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-foreground/90">{comment.text}</div>
               </button>
 
+              {replies.length > 2 && (
+                <button
+                  className="ml-7 mt-1 text-[10px] text-primary hover:underline"
+                  onClick={() => setExpandedThreads((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(comment.id)) next.delete(comment.id);
+                    else next.add(comment.id);
+                    return next;
+                  })}
+                >
+                  {expanded ? t("Hide replies") : t("Show all {count} replies", { count: replies.length })}
+                </button>
+              )}
               {replies.length > 0 && (
                 <div className="ml-7 mt-1 space-y-1 border-l border-border pl-2.5">
-                  {replies.map((reply) => (
+                  {shownReplies.map((reply) => (
                     <div key={reply.id} className="group/reply rounded-md px-1 py-1 hover:bg-secondary/40">
                       <div className="flex items-center gap-1.5">
                         <Avatar className="size-4">

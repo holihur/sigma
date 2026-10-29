@@ -96,3 +96,18 @@ export function uid(prefix = "n"): string {
 export function pluralize(n: number, word: string, plural?: string) {
   return `${n} ${n === 1 ? word : plural ?? word + "s"}`;
 }
+
+export type ObjectFit = "cover" | "contain" | "fill";
+
+export function rememberedObjectFit(): ObjectFit {
+  try {
+    const value = localStorage.getItem("sigma.objectFit");
+    return value === "contain" || value === "fill" ? value : "cover";
+  } catch {
+    return "cover";
+  }
+}
+
+export function rememberObjectFit(value: ObjectFit) {
+  try { localStorage.setItem("sigma.objectFit", value); } catch { /* private mode */ }
+}
