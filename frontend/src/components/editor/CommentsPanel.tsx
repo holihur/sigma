@@ -86,6 +86,26 @@ export function CommentsPanel({
   const submitReply = async (comment: Comment) => {
     const text = replyDraft.trim();
     if (!file || !text) return;
+    const tempId = `temp_${Date.now()}`;
+    const optimistic: Comment = {
+      id: tempId,
+      fileId: file.id,
+      pageId: comment.pageId,
+      nodeId: comment.nodeId,
+      parentId: comment.id,
+      x: comment.x,
+      y: comment.y,
+      text,
+      authorId: user?.id ?? "",
+      author: user?.name ?? "You",
+      color: user?.color ?? "#0ea5e9",
+      avatar: user?.avatar,
+      resolved: false,
+      createdAt: new Date().toISOString(),
+    };
+    appendComment(optimistic);
+    setReplyDraft("");
+    setReplyTo(null);
     try {
       const data = await commentsApi.create(file.id, {
         pageId: comment.pageId,
@@ -95,10 +115,10 @@ export function CommentsPanel({
         y: comment.y,
         text,
       });
+      removeComment(tempId);
       appendComment(data.comment);
-      setReplyDraft("");
-      setReplyTo(null);
     } catch (e) {
+      removeComment(tempId);
       toast.error((e as Error).message);
     }
   };
