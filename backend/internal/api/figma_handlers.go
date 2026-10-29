@@ -75,7 +75,7 @@ func countNodes(doc *design.Doc) int {
 }
 
 func (a *API) handleFigmaImportJSON(w http.ResponseWriter, r *http.Request, u model.User) {
-	body, err := io.ReadAll(io.LimitReader(r.Body, 96<<20))
+	body, err := io.ReadAll(io.LimitReader(r.Body, 32<<20))
 	_ = r.Body.Close()
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "Could not read JSON")

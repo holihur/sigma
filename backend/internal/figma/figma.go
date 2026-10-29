@@ -168,7 +168,7 @@ func (c *Client) Fetch(ctx context.Context, fileKey, token string) ([]byte, erro
 		return nil, err
 	}
 	defer res.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(res.Body, 64<<20))
+	body, err := io.ReadAll(io.LimitReader(res.Body, 32<<20))
 	if err != nil {
 		return nil, err
 	}
