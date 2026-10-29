@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-r
 import { Loader2, Maximize, Minus, Plus, Sparkles, AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
 import { commentsApi, filesApi } from "@/lib/api";
-import type { Comment, Point, SigmaDoc } from "@/lib/types";
+import type { Comment, Page, Point, SceneNode, SigmaDoc } from "@/lib/types";
 import { boundsOf, getPage, nodeAABB } from "@/lib/nodes";
 import { allVectorPoints, subpathPatch, vectorSubpaths } from "@/lib/vector";
 import { useAuth } from "@/store/auth";
@@ -98,6 +98,7 @@ export default function EditorPage() {
   const [findOpen, setFindOpen] = useState(false);
   const [stylesOpen, setStylesOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
+  const thumbKeyRef = useRef("");
   const { sendDoc, sendPresence } = useCollaboration(file?.id ?? null, !!file);
 
   const page = useMemo(() => getPage(doc, pageId), [doc, pageId]);
@@ -252,6 +253,18 @@ export default function EditorPage() {
     const frame = p.nodes[frameId];
     const el = document.querySelector(`[data-node-id="${frameId}"]`) as HTMLElement | null;
     if (!el || !frame) return;
+    const thumbKey = `${st.file.id}:${st.pageId}:${st.changeSeq}:${frameId}`;
+    if (thumbKeyRef.current === thumbKey) return;
+    // Very large pages can spend hundreds of milliseconds rasterizing DOM.
+    // Use the cheap 2D renderer up front instead of blocking interaction.
+    if (Object.keys(p.nodes).length > 400) {
+      const fallback = fallbackThumbnail(p, frameId);
+      if (fallback) {
+        await filesApi.patch(st.file.id, { thumbnail: fallback });
+        thumbKeyRef.current = thumbKey;
+      }
+      return;
+    }
     const width = Math.max(frame.width, 1);
     const height = Math.max(Math.abs(frame.height), 1);
     const host = document.createElement("div");
@@ -276,9 +289,21 @@ export default function EditorPage() {
       // document images are uploaded separately so they never bloat the document JSON.
       if (dataUrl.length < 400_000) {
         await filesApi.patch(st.file.id, { thumbnail: dataUrl });
+        thumbKeyRef.current = thumbKey;
       }
     } catch {
-      /* thumbnails are best-effort */
+      // Safari private mode and some hardened browsers reject html-to-image
+      // (canvas tainting / IndexedDB restrictions). Keep a lightweight 2D
+      // fallback so the dashboard still has a recognizable preview.
+      try {
+        const fallback = fallbackThumbnail(p, frameId);
+        if (fallback) {
+          await filesApi.patch(st.file.id, { thumbnail: fallback });
+          thumbKeyRef.current = thumbKey;
+        }
+      } catch {
+        /* thumbnails are best-effort */
+      }
     } finally {
       host.remove();
     }
@@ -970,6 +995,58 @@ function ZoomControl({ hostRef, onFit }: { hostRef: React.RefObject<HTMLDivEleme
       </button>
     </div>
   );
+}
+
+function fallbackThumbnail(page: Page, frameId: string): string | null {
+  const frame = page.nodes[frameId];
+  if (!frame) return null;
+  const base = nodeAABB(page, frame);
+  const width = Math.max(1, Math.round(base.width));
+  const height = Math.max(1, Math.round(base.height));
+  const scale = Math.min(1, 1200 / Math.max(width, height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.scale(scale, scale);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  const paint = (node: SceneNode) => (node.fill?.type === "solid" ? node.fill.color : null);
+  const draw = (node: SceneNode) => {
+    if (!node.visible) return;
+    const b = nodeAABB(page, node);
+    const x = b.x - base.x;
+    const y = b.y - base.y;
+    if (node.type === "image") {
+      ctx.fillStyle = "#e5e7eb";
+      ctx.fillRect(x, y, b.width, b.height);
+    } else if (node.type === "text") {
+      ctx.fillStyle = node.fill?.type === "solid" ? node.fill.color : "#111827";
+      ctx.font = `${Math.max(1, node.fontSize)}px ${node.fontFamily || "Inter, sans-serif"}`;
+      const lines = String(node.text || "").split("\n").slice(0, 40);
+      lines.forEach((line, i) => ctx.fillText(line, x, y + node.fontSize * (i + 0.85)));
+    } else {
+      const color = paint(node);
+      if (color) {
+        ctx.fillStyle = color;
+        if (node.type === "ellipse") {
+          ctx.beginPath();
+          ctx.ellipse(x + b.width / 2, y + b.height / 2, b.width / 2, b.height / 2, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(x, y, b.width, b.height);
+        }
+      }
+    }
+    for (const childId of node.children) {
+      const child = page.nodes[childId];
+      if (child) draw(child);
+    }
+  };
+  draw(frame);
+  return canvas.toDataURL("image/png");
 }
 
 function CanvasStatus() {
