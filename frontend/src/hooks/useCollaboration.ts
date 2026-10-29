@@ -33,6 +33,8 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopped = useRef(false);
   const baseDocRef = useRef<SigmaDoc | null>(null);
+  const presenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPresenceSent = useRef(0);
 
   const sendRaw = useCallback((payload: unknown): boolean => {
     const ws = wsRef.current;
@@ -46,15 +48,39 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
   const sendPresence = useCallback(
     (cursor?: Point, selection?: string[]) => {
       if (cursor) lastCursor.current = cursor;
-      const st = useEditor.getState();
-      sendRaw({
-        type: "presence",
-        cursor: lastCursor.current ?? undefined,
-        selection: selection ?? st.selection,
-      });
+      const emit = (nextSelection?: string[]) => {
+        lastPresenceSent.current = Date.now();
+        const st = useEditor.getState();
+        sendRaw({
+          type: "presence",
+          cursor: lastCursor.current ?? undefined,
+          selection: nextSelection ?? st.selection,
+        });
+      };
+      // Selection changes are rare and should feel instant. Cursor updates are
+      // frequent, so coalesce them to ~16/s instead of one frame per mousemove.
+      const immediate = selection !== undefined;
+      if (immediate || Date.now() - lastPresenceSent.current >= 60) {
+        if (presenceTimer.current) {
+          clearTimeout(presenceTimer.current);
+          presenceTimer.current = null;
+        }
+        emit(selection);
+        return;
+      }
+      if (!presenceTimer.current) {
+        presenceTimer.current = setTimeout(() => {
+          presenceTimer.current = null;
+          emit();
+        }, 60);
+      }
     },
     [sendRaw],
   );
+
+  useEffect(() => () => {
+    if (presenceTimer.current) clearTimeout(presenceTimer.current);
+  }, []);
 
   const sendDoc = useCallback(async () => {
     const st = useEditor.getState();
@@ -210,13 +236,22 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
       if (!st.dirty || !st.file || st.isReadOnly) return;
       const token = getToken();
       const snapshot = loadedDoc(st.doc, st.loadedPages);
+      const body = JSON.stringify({ doc: snapshot });
+      // sendBeacon is the most reliable unload transport for same-origin
+      // deployments and does not require CORS preflight. Fall back to a
+      // keepalive request when the API lives on another origin.
+      if (apiRoot().startsWith("/") && typeof navigator.sendBeacon === "function") {
+        const query = token ? `?token=${encodeURIComponent(token)}` : "";
+        const blob = new Blob([body], { type: "application/json" });
+        if (navigator.sendBeacon(`${apiRoot()}/files/${st.file.id}/partial-doc${query}`, blob)) return;
+      }
       void fetch(`${apiRoot()}/files/${st.file.id}/partial-doc`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ doc: snapshot }),
+        body,
         keepalive: true,
       }).catch(() => undefined);
     };
