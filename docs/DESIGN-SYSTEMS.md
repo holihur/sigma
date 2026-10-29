@@ -1,6 +1,6 @@
 # 设计系统模板
 
-Sigma 内置 11 套模板：10 套设计语言 + 空白画布。每套设计系统包含 Home / Foundations / Components 三页，Components 页中的控件是主组件，可直接插入实例。
+Sigma 内置 11 套模板：10 套设计语言 + 空白画布。每套设计系统包含 Home / Foundations / Components 三页，Components 页中的控件是主组件，可直接插入实例。组件实例目前是 Beta：同步单层属性和子树，不支持变体、嵌套覆盖和 Auto Layout 继承。
 
 ## Material Design 3
 
