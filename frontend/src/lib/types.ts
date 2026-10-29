@@ -229,6 +229,7 @@ export interface PresenceUser {
   role: string;
   cursor?: { x: number; y: number };
   selection?: string[];
+  editingId?: string;
 }
 
 export type Tool =
@@ -353,6 +354,7 @@ export interface FigmaImportResult {
   file: FileMeta;
   pages: number;
   nodes: number;
+  warnings?: string[];
 }
 
 export interface AIContext {

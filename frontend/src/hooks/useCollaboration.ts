@@ -6,6 +6,7 @@ import { mergeDocs } from "@/lib/merge";
 import type { Comment, Point, PresenceUser, SigmaDoc } from "@/lib/types";
 import { useEditor } from "@/store/editor";
 import { useAuth } from "@/store/auth";
+import { useT } from "@/i18n";
 import { uid } from "@/lib/utils";
 
 function loadedDoc(doc: SigmaDoc, loaded: Set<string>): SigmaDoc {
@@ -27,6 +28,7 @@ interface WsMessage {
  * an HTTP fallback. Only changed pages/nodes are sent after the initial load.
  */
 export function useCollaboration(fileId: string | null, enabled: boolean) {
+  const t = useT();
   const wsRef = useRef<WebSocket | null>(null);
   const clientId = useRef(uid("client"));
   const lastCursor = useRef<Point | null>(null);
@@ -55,6 +57,7 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
           type: "presence",
           cursor: lastCursor.current ?? undefined,
           selection: nextSelection ?? st.selection,
+          editingId: st.editingId ?? undefined,
         });
       };
       // Selection changes are rare and should feel instant. Cursor updates are
@@ -167,6 +170,16 @@ export function useCollaboration(fileId: string | null, enabled: boolean) {
         }
         if (msg.type === "welcome" || msg.type === "presence") {
           useEditor.getState().setCollaborators(msg.users ?? []);
+          const local = useEditor.getState();
+          const self = useAuth.getState().user?.id;
+          if (local.editingId) {
+            for (const user of msg.users ?? []) {
+              if (user.userId !== self && user.editingId === local.editingId) {
+                toast.warning(t("{name} is also editing this text. Concurrent edits may conflict.", { name: user.name }), { id: `text-conflict-${local.editingId}` });
+                break;
+              }
+            }
+          }
         } else if (msg.type === "doc" && msg.doc && typeof msg.version === "number") {
           useEditor.getState().applyRemoteDoc(msg.doc, msg.version);
           baseDocRef.current = loadedDoc(msg.doc, useEditor.getState().loadedPages);

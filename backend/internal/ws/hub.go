@@ -32,6 +32,7 @@ type Presence struct {
 	Role      string   `json:"role"`
 	Cursor    *Point   `json:"cursor,omitempty"`
 	Selection []string `json:"selection,omitempty"`
+	EditingID string   `json:"editingId,omitempty"`
 }
 
 type AccessFunc func(fileID, token string) (User, error)
@@ -65,6 +66,7 @@ type inbound struct {
 	Type      string          `json:"type"`
 	Cursor    *Point          `json:"cursor,omitempty"`
 	Selection []string        `json:"selection,omitempty"`
+	EditingID string          `json:"editingId,omitempty"`
 	Doc       json.RawMessage `json:"doc,omitempty"`
 	Delta     json.RawMessage `json:"delta,omitempty"`
 }
@@ -333,6 +335,7 @@ func (c *client) readPump() {
 				c.presence.Cursor = msg.Cursor
 			}
 			c.presence.Selection = msg.Selection
+			c.presence.EditingID = msg.EditingID
 			c.hub.broadcastPresence(c.fileID)
 		case "doc":
 			if c.user.Role != "owner" && c.user.Role != "edit" {
