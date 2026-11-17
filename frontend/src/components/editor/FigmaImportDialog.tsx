@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
-import { FileJson, Figma, Loader2, UploadCloud } from "lucide-react";
+import { FileJson, Loader2, UploadCloud } from "lucide-react";
+import { Figma } from "@/components/icons/Figma";
 import { toast } from "sonner";
 import { figmaApi } from "@/lib/api";
 import type { FileMeta } from "@/lib/types";

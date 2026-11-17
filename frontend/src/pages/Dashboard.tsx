@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock,
   Copy,
-  Figma,
   Folder,
   Globe2,
   LayoutDashboard,
@@ -41,6 +40,7 @@ import {
   CheckSquare,
   Square as SquareIcon,
 } from "lucide-react";
+import { Figma } from "@/components/icons/Figma";
 import { toast } from "sonner";
 import { filesApi, notificationsApi, commentsApi, membersApi, authedAssetUrl } from "@/lib/api";
 import type { FileMeta, Notification, TemplateMeta } from "@/lib/types";
